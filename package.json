@@ -1,0 +1,36 @@
+{
+  "name": "txt2bas",
+  "version": "0.0.9",
+  "description": "Converts BASIC to Text and back again",
+  "main": "dist/index.js",
+  "module": "./index.js",
+  "prettier": {
+    "singleQuote": true
+  },
+  "bin": {
+    "txt2bas": "./dist/cli/index.js",
+    "bas2txt": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "rm -rf dist; rollup --config && chmod 744 dist/cli/index.js",
+    "prepare": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "spectrum",
+    "cli",
+    "zx",
+    "specnext",
+    "nextbasic",
+    "txt2bas",
+    "basic"
+  ],
+  "author": "Remy Sharp",
+  "license": "MIT",
+  "dependencies": {
+    "@remy/unpack": "^2.1.3"
+  },
+  "devDependencies": {}
+}

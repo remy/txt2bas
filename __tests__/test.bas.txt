@@ -1,0 +1,108 @@
+10 ; Oh Mummy (clone), Remy Sharp 2020
+20 RUN AT 1: REM 7Mhz
+30 ;
+40 PROC init()
+50 ;
+60 PROC initBaddies()
+70 ;
+80 ; define player and game state
+90 LET %x=48: LET %y=48: LET %s=41:; s = sprite
+100 LET %d=1: LET %z=4:; direction & speed
+110 LET %t=10:; baddie speed
+140 PAPER 7: INK 0: BORDER 0:; background black, text white
+150 SPRITE CLEAR : SPRITE PRINT 1
+160 ;
+200 ; game loop
+201 PRINT AT 0,0;"x:";%x;",y:";%y;"   "
+202 IF ( INKEY$ ="s") THEN GO TO 10
+210 ;
+220 ; move player
+230 SPRITE 0,%x,%y,%s,%d
+235 LET %j= IN 31
+240 IF %( IN $fbfe >> 0&1^1) THEN LET %j=%(j+@1000): REM Q
+250 IF %( IN $fdfe >> 0&1^1) THEN LET %j=%(j+@0100): REM A
+260 IF %( IN $dffe >> 1&1^1) THEN LET %j=%(j+@0010): REM O
+270 IF %( IN $dffe >> 0&1^1) THEN LET %j=%(j+@0001): REM P
+280 IF %j&@1000=@1000 THEN GO SUB 7000: REM up
+290 IF %j&@0100=@0100 THEN GO SUB 7100: REM down
+300 IF %j&@0010=@0010 THEN GO SUB 7200: REM left
+310 IF %j&@0001=@0001 THEN GO SUB 7300: REM right
+311 PRINT AT 0,0;"x:";%x;",y:";%y;"   "
+320 ;
+330 ; move baddies
+340 ;
+341 LET %b=0:; current baddie
+350 LET %t=%t-1:; tick down
+360 PRINT AT %b+1,0;%B((b*3)+3);"      "
+370 ;
+380 SPRITE %b+1,%B(b*3),%B((b*3)+1),%B((b*3)+2),1:; 1 = just print baddie
+390 IF %t>0 THEN GO TO %410
+400  ;LET %B((b*3)+ B((b*3)+3))=%B((b*3)+B((b*3)+3))+1
+410 LET %b=%b+1: IF %b<3 THEN GO TO %350
+420 ;
+430 ; update baddie tick
+440 IF %t=0 THEN LET %t=10
+450 ;
+900 GO TO %200
+6999  ;
+7000  ; move up
+7001  ;
+7010 IF %x MOD 48 <> 0 THEN RETURN
+7011  ;
+7020 LET %y=%y-z
+7030 LET %d=%d^ BIN 00001000
+7040 LET %s=48
+7050 RETURN
+7099  ;
+7100  ; move down
+7101  ;
+7110 IF %x MOD 48 <> 0 THEN RETURN
+7120 LET %y=%y+z
+7130 LET %d=%d^ BIN 00001000
+7140 LET %s=45
+7150 RETURN
+7199  ;
+7200  ; move left
+7201  ;
+7210 IF %y MOD 48 <> 0 THEN RETURN
+7220 LET %x=%x-z
+7230 LET %d= BIN 00001001
+7240 LET %s=%s+1: IF %s>43 THEN LET %s=41
+7250 RETURN
+7299  ;
+7300  ; move right
+7301  ;
+7310 IF %y MOD 48 <> 0 THEN RETURN
+7320 LET %x=%x+z
+7330 LET %d= BIN 00000001
+7340 LET %s=%s+1: IF %s>43 THEN LET %s=41
+7350 RETURN
+7999 ;
+8000 ;
+8010 ; init
+8020 ;
+8030 DEFPROC init()
+8035 LAYER 2,1: CLS
+8040 LOAD "mummy-2.spr" BANK 13: REM load spritesheet
+8050 LOAD "mummy-2.map" BANK 14: REM load tile map
+8060 TILE BANK 13: REM point tiles to spritesheet
+8070 TILE DIM 14,0,16,16: REM bank 14, offset 0, tilemap width 16 tiles, tile size 16
+8080 TILE 16,12: REM print tile for 16 tile cols by 12 tile rows
+8090 LOAD "mummy-2.spr" BANK 16,0,4096
+8100 SPRITE BANK 13
+8110 ENDPROC
+8500 ;
+8510 ; initBaddies: %B=Array([x,y,spr,angle(0: x, 1: y),direction(0: backward, 1: forward)])
+8520 ;
+8530 DEFPROC initBaddies()
+8540 FOR %i=0 TO 2:
+8550 LET %B(i*3)=% INT { RND * 5 } * 48 + 48:; x
+8560 LET %B((i*3)+1)=% INT { RND *208}+48:; y
+8570 LET %B((i*3)+2)=38: LET %B((i*3)+3)=% INT { RND }: LET %B((i*3)+4)=% INT { RND }:; sprite
+8580 LET %B((i*3)+3)=% INT { RND }: LET %B((i*3)+4)=% INT { RND }:; angle, direction
+8590 NEXT %i
+8600 ENDPROC
+9000 ;
+9010 ;Quick save
+9020 ;
+9030 SPRITE PRINT 0: SAVE "mummy-3.bas": STOP
