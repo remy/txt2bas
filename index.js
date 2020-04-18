@@ -23,9 +23,21 @@ export const file2bas = (src, format = '3dos', filename = 'UNTITLED') => {
   const lines = [];
   let length = 0;
   const lexer = new Lexer();
+  const directives = {
+    filename,
+    autostart: 0x8000,
+  };
   src.split('\n').forEach((text) => {
     if (text.trim().length > 0) {
       const data = lexer.line(text);
+
+      if (data.directive) {
+        directives[data.directive] = data.value || 0;
+        return;
+      }
+      if (directives.autostart === 0) {
+        directives.autostart = data.lineNumber;
+      }
       lines.push(data);
       length += data.basic.length;
     }
@@ -44,7 +56,7 @@ export const file2bas = (src, format = '3dos', filename = 'UNTITLED') => {
 
   if (format === '3dos') {
     const file = new Uint8Array(length + 128);
-    file.set(plus3DOSHeader(file)); // set the header (128)
+    file.set(plus3DOSHeader(file, directives)); // set the header (128)
     file.set(basic, 128);
 
     return file;

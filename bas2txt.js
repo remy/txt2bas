@@ -15,7 +15,7 @@ export function tap2txt(data) {
 export function bas2txt(data) {
   const unpack = new Unpack(data);
 
-  unpack.parse(
+  const header = unpack.parse(
     `<A8$sig
     C$marker
     C$issue
@@ -23,14 +23,20 @@ export function bas2txt(data) {
     I$length
     C$hType
     S$hFileLength
-    n$hLine
+    S$autostart
     S$hOffset
     x
     x104
     C$checksum`
   );
 
-  return bas2txtLines(data.slice(unpack.offset));
+  let txt = bas2txtLines(data.slice(unpack.offset));
+
+  if (header.autostart && header.autostart != 0x8000) {
+    txt = `#autostart ${header.autostart}\n${txt}`;
+  }
+
+  return txt;
 }
 
 export function bas2txtLines(data) {

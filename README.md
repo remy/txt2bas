@@ -14,7 +14,7 @@ This project provides 3 things:
 
 [Node](https://nodejs.org/en/) and npm (included with node) are required to install and run the code.
 
-For the command line tooling - this installs *both* tools:
+For the command line tooling - this installs _both_ tools:
 
 ```
 npm install --global txt2bas
@@ -39,6 +39,8 @@ txt2bas -i source.txt -o result.tap # generates a tap file
 
 The command line can also read from `stdin` though this works best on `txt2bas` and not recommended for `bas2txt`.
 
+Note that `#autostart` directive is also supported.
+
 ## Library API
 
 Problematically using the library exposes a number of paired functions:
@@ -48,11 +50,6 @@ Problematically using the library exposes a number of paired functions:
 - `file2bas(String: source, String=3dos: format, filename=UNTITLED: String): Uint8Array` - results full byte array with correct format header
 - `bas2file(Uint8Array: source, String=3dos: format): String` - formatted BASIC text
 - `formatText(String: line): String` - processes the line through `line2bas` then `bas2line` to result the formatted line
-
-## TODO
-
-- Support `#autostart`
-- Support autostart on command line
 
 ## Licence
 

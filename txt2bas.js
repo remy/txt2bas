@@ -76,22 +76,24 @@ export const asTap = (basic, filename = 'tap dot js') => {
   return tapData;
 };
 
-export const plus3DOSHeader = (
-  basic,
-  opts = { autostart: 0, hOffset: basic.length - 128 }
-) => {
-  const { autostart, hOffset } = opts;
+export const plus3DOSHeader = (basic, opts = { autostart: 128 }) => {
+  let { hType = 0, hOffset = basic.length - 128, autostart } = opts;
+  const hFileLength = hOffset;
+  autostart = new DataView(Uint16Array.of(autostart).buffer).getUint16(
+    0,
+    false
+  );
   const res = pack(
-    '< A8$sig C$eof C$issue C$version I$length C$autostart S$hFileLength n$hLine S$hOffset',
+    '< A8$sig C$eof C$issue C$version I$length C$hType S$hFileLength n$autostart S$hOffset',
     {
       sig: 'PLUS3DOS',
       eof: 26,
       issue: 1,
       version: 0,
       length: basic.length,
+      hType,
+      hFileLength,
       autostart,
-      hFileLength: basic.length - 128,
-      hLine: 128, // not totally sure what this is…
       hOffset,
     }
   );
@@ -191,6 +193,14 @@ export default class Lexer {
           });
           length += 6;
         }
+      } else if (name === 'DIRECTIVE') {
+        // IMPORTANT there's only ever a single directive on a line
+        return {
+          basic: [],
+          token,
+          directive: token.directive,
+          value,
+        };
       } else {
         length += value.toString().length;
         tokens.push(token);
@@ -223,8 +233,6 @@ export default class Lexer {
         offset += v.length;
       }
     });
-
-    // console.log(tokens);
 
     return {
       basic: new Uint8Array(buffer.buffer),
@@ -261,7 +269,9 @@ export default class Lexer {
     } else {
       // Not an operator - so it's the beginning of another token.
       // if alpha or starts with 0 (which can only be binary)
-      if (
+      if (Lexer._isDirective(c)) {
+        return this._processDirective();
+      } else if (
         Lexer._isAlpha(c) ||
         c === '' ||
         (c === '.' && Lexer._isAlpha(_next))
@@ -317,6 +327,10 @@ export default class Lexer {
     }
   }
 
+  static _isDirective(c) {
+    return c === '#';
+  }
+
   static _isNumericSymbol(c) {
     return c === '@' || c === '$';
   }
@@ -366,6 +380,31 @@ export default class Lexer {
       (c >= '0' && c <= '9') ||
       c === '_'
     );
+  }
+
+  _processDirective() {
+    this.pos++;
+    let endPos = this.pos + 1;
+    while (endPos < this.bufLen && Lexer._isAlphaNum(this.buf.charAt(endPos))) {
+      endPos++;
+    }
+
+    const directive = this.buf.substring(this.pos, endPos);
+    this.pos = endPos;
+    this._skipNonTokens();
+
+    while (endPos < this.bufLen && Lexer._isAlphaNum(this.buf.charAt(endPos))) {
+      endPos++;
+    }
+
+    const value = parseInt(this.buf.substring(this.pos, endPos), 10);
+    this.pos = endPos;
+
+    return {
+      name: 'DIRECTIVE',
+      value,
+      directive,
+    };
   }
 
   _processLiteralNumber() {

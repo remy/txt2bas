@@ -1,6 +1,6 @@
 {
   "name": "txt2bas",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Converts BASIC to Text and back again",
   "main": "dist/index.js",
   "module": "./index.js",
@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "rm -rf dist; rollup --config && chmod 744 dist/cli/index.js",
+    "dev": "npm run build; rollup --config --watch",
     "prepare": "npm run build"
   },
   "files": [
