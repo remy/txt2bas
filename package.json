@@ -1,6 +1,6 @@
 {
   "name": "txt2bas",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Converts BASIC to Text and back again",
   "main": "dist/index.js",
   "module": "./index.js",

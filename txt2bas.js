@@ -151,8 +151,11 @@ export default class Lexer {
       const { name, value } = token;
       if (!lineNumber && name === 'NUMBER') {
         lineNumber = parseInt(value, 10);
+        this.startOfStatement = true;
         continue;
       }
+
+      this.startOfStatement = false;
 
       // ast
       if (name === 'KEYWORD') {
@@ -162,6 +165,7 @@ export default class Lexer {
           token = this._processComment();
           length += token.value.length;
           tokens.push(token);
+          this.startOfStatement = true;
         }
       } else if (name === 'NUMBER') {
         length += value.toString().length;
@@ -269,7 +273,7 @@ export default class Lexer {
     } else {
       // Not an operator - so it's the beginning of another token.
       // if alpha or starts with 0 (which can only be binary)
-      if (Lexer._isDirective(c)) {
+      if (Lexer._isDirective(c) && this.pos === 0) {
         return this._processDirective();
       } else if (Lexer._isDotCommand(c)) {
         return this._processDotCommand();
@@ -288,7 +292,7 @@ export default class Lexer {
           }
         }
         return res;
-      } else if (Lexer._isStartOfComment(c)) {
+      } else if (Lexer._isStartOfComment(c) && this.startOfStatement) {
         return this._processComment();
       } else if (Lexer._isLiteralNumeric(c)) {
         this.inLiteral = true;
@@ -303,6 +307,7 @@ export default class Lexer {
         if (!this.inIf) {
           this.inLiteral = false;
         }
+        this.startOfStatement = true;
         return { name: 'SYMBOL', value: c, pos: this.pos++ };
       } else if (Lexer._isSymbol(c)) {
         if (c === '<' || c === '>') {

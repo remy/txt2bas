@@ -27,21 +27,29 @@ export const file2bas = (src, format = '3dos', filename = 'UNTITLED') => {
     filename,
     autostart: 0x8000,
   };
-  src.split('\n').forEach((text) => {
-    if (text.trim().length > 0) {
-      const data = lexer.line(text);
+  src
+    .split('\n')
+    .filter(Boolean)
+    .forEach((text) => {
+      if (text.trim().length > 0) {
+        const data = lexer.line(text);
 
-      if (data.directive) {
-        directives[data.directive] = data.value || 0;
-        return;
+        if (data.directive) {
+          directives[data.directive] = data.value || 0;
+          return;
+        }
+        if (data.basic.length === 1) {
+          // this is a bad line, throw it out
+          return;
+        }
+
+        if (directives.autostart === 0) {
+          directives.autostart = data.lineNumber;
+        }
+        lines.push(data);
+        length += data.basic.length;
       }
-      if (directives.autostart === 0) {
-        directives.autostart = data.lineNumber;
-      }
-      lines.push(data);
-      length += data.basic.length;
-    }
-  });
+    });
 
   lines.sort((a, b) => {
     return a.lineNumber < b.lineNumber ? -1 : 1;
@@ -73,5 +81,5 @@ export const file2txt = (src, format = '3dos') => {
   }
 };
 
-// line2bas('10 .cd devel: PRINT %10'); // ?
-// formatText('10 .cd devel: PRINT 10'); // ?
+// line2bas('10 INPUT #0;"Stream 0 Input: ";a$:; comment'); // ?
+// formatText('10 INPUT #0;"Stream 0 Input: ";a$'); // ?
