@@ -50,6 +50,8 @@ Problematically using the library exposes a number of paired functions:
 - `file2bas(String: source, String=3dos: format, filename=UNTITLED: String): Uint8Array` - results full byte array with correct format header
 - `bas2file(Uint8Array: source, String=3dos: format): String` - formatted BASIC text
 - `formatText(String: line): String` - processes the line through `line2bas` then `bas2line` to result the formatted line
+- `plus3DOSHeader` and `tapHeader` - file headers for the appropriate data formats
+- `codes` an object lookup from NextBASIC numerical value to text value, ie. `0xf5 = 'PRINT'`
 
 ## Licence
 
