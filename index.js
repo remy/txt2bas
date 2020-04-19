@@ -1,5 +1,6 @@
 import Lexer, { asTap, plus3DOSHeader } from './txt2bas';
-// export { default as codes } from './codes';
+export { plus3DOSHeader, tapHeader } from './txt2bas';
+export { default as codes } from './codes';
 
 import { tap2txt, bas2txt, bas2txtLines } from './bas2txt';
 
@@ -89,6 +90,3 @@ export const file2txt = (src, format = '3dos') => {
     return tap2txt(new Uint8Array(src)) + '\n';
   }
 };
-
-// line2bas('10 INPUT #0;"Stream 0 Input: ";a$:; comment'); // ?
-// formatText('10 INPUT #0;"Stream 0 Input: ";a$'); // ?
