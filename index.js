@@ -18,7 +18,12 @@ export const formatText = (line) => {
   return line2txt(line2bas(line).basic);
 };
 
-export const file2bas = (src, format = '3dos', filename = 'UNTITLED') => {
+export const file2bas = (
+  src,
+  format = '3dos',
+  filename = 'UNTITLED',
+  includeHeader = true
+) => {
   src = src.toString();
   const lines = [];
   let length = 0;
@@ -61,6 +66,10 @@ export const file2bas = (src, format = '3dos', filename = 'UNTITLED') => {
     basic.set(line.basic, offset);
     offset += line.basic.length;
   });
+
+  if (!includeHeader) {
+    return basic;
+  }
 
   if (format === '3dos') {
     const file = new Uint8Array(length + 128);
