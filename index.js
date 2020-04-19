@@ -72,3 +72,6 @@ export const file2txt = (src, format = '3dos') => {
     return tap2txt(new Uint8Array(src)) + '\n';
   }
 };
+
+// line2bas('10 .cd devel: PRINT %10'); // ?
+// formatText('10 .cd devel: PRINT 10'); // ?

@@ -271,6 +271,8 @@ export default class Lexer {
       // if alpha or starts with 0 (which can only be binary)
       if (Lexer._isDirective(c)) {
         return this._processDirective();
+      } else if (Lexer._isDotCommand(c)) {
+        return this._processDotCommand();
       } else if (
         Lexer._isAlpha(c) ||
         c === '' ||
@@ -382,6 +384,10 @@ export default class Lexer {
     );
   }
 
+  static _isDotCommand(c) {
+    return c === '.';
+  }
+
   _processDirective() {
     this.pos++;
     let endPos = this.pos + 1;
@@ -404,6 +410,17 @@ export default class Lexer {
       name: 'DIRECTIVE',
       value,
       directive,
+    };
+  }
+
+  _processDotCommand() {
+    var start = this.pos;
+    this.pos++;
+    this._skipToEndOfStatement();
+    const value = this.buf.substring(start, this.pos);
+    return {
+      name: 'DOT_COMMAND',
+      value,
     };
   }
 
@@ -598,6 +615,17 @@ export default class Lexer {
       };
       this.pos = end_index + 1;
       return tok;
+    }
+  }
+
+  _skipToEndOfStatement() {
+    while (this.pos < this.bufLen) {
+      var c = this.buf.charAt(this.pos);
+      if (c == ':' || c == '\n') {
+        break;
+      } else {
+        this.pos++;
+      }
     }
   }
 
