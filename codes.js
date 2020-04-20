@@ -56,7 +56,7 @@ export default {
   0xba: 'INT',
   0xbb: 'SQR',
   0xbc: 'SGN',
-  0xbd: 'ANS',
+  0xbd: 'ABS',
   0xbe: 'PEEK',
   0xbf: 'IN',
   0xc0: 'USR',
