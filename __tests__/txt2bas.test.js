@@ -1,9 +1,10 @@
-import Lexer from '../public/bas/txt2bas.js';
-import { toHex } from '../public/lib/to.js';
-import { bas2txtLines } from '../public/bas/bas2txt.js';
+import Lexer from '../txt2bas';
+import { toHex } from '../to.js';
+import { formatText, line2txt } from '../index';
 import tap from 'tap';
 const lexer = new Lexer();
 
+// eslint-disable-next-line no-unused-vars
 function asHex(s) {
   return s.split('').map((_) => toHex(_.charCodeAt(0)));
 }
@@ -12,7 +13,7 @@ tap.test('source = output', (t) => {
   let src = ['10 REM marker', '5 LET b=@01111100', '10 LET b=%$ea'];
 
   src.forEach((src) => {
-    t.same(bas2txtLines(lexer.line(src).basic), src);
+    t.same(line2txt(lexer.line(src).basic), src);
   });
 
   t.end();
@@ -62,5 +63,12 @@ tap.test('end with $', (t) => {
     t.same(res.slice(-expect[i].length), expect[i]);
   });
 
+  t.end();
+});
+
+tap.test('line', (t) => {
+  const src = `10 PRINT 10:; This is a comment`;
+  const res = formatText(src);
+  t.same(src, res);
   t.end();
 });

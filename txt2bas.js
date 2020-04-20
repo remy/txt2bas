@@ -155,7 +155,9 @@ export default class Lexer {
         continue;
       }
 
-      this.startOfStatement = false;
+      if (name !== 'STATEMENT_SEP') {
+        this.startOfStatement = false;
+      }
 
       // ast
       if (name === 'KEYWORD') {
@@ -308,7 +310,7 @@ export default class Lexer {
           this.inLiteral = false;
         }
         this.startOfStatement = true;
-        return { name: 'SYMBOL', value: c, pos: this.pos++ };
+        return { name: 'STATEMENT_SEP', value: c, pos: this.pos++ };
       } else if (Lexer._isSymbol(c)) {
         if (c === '<' || c === '>') {
           // check if the next is a symbol

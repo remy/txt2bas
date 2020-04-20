@@ -1,3 +1,4 @@
 dist/
 node_modules/
 cspect.log
+.nyc_output
