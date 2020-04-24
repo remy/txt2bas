@@ -1,4 +1,5 @@
 import BASIC from './codes.js';
+import { BASIC as BASIC_CHRS } from './unicode.js';
 import { unpack } from '@remy/unpack';
 const Unpack = unpack.Unpack;
 
@@ -64,7 +65,9 @@ export function bas2txtLines(data) {
       if (chr === 0x0d) {
         break;
       }
-      if (BASIC[chr]) {
+      if (BASIC_CHRS[chr]) {
+        string += BASIC_CHRS[chr];
+      } else if (BASIC[chr]) {
         if (lastChr !== null && !BASIC[lastChr]) {
           string += ' ' + BASIC[chr] + ' ';
         } else {

@@ -1,6 +1,7 @@
 import codes from './codes';
 import { floatToZX } from './to';
 import { pack as _pack } from '@remy/unpack';
+import { TEXT } from './unicode';
 
 const pack = _pack.default;
 
@@ -122,6 +123,9 @@ export default class Lexer {
   // state and subsequent tokens will be returned starting with the
   // beginning of the new buffer.
   input(buf) {
+    for (let [key, value] of Object.entries(TEXT)) {
+      buf = buf.replace(key, value);
+    }
     this.pos = 0;
     this.buf = buf;
     this.bufLen = buf.length;
@@ -206,11 +210,21 @@ export default class Lexer {
           token,
           directive: token.directive,
           value,
+          length: 0,
         };
       } else {
         length += value.toString().length;
         tokens.push(token);
       }
+    }
+
+    if (tokens.length === 0) {
+      return {
+        basic: new Uint8Array(),
+        lineNumber: null,
+        tokens: [],
+        length,
+      };
     }
 
     // add the end of carriage to the line
@@ -526,13 +540,25 @@ export default class Lexer {
     const _next = this.buf.charAt(endPos, endPos + 1);
 
     let ignorePeek = false;
-    if (_next == ' ' && curr === 'GO') {
-      // check if the next is "SUB" or "TO"
-      const next = this._peekToken(1).toUpperCase();
-      if (next === 'SUB' || next === 'TO') {
-        endPos = endPos + 1 + next.length;
-        curr = curr + ' ' + next;
-        ignorePeek = true;
+    if (_next == ' ') {
+      if (curr === 'GO') {
+        // check if the next is "SUB" or "TO"
+        const next = this._peekToken(1).toUpperCase(); // ?
+        if (next === 'SUB' || next === 'TO') {
+          endPos = endPos + 1 + next.length;
+          curr = curr + ' ' + next;
+          ignorePeek = true;
+        }
+      }
+
+      if (curr === 'DEF') {
+        // check if the next is "FN"
+        const next = this._peekToken(2).toUpperCase(); //?
+        if (next === 'FN') {
+          endPos = endPos + 1 + next.length;
+          curr = curr + ' ' + next;
+          ignorePeek = true;
+        }
       }
     }
 
@@ -572,7 +598,7 @@ export default class Lexer {
       endPos++;
     }
 
-    const value = this.buf.substring(this.pos, endPos);
+    const value = this.buf.substring(this.pos, endPos); // ?
 
     this.pos = tmp;
 
