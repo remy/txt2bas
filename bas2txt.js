@@ -65,9 +65,7 @@ export function bas2txtLines(data) {
       if (chr === 0x0d) {
         break;
       }
-      if (BASIC_CHRS[chr]) {
-        string += BASIC_CHRS[chr];
-      } else if (BASIC[chr]) {
+      if (BASIC[chr]) {
         if (lastChr !== null && !BASIC[lastChr]) {
           string += ' ' + BASIC[chr] + ' ';
         } else {
@@ -77,6 +75,8 @@ export function bas2txtLines(data) {
         // move forward 5 bits - this contains the encoded numerical value
         // which, since we're porting to text, we don't care about on the way in
         data.splice(0, 5);
+      } else if (BASIC_CHRS[chr]) {
+        string += BASIC_CHRS[chr];
       } else {
         string += String.fromCharCode(chr);
       }
