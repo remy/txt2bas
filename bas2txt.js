@@ -57,6 +57,7 @@ export function bas2txtLines(data) {
     let string = lineNumber + ' ';
 
     let lastChr = null;
+    let inString = false;
 
     const data = Array.from(content.data);
 
@@ -65,7 +66,8 @@ export function bas2txtLines(data) {
       if (chr === 0x0d) {
         break;
       }
-      if (BASIC[chr]) {
+
+      if (!inString && BASIC[chr]) {
         if (lastChr !== null && !BASIC[lastChr]) {
           string += ' ' + BASIC[chr] + ' ';
         } else {
@@ -79,6 +81,11 @@ export function bas2txtLines(data) {
         string += BASIC_CHRS[chr];
       } else {
         string += String.fromCharCode(chr);
+      }
+
+      if (chr === 0x22) {
+        // a quote
+        inString = !inString;
       }
 
       lastChr = chr;

@@ -72,3 +72,12 @@ tap.test('line', (t) => {
   t.same(src, res);
   t.end();
 });
+
+tap.test('pound', (t) => {
+  const src = `10 PRINT "£"`;
+  const res = lexer.line(src).basic;
+  const line = line2txt(res);
+
+  t.same(src, line);
+  t.end();
+});
