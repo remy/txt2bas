@@ -81,3 +81,29 @@ tap.test('pound', (t) => {
   t.same(src, line);
   t.end();
 });
+
+tap.test('int expression reset on keyword', (t) => {
+  const src = '10 %x STEP 2 RUN';
+  const res = lexer.line(src).basic;
+
+  t.ok(res.includes(0x0e), 'has 5 byte number');
+
+  t.end();
+});
+
+tap.test(
+  'preserve white space',
+  (t) => {
+    const src = '10     IF 1 THEN %x=1';
+    const res = lexer.line(src).basic;
+
+    t.same(
+      res.slice(4, 7),
+      new Uint8Array([0x20, 0x20, 0x20]),
+      'contains leading white space'
+    );
+
+    t.end();
+  },
+  { skip: true }
+);

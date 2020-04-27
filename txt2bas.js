@@ -20,6 +20,8 @@ const opTable = Object.entries(codes).reduce(
   }
 );
 
+const intFunctions = ['IN', 'REG', 'PEEK', 'DPEEK', 'USR', 'BIN', 'RND'];
+
 /*
 header unpack template:
 <S$headerLength
@@ -145,7 +147,7 @@ export default class Lexer {
 
   line(line) {
     this.input(line);
-    this.inLiteral = false;
+    this.inIntExpression = false;
     let lineNumber = null;
     let tokens = [];
     let length = 0;
@@ -272,6 +274,7 @@ export default class Lexer {
   // an error throws Error.
   token() {
     this._skipNonTokens();
+
     if (this.pos >= this.bufLen) {
       return null;
     }
@@ -304,14 +307,17 @@ export default class Lexer {
             this.inIf = true;
           } else if (res.keyword === 'THEN') {
             this.inIf = false;
-            this.inLiteral = false;
+          }
+
+          if (!intFunctions.includes(res.keyword)) {
+            this.inIntExpression = false;
           }
         }
         return res;
       } else if (Lexer._isStartOfComment(c) && this.startOfStatement) {
         return this._processComment();
       } else if (Lexer._isLiteralNumeric(c)) {
-        this.inLiteral = true;
+        this.inIntExpression = true;
         return { name: 'SYMBOL', value: c, pos: this.pos++ };
       } else if (c === '.' && Lexer._isDigit(_next)) {
         return this._processNumber();
@@ -321,7 +327,7 @@ export default class Lexer {
         return res;
       } else if (Lexer._isLiteralReset(c) || Lexer._isStatementSep(c)) {
         if (!this.inIf) {
-          this.inLiteral = false;
+          this.inIntExpression = false;
         }
         this.startOfStatement = true;
         return { name: 'STATEMENT_SEP', value: c, pos: this.pos++ };
@@ -376,6 +382,10 @@ export default class Lexer {
 
   static _isStatementSep(c) {
     return c === ':';
+  }
+
+  static _isSpace(c) {
+    return c === ' ';
   }
 
   static _isLiteralReset(c) {
@@ -500,7 +510,7 @@ export default class Lexer {
     }
 
     let name = 'NUMBER';
-    if (this.inLiteral) {
+    if (this.inIntExpression) {
       name = 'LITERAL_NUMBER';
     }
 
