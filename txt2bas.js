@@ -20,7 +20,18 @@ const opTable = Object.entries(codes).reduce(
   }
 );
 
-const intFunctions = ['IN', 'REG', 'PEEK', 'DPEEK', 'USR', 'BIN', 'RND'];
+const intFunctions = [
+  'IN',
+  'REG',
+  'PEEK',
+  'DPEEK',
+  'USR',
+  'BIN',
+  'RND',
+  'MOD',
+  'AND',
+  'OR',
+];
 
 /*
 header unpack template:
