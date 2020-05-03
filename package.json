@@ -1,6 +1,6 @@
 {
   "name": "txt2bas",
-  "version": "1.3.3",
+  "version": "1.4.0-alpha.1",
   "description": "Converts BASIC to Text and back again",
   "main": "dist/index.js",
   "module": "./index.js",
@@ -35,6 +35,7 @@
     "@remy/unpack": "^2.1.3"
   },
   "devDependencies": {
+    "@rollup/plugin-json": "^4.0.3",
     "tap": "^14.10.7"
   },
   "repository": {

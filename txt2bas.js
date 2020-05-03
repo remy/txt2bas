@@ -371,8 +371,8 @@ export default class Lexer {
     return c === '#';
   }
 
-  static _isNumericSymbol(c) {
-    return c === '@' || c === '$';
+  static _isHexSymbol(c) {
+    return c === '$';
   }
 
   static _isLiteralNumeric(c) {
