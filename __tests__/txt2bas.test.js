@@ -152,12 +152,39 @@ tap.test('dot commands', (t) => {
 });
 
 tap.test('handles DOS CR', async (t) => {
-  t.plan(1);
+  t.plan(2);
 
   const fixture = await readFile(__dirname + '/fixtures/from-next-bas2txt.txt');
   console.log(__dirname + '/fixtures/from-next-bas2txt.txt', fixture.length);
 
-  const res = parseLines(fixture.toString()).tokens;
-  console.log({ res });
-  t.ok(true);
+  const res = parseLines(fixture.toString());
+
+  t.same(res.tokens.length, 1, 'one line of code');
+  t.same(res.filename, 'test', 'correct program name');
 });
+
+tap.test('def fn args', async (t) => {
+  t.plan(1);
+
+  const fixture = await readFile(
+    __dirname + '/fixtures/def-fn-bytes.txt',
+    'utf-8'
+  );
+  const expect = await readFile(__dirname + '/fixtures/def-fn-bytes.bas');
+
+  const res = parseLines(fixture.toString());
+
+  t.same(
+    res.bytes.length + 128,
+    Uint8Array.from(expect).length,
+    'same length bytes'
+  );
+});
+
+// tap.test('complete test', async (t) => {
+//   t.plan(1);
+//   const fixture = await readFile(__dirname + '/fixtures/basoko.txt', 'utf-8');
+
+//   const res = parseLines(fixture);
+//   t.ok(true, 'made it');
+// });
