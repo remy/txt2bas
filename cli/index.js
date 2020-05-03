@@ -69,12 +69,17 @@ async function main(type) {
   let res;
   let signal = 0;
 
-  if (options.test) {
-    res = cli.validateTxt(src.toString());
-    signal = res.length > 0 ? 1 : 0;
-    res = res.join('\n');
-  } else {
-    res = cli['file2' + type](src, options.format, options.filename);
+  try {
+    if (options.test) {
+      res = cli.validateTxt(src.toString());
+      signal = res.length > 0 ? 1 : 0;
+      res = res.join('\n');
+    } else {
+      res = cli['file2' + type](src, options.format, options.filename);
+    }
+  } catch (e) {
+    console.error(e);
+    process.exit(1);
   }
 
   if (options.output) {
