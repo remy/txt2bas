@@ -15,7 +15,8 @@
     "build": "rm -rf dist; rollup --config && chmod 744 dist/cli/index.js",
     "dev": "npm run build; rollup --config --watch",
     "prepare": "npm run build",
-    "test": "tap __tests__/*.test.js --no-coverage-report --watch"
+    "test:dev": "tap __tests__/*.test.js --no-coverage-report --watch",
+    "test": "tap __tests__/*.test.js"
   },
   "files": [
     "dist"
