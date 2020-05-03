@@ -32,7 +32,7 @@ export const file2bas = (
   filename = 'UNTITLED',
   includeHeader = true
 ) => {
-  if (!src.toString()) {
+  if (!src.toString) {
     throw new Error('Source must be a string');
   }
 
