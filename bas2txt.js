@@ -68,8 +68,11 @@ export function bas2txtLines(data) {
       }
 
       if (!inString && BASIC[chr]) {
-        if (lastChr !== null && !BASIC[lastChr]) {
-          string += ' ' + BASIC[chr] + ' ';
+        // weird bespoke semi colon logic
+        if (BASIC[chr] === ':' || BASIC[chr] === ';') {
+          string += BASIC[chr];
+        } else if (lastChr !== null && !BASIC[lastChr]) {
+          string += BASIC[chr] + ' ';
         } else {
           string += BASIC[chr] + ' ';
         }
@@ -91,7 +94,7 @@ export function bas2txtLines(data) {
       lastChr = chr;
     }
 
-    lines.push(string);
+    lines.push(string.trim());
   }
 
   // note that the 0x0d (13) is dropped in the line, so we're putting it back here

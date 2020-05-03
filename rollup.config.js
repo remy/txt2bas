@@ -1,3 +1,4 @@
+import json from '@rollup/plugin-json';
 export default [
   {
     input: 'index.js',
@@ -8,6 +9,7 @@ export default [
     external: ['@remy/unpack'], // <-- suppresses the warning
   },
   {
+    plugins: [json()],
     input: 'cli/index.js',
     output: {
       file: 'dist/cli/index.js',

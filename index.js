@@ -1,16 +1,12 @@
-import Lexer, { asTap, plus3DOSHeader } from './txt2bas';
-export { plus3DOSHeader, tapHeader } from './txt2bas';
+import { asTap, plus3DOSHeader } from './headers';
+export { plus3DOSHeader, tapHeader } from './headers';
 export { default as codes } from './codes';
 
+import { parseLines, parseLine, validate } from './txt2bas2';
 import { tap2txt, bas2txt, bas2txtLines } from './bas2txt';
 
-const SUPPORTED_DIRECTIVES = ['autostart', 'program'];
-
 export const line2bas = (line) => {
-  const l = new Lexer();
-  const res = l.line(line.trim());
-
-  return res;
+  return parseLine(line);
 };
 
 export const line2txt = (data) => {
@@ -23,7 +19,11 @@ export const formatText = (line) => {
     // this is a directive or blank line - give it back
     return line;
   }
-  return line2txt(res.basic);
+  return line2txt(res);
+};
+
+export const validateTxt = (src) => {
+  return validate(src);
 };
 
 export const file2bas = (
@@ -32,66 +32,39 @@ export const file2bas = (
   filename = 'UNTITLED',
   includeHeader = true
 ) => {
+  if (!src.toString()) {
+    throw new Error('Source must be a string');
+  }
+
   src = src.toString();
-  const lines = [];
-  let length = 0;
-  const lexer = new Lexer();
+
   const directives = {
     filename,
     autostart: 0x8000,
   };
-  src
-    .split('\n')
-    .filter(Boolean)
-    .forEach((text) => {
-      if (text.trim().length > 0) {
-        const data = lexer.line(text);
-        if (data.directive) {
-          if (SUPPORTED_DIRECTIVES.includes(data.directive)) {
-            directives[data.directive] = data.value || 0;
-          }
-          return;
-        }
-        if (data.length === 0) {
-          // this is a bad line, throw it out
-          return;
-        }
 
-        if (directives.autostart === 0) {
-          directives.autostart = data.lineNumber;
-        }
-        lines.push(data);
-        length += data.basic.length;
-      }
-    });
-
-  lines.sort((a, b) => {
-    return a.lineNumber < b.lineNumber ? -1 : 1;
-  });
-
-  let offset = 0;
-  const basic = new Uint8Array(length);
-  lines.forEach((line) => {
-    basic.set(line.basic, offset);
-    offset += line.basic.length;
-  });
+  const { bytes, length, autostart } = parseLines(src);
+  directives.autostart = autostart;
 
   if (!includeHeader) {
-    return basic;
+    return bytes;
   }
 
   if (format === '3dos') {
     const file = new Uint8Array(length + 128);
     file.set(plus3DOSHeader(file, directives)); // set the header (128)
-    file.set(basic, 128);
+    file.set(bytes, 128);
 
     return file;
   } else if (format === 'tap') {
-    return asTap(basic, filename);
+    return asTap(bytes, filename);
   }
 };
 
 export const file2txt = (src, format = '3dos') => {
+  if (!src || !src.length) {
+    throw new Error('Source must be an array of byte data');
+  }
   if (format === '3dos') {
     return bas2txt(new Uint8Array(src)) + '\n';
   } else if (format === 'tap') {

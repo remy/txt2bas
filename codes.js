@@ -1,6 +1,9 @@
 // https://en.wikipedia.org/wiki/ZX_Spectrum_character_set
 export default {
-  // 0x3a: ':',
+  0x3a: ':',
+  0x3b: ';',
+  0x3c: '<',
+  0x3e: '>',
   // 0x2a: '*',
   0x87: 'PEEK$',
   0x88: 'REG',
@@ -124,3 +127,32 @@ export default {
   0xfe: 'RETURN',
   0xff: 'COPY',
 };
+
+export const usesLineNumbers = [
+  'GO SUB',
+  'GO TO',
+  'LIST',
+  'ERASE',
+  'LINE',
+  'TO',
+  'LLIST',
+  'RESTORE',
+  'RUN',
+  'CODE',
+];
+
+export const intFunctions = [
+  'IN',
+  'REG',
+  'PEEK',
+  'DPEEK',
+  'USR',
+  'BIN',
+  'RND',
+  'BANK',
+  '>>',
+  '<<',
+  '<=',
+  '>=',
+  '<>',
+];
