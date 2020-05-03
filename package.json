@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@rollup/plugin-json": "^4.0.3",
+    "rollup": "^2.7.6",
     "tap": "^14.10.7"
   },
   "repository": {
