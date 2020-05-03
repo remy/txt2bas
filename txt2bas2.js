@@ -87,8 +87,6 @@ export function parseLines(text) {
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i].trim();
 
-    console.log({ line });
-
     if (line) {
       if (line.startsWith('#')) {
         // comment and directives
