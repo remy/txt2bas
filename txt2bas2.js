@@ -6,6 +6,11 @@ import { TEXT } from './unicode';
 const COMMENT = 'COMMENT';
 const LINE_NUMBER = 'LINE_NUMBER';
 const BINARY = 'BINARY';
+const IDENTIFIER = 'IDENTIFIER';
+const DEFFN = 'DEFFN';
+const DEFFN_SIG = 'DEFFN_SIG';
+const IF = 'IF';
+const DEFFN_ARGS = 'DEFFN_ARGS';
 
 export const encode = (a) => new TextEncoder().encode(a);
 
@@ -168,6 +173,17 @@ export class Statement {
     this.next = null;
     this.lastToken = {};
     this.inIf = false;
+    this.in = [];
+    this.expect = null;
+    this.expectError = null;
+  }
+
+  get nowIn() {
+    return this.in[this.in.length - 1];
+  }
+
+  isIn(test) {
+    return this.in.includes(test);
   }
 
   nextToken() {
@@ -183,19 +199,58 @@ export class Statement {
       }
     }
 
+    if (this.expect && this.expect !== token.name) {
+      throw new Error(this.expectError);
+    }
+
+    if (this.in.length && token.name === 'STATEMENT_SEP') {
+      this.in = [];
+    }
+
+    if (this.nowIn === DEFFN_SIG) {
+      if (token.name === 'SYMBOL') {
+        if (token.value === '(') {
+          this.in.push(DEFFN_ARGS);
+        }
+
+        if (token.value === '=') {
+          this.in.pop();
+        }
+      }
+    }
+
+    if (
+      this.nowIn === DEFFN_ARGS &&
+      token.name === 'SYMBOL' &&
+      token.value === ')'
+    ) {
+      this.in.pop();
+    }
+
+    this.expect = null;
+    this.expectError = null;
+
     if (token) {
       if (token.name === 'KEYWORD') {
         // FIXME I don't full understand the logic of what comes out of an int expression
-        if (!this.inIf && intFunctions.indexOf(codes[token.value]) === -1) {
+        if (!this.isIn(IF) && intFunctions.indexOf(codes[token.value]) === -1) {
           this.inIntExpression = false;
         }
 
+        if (token.value === opTable['DEF FN']) {
+          this.in.push(DEFFN);
+          this.in.push(DEFFN_SIG);
+          this.expect = IDENTIFIER;
+          this.expectError =
+            'DEF FN must be followed by a single letter identifier';
+        }
+
         if (token.value === opTable.IF) {
-          this.inIf = true;
+          this.in.push(IF);
         }
 
         if (token.value === opTable.THEN) {
-          this.inIf = false;
+          this.in.pop();
         }
 
         if (token.value === opTable.BIN) {
@@ -238,7 +293,7 @@ export class Statement {
       return null;
     }
 
-    if (tests._isLiteralReset(c) && !this.inIf) {
+    if (tests._isLiteralReset(c) && !this.isIn(IF)) {
       this.inIntExpression = false;
     }
 
@@ -365,8 +420,8 @@ export class Statement {
       if (tok) {
         return tok;
       }
-      c = this.line.charAt(endPos);
       endPos++;
+      c = this.line.charAt(endPos);
     }
 
     let tok = this.findOpCode(endPos);
@@ -376,6 +431,7 @@ export class Statement {
     }
 
     const value = this.line.substring(this.pos, endPos);
+    const isString = value.endsWith('$') && value.length === 2;
 
     // this is a generic identifier
     if (value.length > 1) {
@@ -388,6 +444,10 @@ export class Statement {
       if (value.endsWith('$') && value.length > 2) {
         throw new Error('String variables are only allowed 1 character long');
       }
+
+      if (this.nowIn === DEFFN_SIG && value.length > 1 && !isString) {
+        throw new Error('Only single character names allowed for DEF FN');
+      }
     }
 
     // special case for GO<space>[TO|SUB]
@@ -397,6 +457,11 @@ export class Statement {
       value,
       pos: this.pos,
     };
+
+    if (this.nowIn === DEFFN_ARGS) {
+      tok.name = 'DEF_FN_ARG';
+    }
+
     this.pos = endPos;
     return tok;
   }
@@ -674,6 +739,14 @@ export function basicToBytes(lineNumber, basic) {
         });
         length += 6;
       }
+    } else if (name === 'DEF_FN_ARG') {
+      tokens.push({ name, value });
+      length += value.length;
+      tokens.push({
+        name: 'NUMBER_DATA',
+        value: new Uint8Array([0x0e, 0x00, 0x00, 0x00, 0x00, 0x00]),
+      });
+      length += 6;
     } else if (!token.skip) {
       length += value.length;
       tokens.push(token);
@@ -716,4 +789,4 @@ export function processChars(line) {
   return line;
 }
 
-const a = parseBasic('10 IF %(x-32 MOD 48) OR (y-48 MOD 40) THEN ENDPROC'); //?
+const a = parseBasic('10 DEF FN r(x)= INT (x+0.5):; remark'); //?
