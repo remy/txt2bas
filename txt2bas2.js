@@ -81,6 +81,13 @@ export function parseLine(line) {
   return basicToBytes(lineNumber, tokens);
 }
 
+export function parseLineWithData(line) {
+  const [lineNumber, tokens] = parseBasic(line);
+  const basic = basicToBytes(lineNumber, tokens);
+  const length = basic.length;
+  return { basic, length, lineNumber, tokens };
+}
+
 export function parseLines(text) {
   const lines = text.split(text.includes('\r') ? '\r' : '\n');
   const res = [];

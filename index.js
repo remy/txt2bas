@@ -1,25 +1,19 @@
 import { asTap, plus3DOSHeader } from './headers';
+import { parseLines, parseLine, validate, parseLineWithData } from './txt2bas2';
+import { tap2txt, bas2txt, bas2txtLines } from './bas2txt';
 export { plus3DOSHeader, tapHeader } from './headers';
 export { default as codes } from './codes';
 
-import { parseLines, parseLine, validate } from './txt2bas2';
-import { tap2txt, bas2txt, bas2txtLines } from './bas2txt';
-
-export const line2bas = (line) => {
-  return parseLine(line);
-};
-
-export const line2txt = (data) => {
-  return bas2txtLines(data);
-};
+export const line2bas = parseLineWithData;
+export const line2txt = bas2txtLines;
 
 export const formatText = (line) => {
-  const res = line2bas(line);
+  const res = parseLine(line);
   if (res.length === 0) {
     // this is a directive or blank line - give it back
     return line;
   }
-  return line2txt(res);
+  return bas2txtLines(res);
 };
 
 export const validateTxt = (src) => {
