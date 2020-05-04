@@ -1,5 +1,5 @@
 import { asTap, plus3DOSHeader } from './headers';
-import { parseLines, parseLine, validate, parseLineWithData } from './txt2bas2';
+import { parseLines, parseLine, validate, parseLineWithData } from './txt2bas';
 import { tap2txt, bas2txt, bas2txtLines } from './bas2txt';
 export { plus3DOSHeader, tapHeader } from './headers';
 export { default as codes } from './codes';

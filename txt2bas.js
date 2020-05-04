@@ -1,9 +1,16 @@
-import codes from './codes';
+import codes, { usesLineNumbers, intFunctions } from './codes';
 import { floatToZX } from './to';
-import { pack as _pack } from '@remy/unpack';
+import tests from './chr-tests';
 import { TEXT } from './unicode';
 
-const pack = _pack.default;
+const COMMENT = 'COMMENT';
+const LINE_NUMBER = 'LINE_NUMBER';
+const BINARY = 'BINARY';
+const IDENTIFIER = 'IDENTIFIER';
+const DEFFN = 'DEFFN';
+const DEFFN_SIG = 'DEFFN_SIG';
+const IF = 'IF';
+const DEFFN_ARGS = 'DEFFN_ARGS';
 
 export const encode = (a) => new TextEncoder().encode(a);
 
@@ -16,494 +23,509 @@ const opTable = Object.entries(codes).reduce(
     return acc;
   },
   {
+    // aliases
     GOTO: 0xec,
+    GOSUB: 0xed,
   }
 );
 
-const intFunctions = [
-  'IN',
-  'REG',
-  'PEEK',
-  'DPEEK',
-  'USR',
-  'BIN',
-  'RND',
-  'MOD',
-  'AND',
-  'OR',
-];
+function validateLine(current, prev) {
+  if (current === prev) {
+    throw new Error(`Duplicate line number on ${current}`);
+  }
 
-/*
-header unpack template:
-<S$headerLength
-C$flagByte
-C$type
-A10$filename
-S$length
-S$autostart
-S$varStart
-C$checksum
+  if (current < prev) {
+    throw new Error(`Line numbers out of order on ${current}`);
+  }
 
-S$nextBlockLength
+  if (!current) {
+    throw new Error('Line number is missing');
+  }
 
-C$blockType
-C……$data
-C$blockChecksum
-*/
+  if (current > 9999 || current < 0) {
+    throw new Error(`Invalid line number ${current}`);
+  }
+}
 
-export const tapHeader = (basic, filename = 'BASIC') => {
-  // FIXME is this autostart actually correct?
-  const autostart = new DataView(basic.buffer).getUint16(0, false);
-  const res = pack(
-    '<S$headerLength C$flagByte C$type A10$filename S$length S$p1 S$p2 C$checksum',
-    {
-      headerLength: 19,
-      flagByte: 0x0, // header
-      type: 0x00, // program
-      filename: filename.slice(0, 10), // 10 chrs max
-      length: basic.length,
-      p1: autostart,
-      p2: basic.length,
-      checksum: 0, // solved later
+export function validate(text) {
+  const lines = text.split('\n');
+  let lastLine = -1;
+  const errors = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trim();
+
+    if (line) {
+      if (line.startsWith('#')) {
+        // skip
+      } else {
+        let lineNumber;
+
+        try {
+          [lineNumber] = parseBasic(line);
+          validateLine(lineNumber, lastLine);
+        } catch (e) {
+          errors.push(`${i + 1}:${e.message}\n> ${line}\n`);
+        }
+
+        lastLine = lineNumber;
+      }
     }
-  );
+  }
 
-  const checksum = calculateXORChecksum(res.slice(2, 20));
+  return errors;
+}
 
-  res[res.length - 1] = checksum;
+export function parseLine(line) {
+  const [lineNumber, tokens] = parseBasic(line);
+  return basicToBytes(lineNumber, tokens);
+}
 
-  return res;
-};
+export function parseLineWithData(line) {
+  const [lineNumber, tokens] = parseBasic(line);
+  const basic = basicToBytes(lineNumber, tokens);
+  const length = basic.length;
+  return { basic, length, lineNumber, tokens };
+}
 
-export const asTap = (basic, filename = 'tap dot js') => {
-  const header = tapHeader(basic, filename);
-  const dataType = 0xff;
-  const checksum = calculateXORChecksum(Array.from([dataType, ...basic]));
-  const tapData = new Uint8Array(header.length + basic.length + 2 + 2); // ? [header.length, basic.length]
-  tapData.set(header, 0); // put header in tap
-  new DataView(tapData.buffer).setUint16(header.length, basic.length + 2, true); // set follow block length (plus 2 for flag + checksum)
+export function parseLines(text) {
+  const lines = text.split(text.includes('\r') ? '\r' : '\n');
+  const res = [];
+  let autostart = 0x8000;
+  let lastLine = -1;
+  let filename = null;
+  let length = 0;
 
-  tapData[header.length + 2] = dataType; // data follows
-  tapData.set(basic, header.length + 3); // put basic binary in tap
-  tapData[tapData.length - 1] = checksum; // finish with 8bit checksum
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trim();
 
-  return tapData;
-};
+    if (line) {
+      if (line.startsWith('#')) {
+        // comment and directives
+        if (line.startsWith('#program ')) {
+          filename = line.split(' ')[1];
+        }
 
-export const plus3DOSHeader = (basic, opts = { autostart: 128 }) => {
-  let { hType = 0, hOffset = basic.length - 128, autostart } = opts;
-  const hFileLength = hOffset;
-  autostart = new DataView(Uint16Array.of(autostart).buffer).getUint16(
-    0,
-    false
-  );
-  const res = pack(
-    '< A8$sig C$eof C$issue C$version I$length C$hType S$hFileLength n$autostart S$hOffset',
-    {
-      sig: 'PLUS3DOS',
-      eof: 26,
-      issue: 1,
-      version: 0,
-      length: basic.length,
-      hType,
-      hFileLength,
-      autostart,
-      hOffset,
+        if (line.startsWith('#autostart')) {
+          // check if there's an arg, otherwise look at next line
+          const n = parseInt(line.split(' ')[1], 10);
+          if (isNaN(n)) {
+            autostart = -1;
+          } else {
+            autostart = n;
+          }
+        }
+      } else {
+        if (autostart === -1) {
+          const [lineNumber] = parseLineNumber(line);
+          autostart = lineNumber;
+        }
+        let lineNumber;
+        let tokens;
+
+        const errorTail = ` at #${i + 1}\n> ${line}`;
+
+        try {
+          [lineNumber, tokens] = parseBasic(line);
+        } catch (e) {
+          throw new Error(e.message + errorTail);
+        }
+
+        try {
+          validateLine(lineNumber, lastLine);
+        } catch (e) {
+          throw new Error(e.message + errorTail);
+        }
+
+        lastLine = lineNumber;
+
+        const bytes = basicToBytes(lineNumber, tokens);
+        length += bytes.length;
+        res.push({ lineNumber, tokens, bytes });
+      }
     }
-  );
+  }
 
-  const checksum = Array.from(res).reduce((acc, curr) => (acc += curr), 0);
+  const data = new Uint8Array(length);
 
-  const result = new Uint8Array(128);
-  result.set(res, 0);
-  result[127] = checksum;
+  let offset = 0;
+  res.forEach(({ bytes }) => {
+    data.set(bytes, offset);
+    offset += bytes.length;
+  });
 
-  return result;
-};
+  return {
+    bytes: data,
+    length,
+    tokens: res.map((_) => _.tokens),
+    autostart,
+    filename,
+  };
+}
 
-// Based on (with huge mods) https://eli.thegreenplace.net/2013/07/16/hand-written-lexer-in-javascript-compared-to-the-regex-based-ones
-export default class Lexer {
-  constructor() {
+export function parseLineNumber(line) {
+  const match = line.match(/^\s*(\d{1,4})\s?(.*)$/);
+  if (match !== null) {
+    return [parseInt(match[1], 10), match[2]];
+  }
+
+  throw new Error('Line number is missing');
+}
+
+export class Statement {
+  constructor(line) {
+    this.line = line;
     this.pos = 0;
-    this.buf = null;
-    this.bufLen = 0;
-    this.opTable = opTable;
-  }
-
-  // Operator table, mapping operator -> token name
-
-  // Initialize the Lexer's buffer. This resets the lexer's internal
-  // state and subsequent tokens will be returned starting with the
-  // beginning of the new buffer.
-  input(buf) {
-    for (let [key, value] of Object.entries(TEXT)) {
-      buf = buf.replace(key, value);
-    }
-    this.pos = 0;
-    this.buf = buf;
-    this.bufLen = buf.length;
-  }
-
-  lines(lines) {
-    const data = lines.split('\n').map((line) => this.line(line).basic);
-    const len = data.reduce((acc, curr) => (acc += curr.length), 0);
-    const res = new Uint8Array(len);
-    let offset = 0;
-    data.forEach((line) => {
-      res.set(line, offset);
-      offset += line.length;
-    });
-    return res;
-  }
-
-  line(line) {
-    this.input(line);
     this.inIntExpression = false;
-    let lineNumber = null;
-    let tokens = [];
-    let length = 0;
-
-    let token = null;
-    while ((token = this.token())) {
-      const { name, value } = token;
-      if (!lineNumber && name === 'NUMBER') {
-        lineNumber = parseInt(value, 10);
-        this.startOfStatement = true;
-        continue;
-      }
-
-      if (name !== 'STATEMENT_SEP') {
-        this.startOfStatement = false;
-      }
-
-      // ast
-      if (name === 'KEYWORD') {
-        length++;
-        tokens.push(token);
-        if (codes[value] === 'REM') {
-          token = this._processComment();
-          length += token.value.length;
-          tokens.push(token);
-          this.startOfStatement = true;
-        }
-      } else if (name === 'NUMBER') {
-        length += value.toString().length;
-        const { numeric } = token;
-        tokens.push(token);
-
-        if (
-          (numeric | 0) === numeric &&
-          numeric >= -65535 &&
-          numeric <= 65535
-        ) {
-          const view = new DataView(new ArrayBuffer(6));
-          view.setUint8(0, 0x0e);
-          view.setUint8(1, 0x00);
-          view.setUint8(2, numeric < 0 ? 0xff : 0x00);
-          view.setUint16(3, numeric, true);
-          tokens.push({
-            name: 'NUMBER_DATA',
-            value: new Uint8Array(view.buffer),
-          });
-          length += 6;
-        } else {
-          const value = new Uint8Array(6);
-          value[0] = 0x0e;
-          value.set(floatToZX(numeric), 1);
-          tokens.push({
-            name: 'NUMBER_DATA',
-            value,
-          });
-          length += 6;
-        }
-      } else if (name === 'DIRECTIVE') {
-        // IMPORTANT there's only ever a single directive on a line
-        return {
-          basic: [],
-          token,
-          directive: token.directive,
-          value,
-          length: 0,
-        };
-      } else {
-        length += value.toString().length;
-        tokens.push(token);
-      }
-    }
-
-    if (tokens.length === 0) {
-      return {
-        basic: new Uint8Array(),
-        lineNumber: null,
-        tokens: [],
-        length,
-      };
-    }
-
-    // add the end of carriage to the line
-    tokens.push({ name: 'KEYWORD', value: 0x0d });
-    length++;
-
-    const buffer = new DataView(new ArrayBuffer(length + 4));
-
-    buffer.setUint16(0, lineNumber, false); // line number is stored as big endian
-    buffer.setUint16(2, length, true);
-
-    let offset = 4;
-
-    tokens.forEach(({ name, value }) => {
-      if (name === 'KEYWORD') {
-        buffer.setUint8(offset, value);
-        offset++;
-      } else if (name === 'NUMBER_DATA') {
-        const view = new Uint8Array(buffer.buffer);
-        view.set(value, offset);
-        offset += value.length;
-      } else {
-        const v = value.toString();
-        const view = new Uint8Array(buffer.buffer);
-        view.set(encode(v), offset);
-        offset += v.length;
-      }
-    });
-
-    return {
-      basic: new Uint8Array(buffer.buffer),
-      lineNumber,
-      tokens,
-      length,
-    };
+    this.next = null;
+    this.lastToken = {};
+    this.inIf = false;
+    this.in = [];
+    this.expect = null;
+    this.expectError = null;
   }
 
-  // Get the next token from the current buffer. A token is an object with
-  // the following properties:
-  // - name: name of the pattern that this token matched (taken from rules).
-  // - value: actual string value of the token.
-  // - pos: offset in the current buffer where the token starts.
-  //
-  // If there are no more tokens in the buffer, returns null. In case of
-  // an error throws Error.
-  token() {
-    this._skipNonTokens();
+  get nowIn() {
+    return this.in[this.in.length - 1];
+  }
 
-    if (this.pos >= this.bufLen) {
+  isIn(test) {
+    return this.in.includes(test);
+  }
+
+  nextToken() {
+    const token = this.token();
+
+    if (!token) return;
+
+    if (token.name !== 'WHITE_SPACE') {
+      this.next = null; // always reset
+      if (this.peek(this.pos) === ' ') {
+        // eat following space
+        this.pos++;
+      }
+    }
+
+    if (this.expect && this.expect !== token.name) {
+      throw new Error(this.expectError);
+    }
+
+    if (this.in.length && token.name === 'STATEMENT_SEP') {
+      this.in = [];
+    }
+
+    if (this.nowIn === DEFFN_SIG) {
+      if (token.name === 'SYMBOL') {
+        if (token.value === '(') {
+          this.in.push(DEFFN_ARGS);
+        }
+
+        if (token.value === '=') {
+          this.in.pop();
+        }
+      }
+    }
+
+    if (
+      this.nowIn === DEFFN_ARGS &&
+      token.name === 'SYMBOL' &&
+      token.value === ')'
+    ) {
+      this.in.pop();
+    }
+
+    this.expect = null;
+    this.expectError = null;
+
+    if (token) {
+      if (token.name === 'KEYWORD') {
+        // FIXME I don't full understand the logic of what comes out of an int expression
+        if (!this.isIn(IF) && intFunctions.indexOf(codes[token.value]) === -1) {
+          this.inIntExpression = false;
+        }
+
+        if (token.value === opTable['DEF FN']) {
+          this.in.push(DEFFN);
+          this.in.push(DEFFN_SIG);
+          this.expect = IDENTIFIER;
+          this.expectError =
+            'DEF FN must be followed by a single letter identifier';
+        }
+
+        if (token.value === opTable.IF) {
+          this.in.push(IF);
+        }
+
+        if (token.value === opTable.THEN) {
+          this.in.pop();
+        }
+
+        if (token.value === opTable.BIN) {
+          this.next = BINARY;
+        }
+
+        // special handling for keywords
+        if (token.value === opTable.REM) {
+          this.next = COMMENT;
+        }
+
+        // if (token.value === opTable[';']) {
+        //   // undo the space eater…not sure why though, but it's consistent
+        //   this.pos--;
+        //   this.next = COMMENT;
+        // }
+
+        if (usesLineNumbers.includes(token.text)) {
+          // this is just a hint
+          this.next = LINE_NUMBER;
+        }
+      }
+    }
+
+    this.lastToken = token;
+
+    return token;
+  }
+
+  token() {
+    const c = this.line.charAt(this.pos);
+
+    if (this.next === COMMENT) {
+      this.next = false;
+      return { name: 'COMMENT', ...this.processToEnd() };
+    }
+
+    if (c == '') {
+      // EOL
       return null;
     }
 
-    // The char at this.pos is part of a real token. Figure out which.
-    var c = this.buf.charAt(this.pos);
-    const _next = this.buf.charAt(this.pos + 1);
+    if (tests._isLiteralReset(c) && !this.isIn(IF)) {
+      this.inIntExpression = false;
+    }
 
-    // comments are slurped elsewhere
+    if (tests._isIntExpression(c)) {
+      if (this.inIntExpression) {
+        throw new Error(
+          'Cannot redeclare integer expression whilst already inside one'
+        );
+      }
+      this.inIntExpression = true;
+    }
 
-    // Look it up in the table of operators
-    var op = this.opTable[c];
-    if (op !== undefined) {
-      return { name: 'KEYWORD', value: op, pos: this.pos++ };
-    } else {
-      // Not an operator - so it's the beginning of another token.
-      // if alpha or starts with 0 (which can only be binary)
-      if (Lexer._isDirective(c) && this.pos === 0) {
-        return this._processDirective();
-      } else if (Lexer._isDotCommand(c)) {
-        return this._processDotCommand();
-      } else if (
-        Lexer._isAlpha(c) ||
-        c === '' ||
-        (c === '.' && Lexer._isAlpha(_next))
-      ) {
-        const res = this._processIdentifier();
-        if (res.name === 'KEYWORD') {
-          if (res.keyword === 'IF') {
-            this.inIf = true;
-          } else if (res.keyword === 'THEN') {
-            this.inIf = false;
-          }
+    if (tests._isDirective(c)) {
+      return this.processDirective();
+    }
 
-          if (!intFunctions.includes(res.keyword)) {
-            this.inIntExpression = false;
-          }
-        }
-        return res;
-      } else if (Lexer._isStartOfComment(c) && this.startOfStatement) {
-        return this._processComment();
-      } else if (Lexer._isLiteralNumeric(c)) {
-        this.inIntExpression = true;
-        return { name: 'SYMBOL', value: c, pos: this.pos++ };
-      } else if (c === '.' && Lexer._isDigit(_next)) {
-        return this._processNumber();
-      } else if (Lexer._isDigit(c)) {
-        const res = this._processNumber();
-        this.inBinary = false;
-        return res;
-      } else if (Lexer._isLiteralReset(c) || Lexer._isStatementSep(c)) {
-        if (!this.inIf) {
-          this.inIntExpression = false;
-        }
-        this.startOfStatement = true;
-        return { name: 'STATEMENT_SEP', value: c, pos: this.pos++ };
-      } else if (Lexer._isSymbol(c)) {
-        if (c === '<' || c === '>') {
-          // check if the next is a symbol
-          const value = this.opTable[
-            Object.keys(opTable).find((_) => _ === c + _next)
-          ];
-          if (value) {
-            return {
-              name: 'KEYWORD',
-              value,
-              pos: (this.pos += 2),
-            };
-          }
-        }
-        return { name: 'SYMBOL', value: c, pos: this.pos++ };
-      } else if (c === '"') {
-        return this._processQuote();
-      } else if (Lexer._isNumericSymbol(c)) {
-        return { name: 'SYMBOL', value: c, pos: this.pos++ };
+    if (tests._isStartOfComment(c)) {
+      return { ...this.processToEnd(), name: 'COMMENT' };
+    }
+
+    if (tests._isDotCommand(c)) {
+      // FIXME this is wrong
+      return { ...this.processToEndOfStatement(), name: 'DOT_COMMAND' };
+    }
+
+    if (tests._isSpace(c)) {
+      return this.processWhitespace();
+    }
+
+    if (tests._isStatementSep(c)) {
+      return { ...this.processSingle(), name: 'STATEMENT_SEP' };
+    }
+
+    if (tests._isCmpOperatorStart(c)) {
+      // special handling for operator keywords, such as <=
+      return this.processCmpOperator();
+    }
+
+    if (tests._isAlpha(c)) {
+      return this.processIdentifier();
+    }
+
+    if (tests._isBinarySymbol(c)) {
+      if (!this.inIntExpression) {
+        throw new Error('Binary values only allowed in integer expressions');
+      }
+
+      return this.processBinary();
+    }
+
+    if (tests._isHexSymbol(c)) {
+      if (!this.inIntExpression) {
+        throw new Error('Hex values only allowed in integer expressions');
+      }
+
+      return this.processHex();
+    }
+
+    if (tests._isDigit(c)) {
+      return this.processNumber();
+    }
+
+    if (tests._isString(c)) {
+      return this.processQuote();
+    }
+
+    return this.processSingle();
+  }
+
+  peek(at = this.pos + 1) {
+    return this.line.charAt(at);
+  }
+
+  peekToken(at = this.pos) {
+    let pos = at + 1;
+    const start = at;
+    while (pos < this.line.length && !tests._isSpace(this.line.charAt(pos))) {
+      pos++;
+    }
+    return this.line.substring(start, pos);
+  }
+
+  findOpCode(endPos) {
+    const peek = this.peek(endPos);
+    const moreToken = tests._isAlpha(peek);
+    let curr = this.line.substring(this.pos, endPos).toUpperCase();
+
+    if (moreToken) {
+      return false;
+    }
+
+    // be wary that this could be something like `DEF FN`
+    if (peek === ' ' && !opTable[curr]) {
+      const next = this.peekToken(endPos + 1);
+      const test = `${curr} ${next}`;
+
+      if (opTable[test]) {
+        curr = test;
+        endPos = endPos + 1 + next.length;
       } else {
-        throw Error(`Token error at ${this.pos} (${c})\n${this.buf}`);
+        return false;
       }
+    }
+
+    if (opTable[curr] !== undefined) {
+      const token = {
+        name: 'KEYWORD',
+        text: codes[opTable[curr]],
+        value: opTable[curr],
+        pos: this.pos,
+      };
+      this.pos = endPos;
+      return token;
     }
   }
 
-  static _isDirective(c) {
-    return c === '#';
-  }
-
-  static _isHexSymbol(c) {
-    return c === '$';
-  }
-
-  static _isLiteralNumeric(c) {
-    return c === '%';
-  }
-
-  static _isBinary(c) {
-    return c === '1' || c === '0';
-  }
-
-  static _isNewLine(c) {
-    return c === '\r' || c === '\n';
-  }
-
-  static _isDigit(c) {
-    return c >= '0' && c <= '9';
-  }
-
-  static _isStatementSep(c) {
-    return c === ':';
-  }
-
-  static _isSpace(c) {
-    return c === ' ';
-  }
-
-  static _isLiteralReset(c) {
-    return c === '=' || c === ',';
-  }
-
-  static _isSymbol(c) {
-    return '!,;-+/*()<>#%${}[]|&^'.includes(c);
-  }
-
-  static _isAlpha(c) {
-    return (
-      (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c === '_' || c === '$'
-    );
-  }
-
-  static _isStartOfComment(c) {
-    return c === ';';
-  }
-
-  static _isAlphaNum(c) {
-    return (
-      (c >= 'a' && c <= 'z') ||
-      (c >= 'A' && c <= 'Z') ||
-      (c >= '0' && c <= '9') ||
-      c === '_'
-    );
-  }
-
-  static _isDotCommand(c) {
-    return c === '.';
-  }
-
-  _processDirective() {
-    this.pos++;
+  processIdentifier() {
+    // TODO walk until we have something that looks like a token
     let endPos = this.pos + 1;
-    while (endPos < this.bufLen && Lexer._isAlphaNum(this.buf.charAt(endPos))) {
-      endPos++;
-    }
+    let c = this.line.charAt(endPos);
+    while (tests._isAlphaNum(c) || tests._isDollar(c)) {
+      let tok = this.findOpCode(endPos);
 
-    const directive = this.buf.substring(this.pos, endPos);
-    this.pos = endPos;
-    this._skipNonTokens();
-
-    while (endPos < this.bufLen && Lexer._isAlphaNum(this.buf.charAt(endPos))) {
-      endPos++;
-    }
-
-    const value = parseInt(this.buf.substring(this.pos, endPos), 10);
-    this.pos = endPos;
-
-    return {
-      name: 'DIRECTIVE',
-      value,
-      directive,
-    };
-  }
-
-  _processDotCommand() {
-    var start = this.pos;
-    this.pos++;
-    this._skipToEndOfStatement();
-    const value = this.buf.substring(start, this.pos);
-    return {
-      name: 'DOT_COMMAND',
-      value,
-    };
-  }
-
-  _processLiteralNumber() {
-    var endPos = this.pos + 1;
-    let needsClose = false;
-    while (
-      (endPos < this.bufLen &&
-        (Lexer._isDigit(this.buf.charAt(endPos)) ||
-          this.buf.charAt(endPos) === '(' ||
-          this.buf.charAt(endPos) === '!')) ||
-      (needsClose && this.buf.charAt(endPos) === ')')
-    ) {
-      if (this.buf.charAt(endPos) === '(') {
-        needsClose = true; // only allow this once
+      if (tok) {
+        return tok;
       }
       endPos++;
+      c = this.line.charAt(endPos);
     }
 
-    const value = this.buf.substring(this.pos, endPos);
+    let tok = this.findOpCode(endPos);
 
-    var tok = {
-      name: 'LITERAL_NUMBER',
+    if (tok) {
+      return tok;
+    }
+
+    const value = this.line.substring(this.pos, endPos);
+    const isString = value.endsWith('$') && value.length === 2;
+
+    // this is a generic identifier
+    if (value.length > 1) {
+      if (this.inIntExpression) {
+        throw new Error(
+          'Only integer variables (single character vars) are allowed in integer expressions'
+        );
+      }
+
+      if (value.endsWith('$') && value.length > 2) {
+        throw new Error('String variables are only allowed 1 character long');
+      }
+
+      if (this.nowIn === DEFFN_SIG && value.length > 1 && !isString) {
+        throw new Error('Only single character names allowed for DEF FN');
+      }
+    }
+
+    // special case for GO<space>[TO|SUB]
+
+    tok = {
+      name: 'IDENTIFIER',
       value,
       pos: this.pos,
     };
+
+    if (this.nowIn === DEFFN_ARGS) {
+      tok.name = 'DEF_FN_ARG';
+    }
+
     this.pos = endPos;
     return tok;
   }
 
-  _processNumber() {
-    var endPos = this.pos + 1;
+  processSingle() {
+    const token = {
+      name: 'SYMBOL',
+      value: this.line.charAt(this.pos, this.pos + 1),
+      pos: this.pos,
+    };
+    this.pos++;
+    return token;
+  }
+
+  processBinary() {
+    const tok = this.simpleSlurp(tests._isBinary, 'BINARY');
+
+    const numeric = parseInt(tok.value.substring(1), 2);
+
+    tok.numeric = numeric;
+    tok.integer = this.inIntExpression;
+
+    // unlikely but we'll keep it
+    if (this.next === LINE_NUMBER) {
+      tok.lineNumber = true;
+    }
+
+    return tok;
+  }
+
+  processHex() {
+    const tok = this.simpleSlurp(tests._isHex, 'HEX');
+
+    const numeric = parseInt(`0x${tok.value.substring(1)}`, 16);
+
+    tok.numeric = numeric;
+    tok.integer = this.inIntExpression; // should always be true
+
+    // unlikely but we'll keep it
+    if (this.next === LINE_NUMBER) {
+      tok.lineNumber = true;
+    }
+
+    return tok;
+  }
+
+  processNumber() {
+    let endPos = this.pos + 1;
     let exp = false;
     while (
-      (endPos < this.bufLen &&
-        (Lexer._isDigit(this.buf.charAt(endPos)) ||
-          this.buf.charAt(endPos) === '.' ||
-          this.buf.charAt(endPos) === 'e')) ||
-      (exp && this.buf.charAt(endPos) === '-')
+      (endPos < this.line.length &&
+        (tests._isDigit(this.line.charAt(endPos)) ||
+          this.line.charAt(endPos) === '.' ||
+          this.line.charAt(endPos) === 'e')) ||
+      (exp && this.line.charAt(endPos) === '-')
     ) {
-      if (this.buf.charAt(endPos) === 'e') {
+      if (this.line.charAt(endPos) === 'e') {
         exp = true; // only allow this once
       } else {
         exp = false;
@@ -511,10 +533,13 @@ export default class Lexer {
       endPos++;
     }
 
-    const value = this.buf.substring(this.pos, endPos);
+    const value = this.line.substring(this.pos, endPos);
     let numeric = 0;
 
     if (value.includes('.')) {
+      if (this.inIntExpression) {
+        throw new Error(`Non integer used in integer expression`);
+      }
       numeric = parseFloat(value);
     } else {
       numeric = parseInt(value, 10);
@@ -525,172 +550,250 @@ export default class Lexer {
       name = 'LITERAL_NUMBER';
     }
 
-    if (this.inBinary) {
-      numeric = parseInt(value, 2);
-    }
-
     var tok = {
       name,
       value,
       numeric,
+      integer: this.inIntExpression,
       pos: this.pos,
     };
+
+    if (this.next === LINE_NUMBER) {
+      tok.lineNumber = true;
+    }
+
     this.pos = endPos;
     return tok;
   }
 
-  _processComment() {
-    var endPos = this.pos;
-    // Skip until the end of the line
-    while (endPos < this.bufLen && !Lexer._isNewLine(this.buf.charAt(endPos))) {
-      endPos++;
+  processDirective() {
+    const start = this.pos;
+
+    const [directive, arg] = this.line.substring(this.pos + 1).split(' ', 2);
+
+    this.pos = this.line.length; // always slurp to the end
+
+    if (directive === 'autostart') {
+      return {
+        name: 'DIRECTIVE',
+        autostart: parseInt(arg, 10),
+        value: 'autostart',
+        pos: start,
+        skip: true,
+      };
     }
 
-    var tok = {
+    if (directive === 'program') {
+      return {
+        name: 'DIRECTIVE',
+        autostart: arg,
+        value: 'program',
+        pos: start,
+        skip: true,
+      };
+    }
+
+    return {
       name: 'COMMENT',
-      value: this.buf.substring(this.pos, endPos).trim(),
-      pos: this.pos,
+      value: this.line.substring(start, this.pos),
+      pos: start,
+      skip: true,
     };
-    this.pos = endPos + 1;
+  }
+
+  processQuote() {
+    // this.pos points at the opening quote. Find the ending quote.
+    const end = this.line.indexOf('"', this.pos + 1);
+
+    if (end === -1) {
+      throw Error('Unterminated quote at chr ' + this.pos);
+    } else {
+      const tok = {
+        name: 'STRING',
+        value: this.line.substring(this.pos, end + 1),
+        pos: this.pos,
+      };
+      this.pos = end + 1;
+      return tok;
+    }
+  }
+
+  processCmpOperator() {
+    const tok = this.simpleSlurp(tests._isCmpOperator, 'KEYWORD');
+    const value = opTable[tok.value];
+    tok.text = tok.value;
+    tok.value = value;
+
+    // you can >= but you can't =<
+    if (this.lastToken.name === 'SYMBOL' && this.lastToken.value === '=') {
+      throw new Error('Invalid use of relation symbols');
+    }
+
     return tok;
   }
 
-  _isOpCode(endPos) {
-    let curr = this.buf.substring(this.pos, endPos).toUpperCase();
-
-    const _next = this.buf.charAt(endPos, endPos + 1);
-
-    let ignorePeek = false;
-    if (_next == ' ') {
-      if (curr === 'GO') {
-        // check if the next is "SUB" or "TO"
-        const next = this._peekToken(1).toUpperCase(); // ?
-        if (next === 'SUB' || next === 'TO') {
-          endPos = endPos + 1 + next.length;
-          curr = curr + ' ' + next;
-          ignorePeek = true;
-        }
-      }
-
-      if (curr === 'DEF') {
-        // check if the next is "FN"
-        const next = this._peekToken(2).toUpperCase(); //?
-        if (next === 'FN') {
-          endPos = endPos + 1 + next.length;
-          curr = curr + ' ' + next;
-          ignorePeek = true;
-        }
-      }
-    }
-
-    if (_next === '$' && this.opTable[curr + _next]) {
-      curr = curr + _next;
-      endPos = endPos + 1 + _next.length;
-      ignorePeek = true;
-    }
-
-    if (this.opTable[curr] !== undefined) {
-      const peeked = this._peekToken(-1).toUpperCase(); // ?
-      if (ignorePeek === false && curr !== peeked) {
-        return false;
-      }
-
-      if (curr == 'BIN') {
-        this.inBinary = true;
-      }
-      this.pos = endPos;
-
-      return {
-        name: 'KEYWORD',
-        value: this.opTable[curr],
-        pos: this.pos,
-        keyword: curr,
-      };
-    }
-    return false;
+  processWhitespace() {
+    return this.simpleSlurp(tests._isSpace, 'WHITE_SPACE');
   }
 
-  _peekToken(offset = 0) {
-    const tmp = this.pos;
-    this.pos += offset + 1;
-    this._skipNonTokens();
-    let endPos = this.pos + 1;
-    while (endPos < this.bufLen && Lexer._isAlphaNum(this.buf.charAt(endPos))) {
+  simpleSlurp(test, tokenName) {
+    let endPos = this.pos;
+
+    while (test(this.line.charAt(endPos))) {
       endPos++;
     }
 
-    const value = this.buf.substring(this.pos, endPos); // ?
+    const value = this.line.substring(this.pos, endPos);
 
-    this.pos = tmp;
-
-    return value;
-  }
-
-  _processIdentifier() {
-    var endPos = this.pos + 1;
-    while (endPos < this.bufLen && Lexer._isAlphaNum(this.buf.charAt(endPos))) {
-      let tok = this._isOpCode(endPos);
-
-      if (tok) {
-        return tok;
-      }
-      endPos++;
-    }
-
-    let tok = this._isOpCode(endPos); // ?
-
-    if (tok) {
-      return tok;
-    }
-
-    // special case for GO<space>[TO|SUB]
-    let value = this.buf.substring(this.pos, endPos); // ?
-
-    tok = {
-      name: 'IDENTIFIER',
+    const token = {
+      name: tokenName,
       value,
       pos: this.pos,
     };
+
     this.pos = endPos;
-    return tok;
+    return token;
   }
 
-  _processQuote() {
-    // this.pos points at the opening quote. Find the ending quote.
-    var end_index = this.buf.indexOf('"', this.pos + 1);
+  processToEnd() {
+    const pos = this.pos;
+    const value = this.line.substring(pos);
+    this.pos = this.line.length;
 
-    if (end_index === -1) {
-      throw Error('Unterminated quote at ' + this.pos);
-    } else {
-      var tok = {
-        name: 'QUOTE',
-        value: this.buf.substring(this.pos, end_index + 1),
-        pos: this.pos,
-      };
-      this.pos = end_index + 1;
-      return tok;
-    }
+    return {
+      value,
+      pos,
+    };
   }
 
-  _skipToEndOfStatement() {
-    while (this.pos < this.bufLen) {
-      var c = this.buf.charAt(this.pos);
-      if (c == ':' || c == '\n') {
+  processToEndOfStatement() {
+    const pos = this.pos;
+    while (this.pos < this.line.length) {
+      const c = this.line.charAt(this.pos);
+      if (c == ':' || c == '\n' || c === '') {
         break;
       } else {
         this.pos++;
       }
     }
-  }
-
-  _skipNonTokens() {
-    while (this.pos < this.bufLen) {
-      var c = this.buf.charAt(this.pos);
-      if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
-        this.pos++;
-      } else {
-        break;
-      }
-    }
+    const value = this.line.substring(pos, this.pos);
+    return {
+      value,
+      pos,
+    };
   }
 }
+
+export function parseBasic(line) {
+  if (typeof line !== 'string') {
+    throw new Error(
+      `ParseError: parseBasic expected a line, got ${typeof line}`
+    );
+  }
+
+  const tokens = [];
+  let [lineNumber, lineText] = parseLineNumber(line);
+  lineText = processChars(lineText);
+
+  const statement = new Statement(lineText);
+
+  let token = null;
+  while ((token = statement.nextToken())) {
+    tokens.push(token);
+  }
+
+  return [lineNumber, tokens]; //{ tokens, basic }];
+}
+
+export function basicToBytes(lineNumber, basic) {
+  let length = 0;
+  const tokens = [];
+
+  for (let i = 0; i < basic.length; i++) {
+    const token = basic[i];
+    const { name, value } = token;
+    if (name === 'KEYWORD') {
+      length++;
+      tokens.push(token);
+    } else if (name === 'NUMBER') {
+      length += value.length;
+      const { numeric } = token;
+
+      tokens.push({ name, value });
+
+      if (
+        (numeric | 0) === numeric &&
+        numeric >= -65535 &&
+        numeric <= 65535 // 0xffff
+      ) {
+        const view = new DataView(new ArrayBuffer(6));
+        view.setUint8(0, 0x0e);
+        view.setUint8(1, 0x00);
+        view.setUint8(2, numeric < 0 ? 0xff : 0x00);
+        view.setUint16(3, numeric, true);
+        tokens.push({
+          name: 'NUMBER_DATA',
+          value: new Uint8Array(view.buffer),
+        });
+        length += 6;
+      } else {
+        const value = new Uint8Array(6);
+        value[0] = 0x0e;
+        value.set(floatToZX(numeric), 1);
+        tokens.push({
+          name: 'NUMBER_DATA',
+          value,
+        });
+        length += 6;
+      }
+    } else if (name === 'DEF_FN_ARG') {
+      tokens.push({ name, value });
+      length += value.length;
+      tokens.push({
+        name: 'NUMBER_DATA',
+        value: new Uint8Array([0x0e, 0x00, 0x00, 0x00, 0x00, 0x00]),
+      });
+      length += 6;
+    } else if (!token.skip) {
+      length += value.length;
+      tokens.push(token);
+    }
+  }
+
+  tokens.push({ name: 'KEYWORD', value: 0x0d }); // EOL
+  length++;
+
+  const buffer = new DataView(new ArrayBuffer(length + 4));
+
+  buffer.setUint16(0, lineNumber, false); // line number is stored as big endian
+  buffer.setUint16(2, length, true);
+
+  let offset = 4;
+
+  tokens.forEach(({ name, value }) => {
+    if (name === 'KEYWORD') {
+      buffer.setUint8(offset, value);
+      offset++;
+    } else if (name === 'NUMBER_DATA') {
+      const view = new Uint8Array(buffer.buffer);
+      view.set(value, offset);
+      offset += value.length;
+    } else {
+      const view = new Uint8Array(buffer.buffer);
+      view.set(encode(value), offset);
+      offset += value.length;
+    }
+  });
+
+  return new Uint8Array(buffer.buffer);
+}
+
+export function processChars(line) {
+  for (let [key, value] of Object.entries(TEXT)) {
+    line = line.replace(key, value);
+  }
+
+  return line;
+}
+
+const a = parseBasic('10 DEF FN r(x)= INT (x+0.5):; remark'); //?

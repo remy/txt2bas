@@ -1,4 +1,4 @@
-import { parseLine, parseLines } from '../txt2bas2';
+import { parseLine, parseLines } from '../txt2bas';
 import { toHex } from '../to.js';
 import { line2txt, formatText } from '../index';
 import tap from 'tap';

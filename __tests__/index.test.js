@@ -1,4 +1,4 @@
-import { parseLine } from '../txt2bas2';
+import { parseLine } from '../txt2bas';
 import { bas2txtLines } from '../bas2txt';
 import { line2bas, line2txt, formatText } from '../index';
 import tap from 'tap';
