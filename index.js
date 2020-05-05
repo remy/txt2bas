@@ -1,5 +1,10 @@
 import { asTap, plus3DOSHeader } from './headers';
-import { parseLines, parseLine, validate, parseLineWithData } from './txt2bas';
+import {
+  parseLines,
+  parseLine,
+  validate,
+  parseLineWithData,
+} from './txt2bas/index';
 import { tap2txt, bas2txt, bas2txtLines } from './bas2txt';
 export { plus3DOSHeader, tapHeader } from './headers';
 export { default as codes } from './codes';
@@ -23,22 +28,28 @@ export const validateTxt = (src) => {
 export const file2bas = (
   src,
   format = '3dos',
-  filename = 'UNTITLED',
+  filename = null,
   includeHeader = true
 ) => {
   if (!src.toString) {
-    throw new Error('Source must be a string');
+    throw new Error('Source must be string or string-able');
   }
 
-  src = src.toString();
+  if (typeof src !== 'string') {
+    src = src.toString('binary'); // RADAR 'binary' doesn't do anything in the browser
+  }
 
   const directives = {
     filename,
     autostart: 0x8000,
   };
 
-  const { bytes, length, autostart } = parseLines(src);
+  const { bytes, length, autostart, filename: _filename } = parseLines(src);
   directives.autostart = autostart;
+  if (_filename) {
+    directives.filename = _filename;
+    filename = _filename;
+  }
 
   if (!includeHeader) {
     return bytes;
@@ -51,7 +62,7 @@ export const file2bas = (
 
     return file;
   } else if (format === 'tap') {
-    return asTap(bytes, filename);
+    return asTap(bytes, filename, autostart);
   }
 };
 

@@ -2,6 +2,7 @@
 export const BASIC = {
   96: '£',
   127: '©',
+  128: '\x80',
   129: '\u259D', //Quadrant upper right
   130: '\u2598', //Quadrant upper left
   131: '\u2580', //Upper half block

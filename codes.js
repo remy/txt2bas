@@ -141,6 +141,25 @@ export const usesLineNumbers = [
   'CODE',
 ];
 
+export const bitWiseOperators = ['&', '|', '^', '!', '>>', '<<'];
+
+export const operators = [
+  'AND', // logic
+  'OR',
+  'NOT',
+  'MOD',
+  '-', // math
+  '*',
+  '/',
+  '<', // compare
+  '>',
+  '<=',
+  '>=',
+  '<>',
+  ...bitWiseOperators,
+  'INT', // misc?
+];
+
 export const intFunctions = [
   'IN',
   'REG',
@@ -150,9 +169,5 @@ export const intFunctions = [
   'BIN',
   'RND',
   'BANK',
-  '>>',
-  '<<',
-  '<=',
-  '>=',
-  '<>',
+  ...bitWiseOperators,
 ];

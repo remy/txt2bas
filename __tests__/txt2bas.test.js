@@ -73,7 +73,7 @@ tap.test('end with $', (t) => {
 });
 
 tap.test('line', (t) => {
-  const src = `10 PRINT 10:; This is a comment`;
+  const src = `10 PRINT 10: ; This is a comment`;
   const res = formatText(src);
   t.same(res, src);
   t.end();
@@ -84,7 +84,7 @@ tap.test('pound', (t) => {
   const res = parseLine(src);
   const line = line2txt(res);
 
-  t.same(src, line);
+  t.same(line, src);
   t.end();
 });
 
@@ -179,6 +179,25 @@ tap.test('def fn args', async (t) => {
     Uint8Array.from(expect).length,
     'same length bytes'
   );
+});
+
+tap.test('tight lines', (t) => {
+  t.plan(1);
+  let src, res;
+  src = '20 plot0,0:draw f,175:plot 255,0:draw -f,175';
+  res = line2txt(parseLines(src).bytes);
+
+  t.same(res, '20 PLOT 0,0: DRAW f,175: PLOT 255,0: DRAW -f,175');
+});
+
+tap.test('UDG char encoding', async (t) => {
+  t.plan(1);
+
+  const src = (await readFile(__dirname + '/fixtures/udg.txt')).toString(
+    'binary'
+  );
+  const res = parseLines(src);
+  t.same(res.bytes.slice(-5), new Uint8Array([0x9e, 0x80, 0x9f, 0x22, 0x0d]));
 });
 
 // tap.test('complete test', async (t) => {

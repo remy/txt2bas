@@ -1,51 +1,43 @@
-import codes, { usesLineNumbers, intFunctions } from './codes';
-import { floatToZX } from './to';
-import tests from './chr-tests';
-import { TEXT } from './unicode';
+import { opTable } from './op-table';
+import codes, { usesLineNumbers, intFunctions } from '../codes';
+import { floatToZX } from '../to';
+import tests from '../chr-tests';
+import { TEXT } from '../unicode';
 
-const COMMENT = 'COMMENT';
-const LINE_NUMBER = 'LINE_NUMBER';
-const BINARY = 'BINARY';
-const IDENTIFIER = 'IDENTIFIER';
-const DEFFN = 'DEFFN';
-const DEFFN_SIG = 'DEFFN_SIG';
-const IF = 'IF';
-const DEFFN_ARGS = 'DEFFN_ARGS';
+import { validateLineNumber, validateStatement } from './validator';
 
-export const encode = (a) => new TextEncoder().encode(a);
+import {
+  COMMENT,
+  DIRECTIVE,
+  LINE_NUMBER,
+  BINARY,
+  NUMBER,
+  HEX,
+  STRING,
+  LITERAL_NUMBER,
+  DOT_COMMAND,
+  IDENTIFIER,
+  DEFFN,
+  DEFFN_SIG,
+  DEF_FN_ARG,
+  IF,
+  DEFFN_ARGS,
+  NUMBER_DATA,
+  KEYWORD,
+  SYMBOL,
+  WHITE_SPACE,
+  STATEMENT_SEP,
+} from './types';
 
-export const calculateXORChecksum = (array) =>
-  Uint8Array.of(array.reduce((checksum, item) => checksum ^ item, 0))[0];
-
-const opTable = Object.entries(codes).reduce(
-  (acc, [code, str]) => {
-    acc[str] = parseInt(code);
-    return acc;
-  },
-  {
-    // aliases
-    GOTO: 0xec,
-    GOSUB: 0xed,
+// const encode = (a) => new TextEncoder().encode(a);
+const encode = (a) => {
+  a = a.toString();
+  const res = [];
+  for (let i = 0; i < a.length; i++) {
+    res.push(a.charCodeAt(i));
   }
-);
-
-function validateLine(current, prev) {
-  if (current === prev) {
-    throw new Error(`Duplicate line number on ${current}`);
-  }
-
-  if (current < prev) {
-    throw new Error(`Line numbers out of order on ${current}`);
-  }
-
-  if (!current) {
-    throw new Error('Line number is missing');
-  }
-
-  if (current > 9999 || current < 0) {
-    throw new Error(`Invalid line number ${current}`);
-  }
-}
+  return Uint8Array.from(res);
+};
 
 export function validate(text) {
   const lines = text.split('\n');
@@ -59,11 +51,12 @@ export function validate(text) {
       if (line.startsWith('#')) {
         // skip
       } else {
-        let lineNumber;
+        let lineNumber, tokens;
 
         try {
-          [lineNumber] = parseBasic(line);
-          validateLine(lineNumber, lastLine);
+          [lineNumber, tokens] = parseBasic(line);
+          validateLineNumber(lineNumber, lastLine);
+          validateStatement(tokens);
         } catch (e) {
           errors.push(`${i + 1}:${e.message}\n> ${line}\n`);
         }
@@ -127,12 +120,13 @@ export function parseLines(text) {
 
         try {
           [lineNumber, tokens] = parseBasic(line);
+          validateStatement(tokens);
         } catch (e) {
           throw new Error(e.message + errorTail);
         }
 
         try {
-          validateLine(lineNumber, lastLine);
+          validateLineNumber(lineNumber, lastLine);
         } catch (e) {
           throw new Error(e.message + errorTail);
         }
@@ -198,7 +192,7 @@ export class Statement {
 
     if (!token) return;
 
-    if (token.name !== 'WHITE_SPACE') {
+    if (token.name !== WHITE_SPACE) {
       this.next = null; // always reset
       if (this.peek(this.pos) === ' ') {
         // eat following space
@@ -210,12 +204,12 @@ export class Statement {
       throw new Error(this.expectError);
     }
 
-    if (this.in.length && token.name === 'STATEMENT_SEP') {
+    if (this.in.length && token.name === STATEMENT_SEP) {
       this.in = [];
     }
 
     if (this.nowIn === DEFFN_SIG) {
-      if (token.name === 'SYMBOL') {
+      if (token.name === SYMBOL) {
         if (token.value === '(') {
           this.in.push(DEFFN_ARGS);
         }
@@ -228,7 +222,7 @@ export class Statement {
 
     if (
       this.nowIn === DEFFN_ARGS &&
-      token.name === 'SYMBOL' &&
+      token.name === SYMBOL &&
       token.value === ')'
     ) {
       this.in.pop();
@@ -238,7 +232,7 @@ export class Statement {
     this.expectError = null;
 
     if (token) {
-      if (token.name === 'KEYWORD') {
+      if (token.name === KEYWORD) {
         // FIXME I don't full understand the logic of what comes out of an int expression
         if (!this.isIn(IF) && intFunctions.indexOf(codes[token.value]) === -1) {
           this.inIntExpression = false;
@@ -269,12 +263,6 @@ export class Statement {
           this.next = COMMENT;
         }
 
-        // if (token.value === opTable[';']) {
-        //   // undo the space eater…not sure why though, but it's consistent
-        //   this.pos--;
-        //   this.next = COMMENT;
-        // }
-
         if (usesLineNumbers.includes(token.text)) {
           // this is just a hint
           this.next = LINE_NUMBER;
@@ -292,7 +280,7 @@ export class Statement {
 
     if (this.next === COMMENT) {
       this.next = false;
-      return { name: 'COMMENT', ...this.processToEnd() };
+      return { name: COMMENT, ...this.processToEnd() };
     }
 
     if (c == '') {
@@ -305,25 +293,25 @@ export class Statement {
     }
 
     if (tests._isIntExpression(c)) {
-      if (this.inIntExpression) {
-        throw new Error(
-          'Cannot redeclare integer expression whilst already inside one'
-        );
-      }
       this.inIntExpression = true;
     }
 
-    if (tests._isDirective(c)) {
+    if (
+      tests._isDirective(c) &&
+      (!this.lastToken.name || this.lastToken.name === WHITE_SPACE)
+    ) {
       return this.processDirective();
     }
 
-    if (tests._isStartOfComment(c)) {
-      return { ...this.processToEnd(), name: 'COMMENT' };
+    if (
+      tests._isStartOfComment(c) &&
+      (!this.lastToken.name || this.lastToken.name === STATEMENT_SEP)
+    ) {
+      return { ...this.processToEnd(), name: COMMENT };
     }
 
     if (tests._isDotCommand(c)) {
-      // FIXME this is wrong
-      return { ...this.processToEndOfStatement(), name: 'DOT_COMMAND' };
+      return { ...this.processToEndOfStatement(), name: DOT_COMMAND };
     }
 
     if (tests._isSpace(c)) {
@@ -331,7 +319,7 @@ export class Statement {
     }
 
     if (tests._isStatementSep(c)) {
-      return { ...this.processSingle(), name: 'STATEMENT_SEP' };
+      return { ...this.processSingle(), name: STATEMENT_SEP };
     }
 
     if (tests._isCmpOperatorStart(c)) {
@@ -344,18 +332,10 @@ export class Statement {
     }
 
     if (tests._isBinarySymbol(c)) {
-      if (!this.inIntExpression) {
-        throw new Error('Binary values only allowed in integer expressions');
-      }
-
       return this.processBinary();
     }
 
     if (tests._isHexSymbol(c)) {
-      if (!this.inIntExpression) {
-        throw new Error('Hex values only allowed in integer expressions');
-      }
-
       return this.processHex();
     }
 
@@ -407,7 +387,7 @@ export class Statement {
 
     if (opTable[curr] !== undefined) {
       const token = {
-        name: 'KEYWORD',
+        name: KEYWORD,
         text: codes[opTable[curr]],
         value: opTable[curr],
         pos: this.pos,
@@ -438,35 +418,15 @@ export class Statement {
     }
 
     const value = this.line.substring(this.pos, endPos);
-    const isString = value.endsWith('$') && value.length === 2;
-
-    // this is a generic identifier
-    if (value.length > 1) {
-      if (this.inIntExpression) {
-        throw new Error(
-          'Only integer variables (single character vars) are allowed in integer expressions'
-        );
-      }
-
-      if (value.endsWith('$') && value.length > 2) {
-        throw new Error('String variables are only allowed 1 character long');
-      }
-
-      if (this.nowIn === DEFFN_SIG && value.length > 1 && !isString) {
-        throw new Error('Only single character names allowed for DEF FN');
-      }
-    }
-
-    // special case for GO<space>[TO|SUB]
 
     tok = {
-      name: 'IDENTIFIER',
+      name: IDENTIFIER,
       value,
       pos: this.pos,
     };
 
     if (this.nowIn === DEFFN_ARGS) {
-      tok.name = 'DEF_FN_ARG';
+      tok.name = DEF_FN_ARG;
     }
 
     this.pos = endPos;
@@ -475,7 +435,7 @@ export class Statement {
 
   processSingle() {
     const token = {
-      name: 'SYMBOL',
+      name: SYMBOL,
       value: this.line.charAt(this.pos, this.pos + 1),
       pos: this.pos,
     };
@@ -484,7 +444,7 @@ export class Statement {
   }
 
   processBinary() {
-    const tok = this.simpleSlurp(tests._isBinary, 'BINARY');
+    const tok = this.simpleSlurp(tests._isBinary, BINARY);
 
     const numeric = parseInt(tok.value.substring(1), 2);
 
@@ -500,7 +460,7 @@ export class Statement {
   }
 
   processHex() {
-    const tok = this.simpleSlurp(tests._isHex, 'HEX');
+    const tok = this.simpleSlurp(tests._isHex, HEX);
 
     const numeric = parseInt(`0x${tok.value.substring(1)}`, 16);
 
@@ -545,9 +505,9 @@ export class Statement {
       numeric = parseInt(value, 10);
     }
 
-    let name = 'NUMBER';
+    let name = NUMBER;
     if (this.inIntExpression) {
-      name = 'LITERAL_NUMBER';
+      name = LITERAL_NUMBER;
     }
 
     var tok = {
@@ -575,7 +535,7 @@ export class Statement {
 
     if (directive === 'autostart') {
       return {
-        name: 'DIRECTIVE',
+        name: DIRECTIVE,
         autostart: parseInt(arg, 10),
         value: 'autostart',
         pos: start,
@@ -585,7 +545,7 @@ export class Statement {
 
     if (directive === 'program') {
       return {
-        name: 'DIRECTIVE',
+        name: DIRECTIVE,
         autostart: arg,
         value: 'program',
         pos: start,
@@ -594,7 +554,7 @@ export class Statement {
     }
 
     return {
-      name: 'COMMENT',
+      name: COMMENT,
       value: this.line.substring(start, this.pos),
       pos: start,
       skip: true,
@@ -609,7 +569,7 @@ export class Statement {
       throw Error('Unterminated quote at chr ' + this.pos);
     } else {
       const tok = {
-        name: 'STRING',
+        name: STRING,
         value: this.line.substring(this.pos, end + 1),
         pos: this.pos,
       };
@@ -619,13 +579,13 @@ export class Statement {
   }
 
   processCmpOperator() {
-    const tok = this.simpleSlurp(tests._isCmpOperator, 'KEYWORD');
+    const tok = this.simpleSlurp(tests._isCmpOperator, KEYWORD);
     const value = opTable[tok.value];
     tok.text = tok.value;
     tok.value = value;
 
     // you can >= but you can't =<
-    if (this.lastToken.name === 'SYMBOL' && this.lastToken.value === '=') {
+    if (this.lastToken.name === SYMBOL && this.lastToken.value === '=') {
       throw new Error('Invalid use of relation symbols');
     }
 
@@ -633,7 +593,7 @@ export class Statement {
   }
 
   processWhitespace() {
-    return this.simpleSlurp(tests._isSpace, 'WHITE_SPACE');
+    return this.simpleSlurp(tests._isSpace, WHITE_SPACE);
   }
 
   simpleSlurp(test, tokenName) {
@@ -702,7 +662,7 @@ export function parseBasic(line) {
     tokens.push(token);
   }
 
-  return [lineNumber, tokens]; //{ tokens, basic }];
+  return [lineNumber, tokens];
 }
 
 export function basicToBytes(lineNumber, basic) {
@@ -712,10 +672,10 @@ export function basicToBytes(lineNumber, basic) {
   for (let i = 0; i < basic.length; i++) {
     const token = basic[i];
     const { name, value } = token;
-    if (name === 'KEYWORD') {
+    if (name === KEYWORD) {
       length++;
       tokens.push(token);
-    } else if (name === 'NUMBER') {
+    } else if (name === NUMBER) {
       length += value.length;
       const { numeric } = token;
 
@@ -732,7 +692,7 @@ export function basicToBytes(lineNumber, basic) {
         view.setUint8(2, numeric < 0 ? 0xff : 0x00);
         view.setUint16(3, numeric, true);
         tokens.push({
-          name: 'NUMBER_DATA',
+          name: NUMBER_DATA,
           value: new Uint8Array(view.buffer),
         });
         length += 6;
@@ -741,26 +701,27 @@ export function basicToBytes(lineNumber, basic) {
         value[0] = 0x0e;
         value.set(floatToZX(numeric), 1);
         tokens.push({
-          name: 'NUMBER_DATA',
+          name: NUMBER_DATA,
           value,
         });
         length += 6;
       }
-    } else if (name === 'DEF_FN_ARG') {
+    } else if (name === DEF_FN_ARG) {
       tokens.push({ name, value });
       length += value.length;
       tokens.push({
-        name: 'NUMBER_DATA',
+        name: NUMBER_DATA,
         value: new Uint8Array([0x0e, 0x00, 0x00, 0x00, 0x00, 0x00]),
       });
       length += 6;
     } else if (!token.skip) {
       length += value.length;
       tokens.push(token);
+      [length, value.length]; //?
     }
   }
 
-  tokens.push({ name: 'KEYWORD', value: 0x0d }); // EOL
+  tokens.push({ name: KEYWORD, value: 0x0d }); // EOL
   length++;
 
   const buffer = new DataView(new ArrayBuffer(length + 4));
@@ -771,15 +732,16 @@ export function basicToBytes(lineNumber, basic) {
   let offset = 4;
 
   tokens.forEach(({ name, value }) => {
-    if (name === 'KEYWORD') {
+    if (name === KEYWORD) {
       buffer.setUint8(offset, value);
       offset++;
-    } else if (name === 'NUMBER_DATA') {
+    } else if (name === NUMBER_DATA) {
       const view = new Uint8Array(buffer.buffer);
       view.set(value, offset);
       offset += value.length;
     } else {
       const view = new Uint8Array(buffer.buffer);
+      [value.length, encode(value).length, offset]; // ?
       view.set(encode(value), offset);
       offset += value.length;
     }
@@ -795,5 +757,3 @@ export function processChars(line) {
 
   return line;
 }
-
-const a = parseBasic('10 DEF FN r(x)= INT (x+0.5):; remark'); //?
