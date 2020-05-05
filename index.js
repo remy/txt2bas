@@ -25,6 +25,15 @@ export const validateTxt = (src) => {
   return validate(src);
 };
 
+export const tokens = (src) => {
+  if (typeof src !== 'string') {
+    src = src.toString('binary');
+  }
+
+  const res = parseLines(src);
+  return res.tokens;
+};
+
 export const file2bas = (
   src,
   format = '3dos',

@@ -1,7 +1,6 @@
 import { opTable } from './op-table';
 import tests from '../chr-tests.js';
 import codes, { intFunctions } from '../codes';
-const { parseBasic } = require('./index');
 
 import {
   COMMENT,
@@ -14,11 +13,9 @@ import {
   DEFFN,
   DEFFN_SIG,
   IF,
-  DEFFN_ARGS,
   STATEMENT_SEP,
   SYMBOL,
   OPERATION,
-  STRING,
 } from './types';
 
 export function validateLineNumber(current, prev) {
@@ -89,14 +86,6 @@ class BasicScope extends Array {
   }
 }
 
-// validateStatement(parseBasic('10 let a = %4 << a')[1]); // ?
-// validateStatement(parseBasic('10 let a = %@1')[1]); // ?
-// validateStatement(
-//   parseBasic('590 SPRITE CONTINUE 10,%x STEP 2 RUN ,%y STEP 2 RUN ,%s,%d')[1]
-// ); // ?
-
-// 590 SPRITE CONTINUE 10,%x STEP 2 RUN ,%y STEP 2 RUN ,%s,%d
-
 export function validateStatement(tokens) {
   if (!Array.isArray(tokens)) {
     throw new Error('validateStatement expects tokens to be an array');
@@ -136,6 +125,22 @@ export function validateStatement(tokens) {
       ) {
         [name, token.text]; //?
         scope.inIntExpression = false;
+      }
+
+      if (
+        scope.last === DEFFN_SIG &&
+        scope.previousToken.value === opTable['DEF FN']
+      ) {
+        // check the arg
+        if (name !== IDENTIFIER) {
+          throw new Error('Expected single letter function name');
+        }
+
+        if (value.length > 1 && !(value.length === 2 && value[1] === '$')) {
+          throw new Error(
+            'DEF FN must be followed by a single letter identifier'
+          );
+        }
       }
 
       if (name === SYMBOL && tests._isIntExpression(value)) {
@@ -181,8 +186,9 @@ export function validateStatement(tokens) {
         }
       }
 
-      validateIdentifier({ name, value }, scope);
-      validateCharRange({ name, value }, scope);
+      validateIdentifier(token, scope);
+      validateCharRange(token, scope);
+      validateSymbolRange(token, scope);
 
       expect = null;
       expectError = null;
@@ -191,8 +197,6 @@ export function validateStatement(tokens) {
       if (value === opTable['DEF FN']) {
         scope.push(DEFFN);
         scope.push(DEFFN_SIG);
-        expect = IDENTIFIER;
-        expectError = 'DEF FN must be followed by a single letter identifier';
       }
 
       if (value === opTable.REM) {
@@ -201,7 +205,9 @@ export function validateStatement(tokens) {
       }
     } catch (e) {
       let message = e.message;
-      message += `\nToken: ${name}, "${value}" at ${token.pos}`;
+      message += `, "${token.text || value}" at: ${token.pos + 1}:${
+        (token.text || value).length + token.pos + 1
+      }`;
       throw new Error(message);
     }
   }
@@ -251,8 +257,21 @@ export function validateCharRange(token) {
     for (let i = 0; i < value.length; i++) {
       const charCode = value[i].charCodeAt(0);
       if (charCode > 255 || charCode < 32) {
+        throw new Error(`Out of range character "${value[i]}" (${charCode})`);
+      }
+    }
+  }
+}
+
+export function validateSymbolRange(token) {
+  const { name, value } = token;
+
+  if (name === SYMBOL) {
+    for (let i = 0; i < value.length; i++) {
+      const charCode = value[i].charCodeAt(0);
+      if (charCode < 0x21 || charCode > 0x7f) {
         throw new Error(
-          `Out of range character "${value[i]}" (${charCode}) at ${i}`
+          `Out of range symbol character "${value[i]}" (${charCode})`
         );
       }
     }

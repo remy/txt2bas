@@ -12,8 +12,9 @@ async function main(type) {
     f: 'format',
     t: 'test',
     d: 'debug',
+    tokens: 'tokens',
   };
-  const bools = ['test', 'debug'];
+  const bools = ['test', 'debug', 'tokens'];
   const options = {};
   const args = process.argv.slice(2).map((_) => _.trim());
 
@@ -77,7 +78,11 @@ async function main(type) {
       signal = res.length > 0 ? 1 : 0;
       res = res.join('\n');
     } else {
-      res = cli['file2' + type](src, options.format, options.filename);
+      if (options.tokens) {
+        res = JSON.stringify(cli.tokens(src));
+      } else {
+        res = cli['file2' + type](src, options.format, options.filename);
+      }
     }
   } catch (e) {
     if (options.debug) {

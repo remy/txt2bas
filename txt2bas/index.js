@@ -58,7 +58,8 @@ export function validate(text) {
           validateLineNumber(lineNumber, lastLine);
           validateStatement(tokens);
         } catch (e) {
-          errors.push(`${i + 1}:${e.message}\n> ${line}\n`);
+          const errorTail = `#${i + 1}\n> ${line}`;
+          errors.push(`${e.message}${errorTail}`);
         }
 
         lastLine = lineNumber;
@@ -110,13 +111,13 @@ export function parseLines(text) {
         }
       } else {
         if (autostart === -1) {
-          const [lineNumber] = parseLineNumber(line);
+          const [lineNumber] = Statement.parseLineNumber(line);
           autostart = lineNumber;
         }
         let lineNumber;
         let tokens;
 
-        const errorTail = ` at #${i + 1}\n> ${line}`;
+        const errorTail = `#${i + 1}\n> ${line}`;
 
         try {
           [lineNumber, tokens] = parseBasic(line);
@@ -157,15 +158,6 @@ export function parseLines(text) {
   };
 }
 
-export function parseLineNumber(line) {
-  const match = line.match(/^\s*(\d{1,4})\s?(.*)$/);
-  if (match !== null) {
-    return [parseInt(match[1], 10), match[2]];
-  }
-
-  throw new Error('Line number is missing');
-}
-
 export class Statement {
   constructor(line) {
     this.line = line;
@@ -177,6 +169,29 @@ export class Statement {
     this.in = [];
     this.expect = null;
     this.expectError = null;
+
+    let [lineNumber, lineText] = Statement.parseLineNumber(line);
+    this.pos = line.indexOf(lineText);
+    lineText = Statement.processChars(lineText);
+
+    this.lineNumber = lineNumber;
+  }
+
+  static processChars(line) {
+    for (let [key, value] of Object.entries(TEXT)) {
+      line = line.replace(key, value);
+    }
+
+    return line;
+  }
+
+  static parseLineNumber(line) {
+    const match = line.match(/^\s*(\d{1,4})\s?(.*)$/);
+    if (match !== null) {
+      return [parseInt(match[1], 10), match[2]];
+    }
+
+    throw new Error('Line number is missing');
   }
 
   get nowIn() {
@@ -238,12 +253,10 @@ export class Statement {
           this.inIntExpression = false;
         }
 
+        // needed to track DEF FN args and to pad them properly
         if (token.value === opTable['DEF FN']) {
           this.in.push(DEFFN);
           this.in.push(DEFFN_SIG);
-          this.expect = IDENTIFIER;
-          this.expectError =
-            'DEF FN must be followed by a single letter identifier';
         }
 
         if (token.value === opTable.IF) {
@@ -374,7 +387,7 @@ export class Statement {
 
     // be wary that this could be something like `DEF FN`
     if (peek === ' ' && !opTable[curr]) {
-      const next = this.peekToken(endPos + 1);
+      const next = this.peekToken(endPos + 1).toUpperCase();
       const test = `${curr} ${next}`;
 
       if (opTable[test]) {
@@ -652,17 +665,14 @@ export function parseBasic(line) {
   }
 
   const tokens = [];
-  let [lineNumber, lineText] = parseLineNumber(line);
-  lineText = processChars(lineText);
-
-  const statement = new Statement(lineText);
+  const statement = new Statement(line);
 
   let token = null;
   while ((token = statement.nextToken())) {
     tokens.push(token);
   }
 
-  return [lineNumber, tokens];
+  return [statement.lineNumber, tokens];
 }
 
 export function basicToBytes(lineNumber, basic) {
@@ -748,12 +758,4 @@ export function basicToBytes(lineNumber, basic) {
   });
 
   return new Uint8Array(buffer.buffer);
-}
-
-export function processChars(line) {
-  for (let [key, value] of Object.entries(TEXT)) {
-    line = line.replace(key, value);
-  }
-
-  return line;
 }

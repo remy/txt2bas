@@ -155,7 +155,6 @@ tap.test('handles DOS CR', async (t) => {
   t.plan(2);
 
   const fixture = await readFile(__dirname + '/fixtures/from-next-bas2txt.txt');
-  console.log(__dirname + '/fixtures/from-next-bas2txt.txt', fixture.length);
 
   const res = parseLines(fixture.toString());
 
