@@ -65,8 +65,7 @@ class BasicScope extends Array {
   }
 
   reset() {
-    this.inFloatExpression = false;
-    this.inIntExpression = false;
+    this.resetExpression();
     this.allowHanging = false;
     this.position = -1;
     this.length = 0;
@@ -75,6 +74,11 @@ class BasicScope extends Array {
   popTo(type) {
     while (this.last !== type) this.pop();
     this.pop();
+  }
+
+  resetExpression() {
+    this.inFloatExpression = false;
+    this.inIntExpression = false;
   }
 
   get hasTokens() {
@@ -175,14 +179,16 @@ export function validateStatement(tokens) {
       if (name == SYMBOL) {
         if (value === ',') {
           scope.push(PARAM_SEP);
-          scope.inIntExpression = false;
-          scope.inFloatExpression = false;
+          scope.resetExpression();
         }
 
         if (value === '=') {
           scope.push(OPERATION);
-          scope.inIntExpression = false;
-          scope.inFloatExpression = false;
+          scope.resetExpression();
+        }
+
+        if (value === ';') {
+          scope.resetExpression();
         }
       }
 

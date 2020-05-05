@@ -1,11 +1,17 @@
 {
   "name": "txt2bas",
-  "version": "1.6.3",
+  "version": "0.0.0-development",
   "description": "Converts BASIC to Text and back again",
   "main": "dist/index.js",
   "module": "./index.js",
   "prettier": {
     "singleQuote": true
+  },
+  "release": {
+    "branches": [
+      "master",
+      "next"
+    ]
   },
   "bin": {
     "txt2bas": "dist/cli/index.js",
@@ -16,7 +22,8 @@
     "dev": "npm run build; rollup --config --watch",
     "prepare": "npm run build",
     "test:dev": "tap __tests__/*.test.js --no-coverage-report --watch",
-    "test": "tap __tests__/*.test.js"
+    "test": "tap __tests__/*.test.js",
+    "semantic-release": "semantic-release"
   },
   "files": [
     "dist"
@@ -38,11 +45,12 @@
   "devDependencies": {
     "@rollup/plugin-json": "^4.0.3",
     "rollup": "^2.7.6",
-    "tap": "^14.10.7"
+    "tap": "^14.10.7",
+    "semantic-release": "^17.0.7"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/remy/txt2bas.git"
+    "url": "https://github.com/remy/txt2bas.git"
   },
   "bugs": {
     "url": "https://github.com/remy/txt2bas/issues"
