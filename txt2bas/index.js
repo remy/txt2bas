@@ -579,7 +579,9 @@ export class Statement {
     const end = this.line.indexOf('"', this.pos + 1);
 
     if (end === -1) {
-      throw Error(`Unterminated quote at: ${this.pos}:${this.line.length}`);
+      throw Error(
+        `Unterminated quote at: ${this.pos + 1}:${this.line.length + 1}`
+      );
     } else {
       const tok = {
         name: STRING,
@@ -600,7 +602,7 @@ export class Statement {
     // you can >= but you can't =<
     if (this.lastToken.name === SYMBOL && this.lastToken.value === '=') {
       throw new Error(
-        `Invalid use of relation symbols at: ${tok.pos}:${tok.pos + 1}`
+        `Invalid use of relation symbols at: ${tok.pos + 1}:${tok.pos + 2}`
       );
     }
 
