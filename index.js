@@ -22,6 +22,10 @@ export const formatText = (line) => {
 };
 
 export const validateTxt = (src) => {
+  if (typeof src !== 'string') {
+    src = src.toString('binary');
+  }
+
   return validate(src);
 };
 
