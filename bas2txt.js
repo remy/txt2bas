@@ -56,42 +56,67 @@ export function bas2txtLines(data) {
 
     let string = lineNumber + ' ';
 
-    let lastChr = null;
+    let last = null;
     let inString = false;
 
     const data = Array.from(content.data);
 
     while (data.length) {
-      let chr = data.shift();
-      if (chr === 0x0d) {
+      let c = data.shift();
+      if (c === 0x0d) {
         break;
       }
 
-      if (!inString && BASIC[chr]) {
-        // weird bespoke semi colon logic
-        if (BASIC[chr] === ':' || BASIC[chr] === ';') {
-          string += BASIC[chr];
-        } else if (lastChr !== null && !BASIC[lastChr]) {
-          string += BASIC[chr] + ' ';
+      const chr = String.fromCharCode(c);
+      const peek = data[0];
+
+      /**
+       * spaces around ; are as follows:
+       * - if it's the first character of the line, then no extra space
+       */
+
+      if (inString) {
+        if (BASIC_CHRS[c]) {
+          string += BASIC_CHRS[c];
         } else {
-          string += BASIC[chr] + ' ';
+          string += chr;
         }
-      } else if (chr === 0x0e) {
-        // move forward 5 bits - this contains the encoded numerical value
-        // which, since we're porting to text, we don't care about on the way in
-        data.splice(0, 5);
-      } else if (BASIC_CHRS[chr]) {
-        string += BASIC_CHRS[chr];
       } else {
-        string += String.fromCharCode(chr);
+        if (chr === ';') {
+          if (BASIC[peek]) {
+            string += chr + ' ';
+          } else {
+            string += chr;
+          }
+        } else if (chr === ':') {
+          if (String.fromCharCode(peek) === ';') {
+            string += chr + ' ';
+          } else {
+            string += chr;
+          }
+        } else if (BASIC[c]) {
+          if (BASIC[last] === ':') {
+            string += ' ' + BASIC[c] + ' ';
+          } else if (last !== null && !BASIC[last]) {
+            string += ' ' + BASIC[c] + ' ';
+          } else {
+            string += BASIC[c] + ' ';
+          }
+        } else if (c === 0x0e) {
+          // move forward 5 bits - this contains the encoded numerical value
+          // which, since we're porting to text, we don't care about on the way in
+          data.splice(0, 5);
+        } else {
+          string += chr;
+        }
       }
 
-      if (chr === 0x22) {
+      if (c === 0x22) {
         // a quote
         inString = !inString;
       }
 
-      lastChr = chr;
+      last = c;
     }
 
     lines.push(string.trim());
