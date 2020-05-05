@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'fs';
+const { PassThrough } = require('stream');
 import * as cli from '../index';
 import { version } from '../package.json';
 
@@ -10,8 +11,9 @@ async function main(type) {
     o: 'output',
     f: 'format',
     t: 'test',
+    d: 'debug',
   };
-  const bools = ['test'];
+  const bools = ['test', 'debug'];
   const options = {};
   const args = process.argv.slice(2).map((_) => _.trim());
 
@@ -78,14 +80,27 @@ async function main(type) {
       res = cli['file2' + type](src, options.format, options.filename);
     }
   } catch (e) {
-    console.error(e);
+    if (options.debug) {
+      console.error(e.stack);
+    } else {
+      console.error(e.message);
+    }
     process.exit(1);
   }
 
   if (options.output) {
-    writeFileSync(options.output, res);
+    writeFileSync(options.output, res, 'binary');
   } else {
-    process.stdout.write(res);
+    if (typeof res === 'string') {
+      const data = [];
+      for (let i = 0; i < res.length; i++) {
+        data.push(res.charCodeAt(i));
+      }
+      const buffer = Buffer.from(data);
+      process.stdout.write(buffer);
+    } else {
+      process.stdout.write(res);
+    }
   }
   process.exit(signal);
 }
