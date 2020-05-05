@@ -4,9 +4,9 @@ const pack = _pack.default; // sigh
 export const calculateXORChecksum = (array) =>
   Uint8Array.of(array.reduce((checksum, item) => checksum ^ item, 0))[0];
 
-export const tapHeader = (basic, filename = 'BASIC') => {
+export const tapHeader = (basic, filename = 'BASIC', autostart = 0) => {
   // FIXME is this autostart actually correct?
-  const autostart = new DataView(basic.buffer).getUint16(0, false);
+  autostart = new DataView(basic.buffer).getUint16(autostart, false);
   const res = pack(
     '<S$headerLength C$flagByte C$type A10$filename S$length S$p1 S$p2 C$checksum',
     {
@@ -28,8 +28,8 @@ export const tapHeader = (basic, filename = 'BASIC') => {
   return res;
 };
 
-export const asTap = (basic, filename = 'tap dot js') => {
-  const header = tapHeader(basic, filename);
+export const asTap = (basic, filename = 'tap dot js', autostart) => {
+  const header = tapHeader(basic, filename, autostart);
   const dataType = 0xff;
   const checksum = calculateXORChecksum(Array.from([dataType, ...basic]));
   const tapData = new Uint8Array(header.length + basic.length + 2 + 2); // ? [header.length, basic.length]
