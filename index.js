@@ -57,7 +57,9 @@ export const file2bas = (
     autostart: 0x8000,
   };
 
-  const { bytes, length, autostart, filename: _filename } = parseLines(src);
+  const { bytes, length, autostart, filename: _filename } = parseLines(src, {
+    validate: false,
+  });
   directives.autostart = autostart;
   if (_filename) {
     directives.filename = _filename;

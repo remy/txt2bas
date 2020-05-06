@@ -82,7 +82,7 @@ export function parseLineWithData(line) {
   return { basic, length, lineNumber, tokens };
 }
 
-export function parseLines(text) {
+export function parseLines(text, options = { validate: true }) {
   const lines = text.split(text.includes('\r') ? '\r' : '\n');
   const res = [];
   let autostart = 0x8000;
@@ -121,7 +121,9 @@ export function parseLines(text) {
 
         try {
           [lineNumber, tokens] = parseBasic(line);
-          validateStatement(tokens);
+          if (options.validate) {
+            validateStatement(tokens);
+          }
         } catch (e) {
           throw new Error(e.message + errorTail);
         }
