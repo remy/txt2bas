@@ -33,7 +33,11 @@ export function bas2txt(data) {
 
   let txt = bas2txtLines(data.slice(unpack.offset));
 
-  if (header.autostart && header.autostart != 0x8000) {
+  if (
+    header.autostart &&
+    header.autostart != 0x8000 &&
+    header.autostart <= 9999
+  ) {
     txt = `#autostart ${header.autostart}\n${txt}`;
   }
 
