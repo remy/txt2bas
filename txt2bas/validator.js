@@ -90,12 +90,13 @@ class BasicScope extends Array {
   }
 }
 
-export function validateStatement(tokens) {
+export function validateStatement(tokens, debug = {}) {
   if (!Array.isArray(tokens)) {
     throw new Error('validateStatement expects tokens to be an array');
   }
-  tokens; // ?
+
   const scope = new BasicScope(tokens);
+  debug.scope = scope; // allows testing to pull up the scope state
   let expect = null;
   let expectError = null;
 
@@ -113,7 +114,7 @@ export function validateStatement(tokens) {
         scope.push(IF);
       }
 
-      if (scope.last == IF && value === opTable.THEN) {
+      if (scope.includes(IF) && value === opTable.THEN) {
         scope.popTo(IF);
       }
 
@@ -123,11 +124,10 @@ export function validateStatement(tokens) {
 
       if (
         name === KEYWORD &&
-        !scope.includes(IF) &&
-        !scope.includes(PARAM_SEP) &&
+        // !scope.includes(IF) &&
+        // !scope.includes(PARAM_SEP) &&
         intFunctions.indexOf(codes[value]) === -1
       ) {
-        [name, token.text]; //?
         scope.inIntExpression = false;
       }
 
@@ -176,9 +176,10 @@ export function validateStatement(tokens) {
         expect = BINARY;
       }
 
+      // symbols that reset the integer expression state
       if (name == SYMBOL) {
         if (value === ',') {
-          scope.push(PARAM_SEP);
+          if (scope.last !== PARAM_SEP) scope.push(PARAM_SEP);
           scope.resetExpression();
         }
 

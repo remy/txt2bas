@@ -34,9 +34,16 @@ tap.test('hex looking like dec', (t) => {
   }, 'hex needs int expression');
 });
 
-tap.test('ints in prints', (t) => {
-  t.plan(1);
-  const line = asBasic('590 PRINT AT 0,0;%x;":";%y;"(";ctr;")  "');
+tap.test('In the wild', (t) => {
+  t.plan(2);
+  let line;
+  line = asBasic('374 IF %p=0 THEN TILE 1,HEIGHT AT %x+15,%p TO %r,%p');
+  const debug = {};
+  t.doesNotThrow(() => {
+    validateStatement(line, debug);
+  }, 'valid use of ints in TO');
+
+  line = asBasic('590 PRINT AT 0,0;%x;":";%y;"(";ctr;")  "');
   t.doesNotThrow(() => {
     validateStatement(line);
   }, 'print allows for multiple statements');
