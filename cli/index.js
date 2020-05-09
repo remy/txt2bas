@@ -1,5 +1,4 @@
 import { readFileSync, writeFileSync } from 'fs';
-const { PassThrough } = require('stream');
 import * as cli from '../index';
 import { version } from '../package.json';
 
@@ -12,9 +11,10 @@ async function main(type) {
     f: 'format',
     t: 'test',
     d: 'debug',
+    udg: 'udg',
     tokens: 'tokens',
   };
-  const bools = ['test', 'debug', 'tokens'];
+  const bools = ['test', 'debug', 'tokens', 'udg'];
   const options = {};
   const args = process.argv.slice(2).map((_) => _.trim());
 
@@ -81,7 +81,11 @@ async function main(type) {
       if (options.tokens) {
         res = JSON.stringify(cli.tokens(src));
       } else {
-        res = cli['file2' + type](src, options.format, options.filename);
+        res = cli['file2' + type](src, {
+          ...options,
+          validate: false,
+          binary: options.udg,
+        });
       }
     }
   } catch (e) {
@@ -93,26 +97,50 @@ async function main(type) {
     process.exit(1);
   }
 
+  let outputType = 'binary';
+  if (type === 'txt' && !options.udg) {
+    outputType = 'utf8';
+  }
+
   if (options.output) {
-    writeFileSync(options.output, res, 'binary');
+    writeFileSync(options.output, res, outputType);
   } else {
-    if (typeof res === 'string') {
+    if (typeof res === 'string' && options.udg) {
       const data = [];
       for (let i = 0; i < res.length; i++) {
         data.push(res.charCodeAt(i));
       }
       const buffer = Buffer.from(data);
-      process.stdout.write(buffer);
+      process.stdout.write(buffer, outputType);
     } else {
-      process.stdout.write(res);
+      process.stdout.write(res, outputType);
     }
   }
   process.exit(signal);
 }
 
 if (!process.argv[2] && process.stdin.isTTY) {
-  console.log(`Usage: ${cmd} -i input-file -o output-file [-f 3dos|tap]`);
-  console.log(`       ${cmd} -t -i input-file # test for errors`);
+  console.log(`  Usage: ${cmd} [-i input-file] [-o output-file]`);
+  console.log('');
+  console.log(`  Options:`);
+  console.log('');
+  if (cmd.endsWith('txt2bas')) {
+    console.log('  -f 3dos|tap ... set the output format');
+    console.log('  -t ............ parse and validate the NextBASIC');
+  }
+  console.log('  -udg .......... UDGs are used so encode with binary not utf8');
+  console.log('  -v ............ Show current version');
+
+  console.log('');
+  console.log(`  Note that ${cmd} can also read and write on STDIN and STDOUT`);
+
+  console.log('');
+
+  console.log(`  v${version}`);
+  console.log(
+    '  \x1B[1mAny issues should be filed at \x1B[4mhttps://github.com/remy/txt2bas\x1B[0m'
+  );
+  console.log('');
   process.exit(1);
 }
 

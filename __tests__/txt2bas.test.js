@@ -199,6 +199,13 @@ tap.test('UDG char encoding', async (t) => {
   t.same(res.bytes.slice(-5), new Uint8Array([0x9e, 0x80, 0x9f, 0x22, 0x0d]));
 });
 
+tap.test('throwing shapes', (t) => {
+  const src = `10 print "▛▜"'"▙▟"`;
+  const res = parseLines(src);
+  t.same(res.bytes.length, 15, 'expecting 16 bytes');
+  t.end();
+});
+
 // tap.test('complete test', async (t) => {
 //   t.plan(1);
 //   const fixture = await readFile(__dirname + '/fixtures/basoko.txt', 'utf-8');

@@ -162,7 +162,7 @@ export function parseLines(text, options = { validate: true }) {
 
 export class Statement {
   constructor(line) {
-    this.line = line;
+    this.line = Statement.processChars(line);
     this.pos = 0;
     this.inIntExpression = false;
     this.next = null;
@@ -174,14 +174,14 @@ export class Statement {
 
     let [lineNumber, lineText] = Statement.parseLineNumber(line);
     this.pos = line.indexOf(lineText);
-    lineText = Statement.processChars(lineText);
 
     this.lineNumber = lineNumber;
   }
 
   static processChars(line) {
-    for (let [key, value] of Object.entries(TEXT)) {
-      line = line.replace(key, value);
+    for (let code in TEXT) {
+      const re = new RegExp(code, 'g');
+      line = line.replace(re, TEXT[code]);
     }
 
     return line;
@@ -765,3 +765,8 @@ export function basicToBytes(lineNumber, basic) {
 
   return new Uint8Array(buffer.buffer);
 }
+
+// const res = parseBasic(`10 print "▛▜"'"▙▟"`); // ?
+// basicToBytes(...res); // ?
+
+// parseLines(`10 print "▛"`).bytes; //?

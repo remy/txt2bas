@@ -38,32 +38,44 @@ export const tokens = (src) => {
   return res.tokens;
 };
 
-export const file2bas = (
-  src,
-  format = '3dos',
-  filename = null,
-  includeHeader = true
-) => {
+export const file2bas = (src, options = {}) => {
   if (!src.toString) {
     throw new Error('Source must be string or string-able');
   }
 
+  const {
+    format = '3dos',
+    binary = false, // used if source has UDGs
+    includeHeader = true,
+    validate = false,
+  } = options;
+
+  let { filename = 'untitled', autostart = 0x8000 } = options;
+
   if (typeof src !== 'string') {
-    src = src.toString('binary'); // RADAR 'binary' doesn't do anything in the browser
+    if (binary) {
+      src = src.toString('binary');
+    } else {
+      src = src.toString();
+    }
   }
 
   const directives = {
     filename,
-    autostart: 0x8000,
+    autostart,
   };
 
-  const { bytes, length, autostart, filename: _filename } = parseLines(src, {
-    validate: false,
+  const { bytes, length, ...rest } = parseLines(src, {
+    validate,
   });
-  directives.autostart = autostart;
-  if (_filename) {
-    directives.filename = _filename;
-    filename = _filename;
+
+  if (rest.autostart) {
+    directives.autostart = rest.autostart;
+  }
+
+  if (rest.filename) {
+    directives.filename = rest.filename;
+    filename = rest.filename;
   }
 
   if (!includeHeader) {
@@ -81,7 +93,8 @@ export const file2bas = (
   }
 };
 
-export const file2txt = (src, format = '3dos') => {
+export const file2txt = (src, options = {}) => {
+  const { format = '3dos' } = options;
   if (!src || !src.length) {
     throw new Error('Source must be an array of byte data');
   }

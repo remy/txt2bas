@@ -21,3 +21,17 @@ tap.test('UDG char encoding', async (t) => {
 
   t.same(res.slice(-5), new Uint8Array([0x9e, 0x80, 0x9f, 0x22, 0x0a]));
 });
+
+tap.test('shapes mapped to utf8', async (t) => {
+  t.plan(1);
+
+  const src = await readFile(__dirname + '/fixtures/shapes.bas');
+  const line = file2txt(src);
+  console.log('>>>>', line);
+
+  const res = Uint8Array.from({ length: line.length }, (_, i) => {
+    return line.charCodeAt(i);
+  });
+
+  t.same(res.slice(-5), new Uint8Array([0x9e, 0x80, 0x9f, 0x22, 0x0a]));
+});
