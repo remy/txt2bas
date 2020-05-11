@@ -11,6 +11,7 @@ import {
   PRINT,
   HEX,
   DEFFN,
+  WHITE_SPACE,
   DEFFN_SIG,
   IF,
   STATEMENT_SEP,
@@ -95,6 +96,10 @@ export function validateStatement(tokens, debug = {}) {
     throw new Error('validateStatement expects tokens to be an array');
   }
 
+  if (tokens.length === 1 && tokens[0].name === WHITE_SPACE) {
+    throw new Error('Empty line');
+  }
+
   const scope = new BasicScope(tokens);
   debug.scope = scope; // allows testing to pull up the scope state
   let expect = null;
@@ -116,6 +121,10 @@ export function validateStatement(tokens, debug = {}) {
 
       if (scope.includes(IF) && value === opTable.THEN) {
         scope.popTo(IF);
+      }
+
+      if (value === opTable.ELSE && !scope.includes(IF)) {
+        throw new Error('Statement separator (:) expected before ELSE');
       }
 
       if (value == opTable.PRINT) {
@@ -220,7 +229,7 @@ export function validateStatement(tokens, debug = {}) {
   }
 
   // check if anything is hanging on the scope
-  if (scope.last === IF) {
+  if (scope.includes(IF)) {
     throw new Error('IF statement must have THEN');
   }
 

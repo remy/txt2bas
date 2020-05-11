@@ -190,6 +190,9 @@ export class Statement {
   static parseLineNumber(line) {
     const match = line.match(/^\s*(\d{1,4})\s?(.*)$/);
     if (match !== null) {
+      if (match[2].length === 0) {
+        throw new Error('Empty line');
+      }
       return [parseInt(match[1], 10), match[2]];
     }
 
@@ -211,7 +214,7 @@ export class Statement {
 
     if (token.name !== WHITE_SPACE) {
       this.next = null; // always reset
-      if (this.peek(this.pos) === ' ' && token.name === KEYWORD) {
+      if (this.peek(this.pos) === ' ') {
         // eat following space
         this.pos++;
       }
@@ -445,6 +448,7 @@ export class Statement {
     }
 
     this.pos = endPos;
+
     return tok;
   }
 
@@ -765,8 +769,3 @@ export function basicToBytes(lineNumber, basic) {
 
   return new Uint8Array(buffer.buffer);
 }
-
-// const res = parseBasic(`10 print "▛▜"'"▙▟"`); // ?
-// basicToBytes(...res); // ?
-
-// parseLines(`10 print "▛"`).bytes; //?

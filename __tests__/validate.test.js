@@ -35,8 +35,8 @@ tap.test('hex looking like dec', (t) => {
 });
 
 tap.test('In the wild', (t) => {
-  t.plan(2);
   let line;
+
   line = asBasic('374 IF %p=0 THEN TILE 1,HEIGHT AT %x+15,%p TO %r,%p');
   const debug = {};
   t.doesNotThrow(() => {
@@ -47,4 +47,26 @@ tap.test('In the wild', (t) => {
   t.doesNotThrow(() => {
     validateStatement(line);
   }, 'print allows for multiple statements');
+
+  line = asBasic('760 IF sgn{(e-a) < 0} THEN %g=%a ELSE %g=%e');
+  t.throws(() => {
+    validateStatement(line);
+  }, 'ELSE should be a separate statement');
+
+  t.throws(() => {
+    line = asBasic('760 ');
+    validateStatement(line);
+  }, 'Line with no content should fail');
+
+  line = asBasic('760       ');
+  t.throws(() => {
+    validateStatement(line);
+  }, 'Line with only white space should fail');
+
+  line = asBasic('945 IF %i = %20 ENDPROC');
+  t.throws(() => {
+    validateStatement(line);
+  }, 'Incomplete IF statement');
+
+  t.end();
 });
