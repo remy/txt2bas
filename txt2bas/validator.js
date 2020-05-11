@@ -14,6 +14,7 @@ import {
   WHITE_SPACE,
   DEFFN_SIG,
   IF,
+  OUTER_IF,
   STATEMENT_SEP,
   SYMBOL,
   OPERATION,
@@ -116,6 +117,7 @@ export function validateStatement(tokens, debug = {}) {
 
       if (value === opTable.IF) {
         // scope state
+        scope.push(OUTER_IF);
         scope.push(IF);
       }
 
@@ -123,7 +125,7 @@ export function validateStatement(tokens, debug = {}) {
         scope.popTo(IF);
       }
 
-      if (value === opTable.ELSE && !scope.includes(IF)) {
+      if (value === opTable.ELSE && scope.includes(OUTER_IF)) {
         throw new Error('Statement separator (:) expected before ELSE');
       }
 

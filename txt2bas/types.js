@@ -5,6 +5,7 @@ export const IDENTIFIER = 'IDENTIFIER';
 export const DEFFN = 'DEFFN';
 export const DEFFN_SIG = 'DEFFN_SIG';
 export const IF = 'IF';
+export const OUTER_IF = 'OUTER_IF';
 export const DEFFN_ARGS = 'DEFFN_ARGS';
 export const WHITE_SPACE = 'WHITE_SPACE';
 export const STATEMENT_SEP = 'STATEMENT_SEP';
