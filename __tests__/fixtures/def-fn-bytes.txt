@@ -1,2 +1,2 @@
-10 DEF FN r(x)= INT (x+0.5)
+10 DEF FN r(x)=INT (x+0.5)
 20 PRINT FN r(2.2)
