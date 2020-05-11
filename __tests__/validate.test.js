@@ -53,6 +53,11 @@ tap.test('In the wild', (t) => {
     validateStatement(line);
   }, 'ELSE should be a separate statement');
 
+  line = asBasic('760 IF sgn{(e-a) < 0} THEN %g=%a: ELSE %g=%e');
+  t.doesNotThrow(() => {
+    validateStatement(line, debug);
+  }, 'ELSE comes after colon');
+
   t.throws(() => {
     line = asBasic('760 ');
     validateStatement(line);
@@ -67,6 +72,26 @@ tap.test('In the wild', (t) => {
   t.throws(() => {
     validateStatement(line);
   }, 'Incomplete IF statement');
+
+  line = asBasic('945 %i = %20; ENDPROC');
+  t.throws(() => {
+    validateStatement(line);
+  }, 'Only semicolon should be used in PRINT context');
+
+  line = asBasic('945 %i = %20:; remark');
+  t.doesNotThrow(() => {
+    validateStatement(line);
+  }, '; is fine for remarks');
+
+  line = asBasic('945; remark');
+  t.doesNotThrow(() => {
+    validateStatement(line);
+  }, '; is fine for remarks');
+
+  line = asBasic('945 PRINT AT 0,1;"Remy":;remark');
+  t.doesNotThrow(() => {
+    validateStatement(line, debug);
+  }, '; is fine for remarks');
 
   t.end();
 });

@@ -187,6 +187,12 @@ export function validateStatement(tokens, debug = {}) {
         expect = BINARY;
       }
 
+      if (name == SYMBOL && value === ';' && !scope.includes(PRINT)) {
+        throw new Error(
+          'Semicolons are either used at start of statement as a remark or as separator for PRINT statements'
+        );
+      }
+
       // symbols that reset the integer expression state
       if (name == SYMBOL) {
         if (value === ',') {
