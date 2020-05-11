@@ -102,7 +102,7 @@ export function bas2txtLines(data) {
           if (BASIC[last] === ':') {
             string += ' ' + BASIC[c] + ' ';
           } else if (last !== null && !BASIC[last]) {
-            string += ' ' + BASIC[c] + ' ';
+            string += BASIC[c] + ' ';
           } else {
             string += BASIC[c] + ' ';
           }

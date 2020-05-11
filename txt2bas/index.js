@@ -211,7 +211,7 @@ export class Statement {
 
     if (token.name !== WHITE_SPACE) {
       this.next = null; // always reset
-      if (this.peek(this.pos) === ' ') {
+      if (this.peek(this.pos) === ' ' && token.name === KEYWORD) {
         // eat following space
         this.pos++;
       }
