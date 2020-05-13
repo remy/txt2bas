@@ -3,8 +3,8 @@ import { validateStatement } from '../txt2bas/validator';
 import tap from 'tap';
 
 function asBasic(s) {
-  const [, line] = parseBasic(s);
-  return line;
+  const { tokens } = parseBasic(s);
+  return tokens;
 }
 
 tap.test('test bad if', (t) => {
@@ -16,14 +16,17 @@ tap.test('test bad if', (t) => {
 });
 
 tap.test('test bad int expression', (t) => {
-  t.plan(1);
-  const line = asBasic('10 %4 << %1');
-  try {
+  t.plan(2);
+  let line = asBasic('10 %4 << %1');
+  let debug = {};
+  t.throws(() => {
+    validateStatement(line, debug);
+  });
+
+  line = asBasic('10 %4 << 1');
+  t.doesNotThrow(() => {
     validateStatement(line);
-    t.fail('should have thrown');
-  } catch (e) {
-    t.pass();
-  }
+  });
 });
 
 tap.test('hex looking like dec', (t) => {
@@ -92,6 +95,36 @@ tap.test('In the wild', (t) => {
   t.doesNotThrow(() => {
     validateStatement(line, debug);
   }, '; is fine for remarks');
+
+  line = asBasic('1198  ;PRINT AT 10,0;%o;"--";%o & @1000;"   "');
+  t.doesNotThrow(() => {
+    validateStatement(line, debug);
+  }, 'comments with leading white space are allowed');
+
+  line = asBasic('430 LAYER PALETTE %0 BANK %b,%256');
+  t.doesNotThrow(() => {
+    validateStatement(line, debug);
+  }, 'keyword resets int expression');
+
+  line = asBasic('360 BANK %b COPY %( SGN {n}+7)*7+512,%7 TO %b,%c-1*7+258');
+  t.doesNotThrow(() => {
+    validateStatement(line);
+  }, 'keyword resets int expression #2');
+
+  line = asBasic('10 LET %a=% RND 16384:PRINT %a,% PEEK a');
+  t.doesNotThrow(() => {
+    validateStatement(line, debug);
+  }, 'int functions do not reset int expression');
+
+  line = asBasic('10 LET %a = % IN 254');
+  t.doesNotThrow(() => {
+    validateStatement(line, debug);
+  }, 'int functions do not reset int expression #2');
+
+  line = asBasic('10 PRINT %REG 7 & BIN 00000011');
+  t.doesNotThrow(() => {
+    validateStatement(line, debug);
+  }, 'int functions do not reset int expression #3');
 
   t.end();
 });

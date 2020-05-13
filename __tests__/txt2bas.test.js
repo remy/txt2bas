@@ -206,10 +206,15 @@ tap.test('throwing shapes', (t) => {
   t.end();
 });
 
-// tap.test('complete test', async (t) => {
-//   t.plan(1);
-//   const fixture = await readFile(__dirname + '/fixtures/basoko.txt', 'utf-8');
+tap.test('directives and comments', async (t) => {
+  const src = `# this is ignored\n#program hello\n10 print "ok"\n#autostart 10\n20 goto 10`;
 
-//   const res = parseLines(fixture);
-//   t.ok(true, 'made it');
-// });
+  let res = parseLines(src);
+
+  t.same(res.filename, 'hello', 'found filename');
+  t.same(res.autostart, 10, 'autostart correct');
+  t.same(res.statements.length, 2, 'has two lines');
+
+  res = parseLine('# this is ignored');
+  t.same(res.length, 0, 'comments are stripped');
+});

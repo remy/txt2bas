@@ -51,18 +51,18 @@ export function validate(text) {
       if (line.startsWith('#')) {
         // skip
       } else {
-        let lineNumber, tokens;
-
+        let ln;
         try {
-          [lineNumber, tokens] = parseBasic(line);
+          let { lineNumber, tokens } = parseBasic(line);
           validateLineNumber(lineNumber, lastLine);
           validateStatement(tokens);
+          ln = lineNumber;
         } catch (e) {
           const errorTail = `#${i + 1}\n> ${line}`;
           errors.push(`${e.message}${errorTail}`);
         }
 
-        lastLine = lineNumber;
+        lastLine = ln;
       }
     }
   }
@@ -71,12 +71,15 @@ export function validate(text) {
 }
 
 export function parseLine(line) {
-  const [lineNumber, tokens] = parseBasic(line);
+  if (line.startsWith('#')) {
+    return new Uint8Array([]);
+  }
+  const { lineNumber, tokens } = parseBasic(line);
   return basicToBytes(lineNumber, tokens);
 }
 
 export function parseLineWithData(line) {
-  const [lineNumber, tokens] = parseBasic(line);
+  const { lineNumber, tokens } = parseBasic(line);
   const basic = basicToBytes(lineNumber, tokens);
   const length = basic.length;
   return { basic, length, lineNumber, tokens };
@@ -116,29 +119,30 @@ export function parseLines(text, options = { validate: true }) {
         }
         let lineNumber;
         let tokens;
+        let statement;
 
         const errorTail = `#${i + 1}\n> ${line}`;
 
         try {
-          [lineNumber, tokens] = parseBasic(line);
+          statement = parseBasic(line);
           if (options.validate) {
-            validateStatement(tokens);
+            validateStatement(statement.tokens);
           }
         } catch (e) {
           throw new Error(e.message + errorTail);
         }
 
         try {
-          validateLineNumber(lineNumber, lastLine);
+          validateLineNumber(statement.lineNumber, lastLine);
         } catch (e) {
           throw new Error(e.message + errorTail);
         }
 
-        lastLine = lineNumber;
+        lastLine = statement.lineNumber;
 
-        const bytes = basicToBytes(lineNumber, tokens);
+        const bytes = basicToBytes(statement.lineNumber, statement.tokens);
         length += bytes.length;
-        res.push({ lineNumber, tokens, bytes });
+        res.push({ statement, bytes });
       }
     }
   }
@@ -154,10 +158,30 @@ export function parseLines(text, options = { validate: true }) {
   return {
     bytes: data,
     length,
-    tokens: res.map((_) => _.tokens),
+    tokens: res.map((_) => _.statement.tokens),
+    statements: res.map((_) => _.statement),
     autostart,
     filename,
   };
+}
+
+export function statementsToBytes(statements) {
+  let length = 0;
+  const res = statements.map((statement) => {
+    const bytes = basicToBytes(statement.lineNumber, statement.tokens);
+    length += bytes.length;
+    return bytes;
+  });
+
+  const data = new Uint8Array(length);
+
+  let offset = 0;
+  res.forEach((bytes) => {
+    data.set(bytes, offset);
+    offset += bytes.length;
+  });
+
+  return data;
 }
 
 export class Statement {
@@ -169,8 +193,8 @@ export class Statement {
     this.lastToken = {};
     this.inIf = false;
     this.in = [];
-    this.expect = null;
-    this.expectError = null;
+
+    this.tokens = [];
 
     let [lineNumber, lineText] = Statement.parseLineNumber(line);
     this.pos = line.indexOf(lineText);
@@ -213,15 +237,11 @@ export class Statement {
     if (!token) return;
 
     if (token.name !== WHITE_SPACE) {
-      this.next = null; // always reset
+      if (token.value !== '%') this.next = null; // always reset
       if (this.peek(this.pos) === ' ') {
         // eat following space
         this.pos++;
       }
-    }
-
-    if (this.expect && this.expect !== token.name) {
-      throw new Error(this.expectError);
     }
 
     if (this.in.length && token.name === STATEMENT_SEP) {
@@ -247,9 +267,6 @@ export class Statement {
     ) {
       this.in.pop();
     }
-
-    this.expect = null;
-    this.expectError = null;
 
     if (token) {
       if (token.name === KEYWORD) {
@@ -290,6 +307,7 @@ export class Statement {
 
     this.lastToken = token;
 
+    this.tokens.push(token);
     return token;
   }
 
@@ -323,7 +341,8 @@ export class Statement {
 
     if (
       tests._isStartOfComment(c) &&
-      (!this.lastToken.name || this.lastToken.name === STATEMENT_SEP)
+      (this.lastToken.name === STATEMENT_SEP ||
+        this.tokens.filter((_) => _.name !== WHITE_SPACE).length === 0)
     ) {
       return { ...this.processToEnd(), name: COMMENT };
     }
@@ -674,15 +693,13 @@ export function parseBasic(line) {
     );
   }
 
-  const tokens = [];
   const statement = new Statement(line);
 
-  let token = null;
-  while ((token = statement.nextToken())) {
-    tokens.push(token);
+  while (statement.nextToken()) {
+    // keep going
   }
 
-  return [statement.lineNumber, tokens];
+  return statement; //[statement.lineNumber, tokens];
 }
 
 export function basicToBytes(lineNumber, basic) {
@@ -761,7 +778,7 @@ export function basicToBytes(lineNumber, basic) {
       offset += value.length;
     } else {
       const view = new Uint8Array(buffer.buffer);
-      [value.length, encode(value).length, offset]; // ?
+      [value.length, encode(value).length, offset];
       view.set(encode(value), offset);
       offset += value.length;
     }

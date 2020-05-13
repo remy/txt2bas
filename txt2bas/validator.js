@@ -1,6 +1,6 @@
 import { opTable } from './op-table';
 import tests from '../chr-tests.js';
-import codes, { intFunctions } from '../codes';
+import codes, { intFunctions, bitWiseOperators } from '../codes';
 
 import {
   COMMENT,
@@ -43,16 +43,18 @@ class BasicScope extends Array {
     super();
     this.inIntExpression = false;
     this.inFloatExpression = false;
+    this.source = Array.from(tokens);
     this.tokens = Array.from(tokens); // ensure this is a copy
     this.position = 0;
-    this.lastToken = {};
+    this.lastKeyword = null;
+    this.currentToken = {};
     this.previousToken = {};
   }
 
   next() {
-    this.previousToken = this.lastToken;
+    this.previousToken = this.currentToken;
     const token = this.tokens.shift();
-    this.lastToken = token;
+    this.currentToken = token;
     this.position++;
 
     if (token.name === STATEMENT_SEP) {
@@ -68,6 +70,7 @@ class BasicScope extends Array {
 
   reset() {
     this.resetExpression();
+    this.lastKeyword = null;
     this.allowHanging = false;
     this.position = -1;
     this.length = 0;
@@ -81,6 +84,20 @@ class BasicScope extends Array {
   resetExpression() {
     this.inFloatExpression = false;
     this.inIntExpression = false;
+  }
+
+  isAfterInExpression() {
+    let i = this.source.length - this.tokens.length;
+    while (i >= 0) {
+      if (this.source[i].value === '%') {
+        return true;
+      }
+      if (this.source[i].name !== WHITE_SPACE) {
+        break;
+      }
+      i--;
+    }
+    return false;
   }
 
   get hasTokens() {
@@ -110,6 +127,10 @@ export function validateStatement(tokens, debug = {}) {
     const token = scope.next();
     const { name, value } = token;
     try {
+      if (name === KEYWORD) {
+        scope.lastKeyword = token;
+      }
+
       // expectation checks
       if (expect && name !== expect) {
         throw new Error(expectError);
@@ -133,13 +154,15 @@ export function validateStatement(tokens, debug = {}) {
         scope.push(PRINT);
       }
 
-      if (
-        name === KEYWORD &&
-        // !scope.includes(IF) &&
-        // !scope.includes(PARAM_SEP) &&
-        intFunctions.indexOf(codes[value]) === -1
-      ) {
-        scope.inIntExpression = false;
+      if (name === KEYWORD) {
+        if (
+          intFunctions.indexOf(codes[value]) === -1 ||
+          scope.isAfterInExpression()
+        ) {
+          if (bitWiseOperators.indexOf(token.text) == -1) {
+            scope.inIntExpression = false;
+          }
+        }
       }
 
       if (
@@ -160,7 +183,6 @@ export function validateStatement(tokens, debug = {}) {
 
       if (name === SYMBOL && tests._isIntExpression(value)) {
         if (scope.inIntExpression) {
-          scope.previousToken; // ?
           throw new Error(
             'Cannot redeclare integer expression whilst already inside one'
           );
@@ -241,7 +263,7 @@ export function validateStatement(tokens, debug = {}) {
     throw new Error('IF statement must have THEN');
   }
 
-  if (scope.lastToken.name === IDENTIFIER && scope.position === 0) {
+  if (scope.currentToken.name === IDENTIFIER && scope.position === 0) {
     throw new Error('Unexpected token at end of statement');
   }
 }
