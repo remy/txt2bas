@@ -2,11 +2,11 @@
 
 This code is inspired by the [.txt2bas](https://gitlab.com/thesmog358/tbblue/-/blob/ef6dc4fd0f684349d16354d67d4f756db2994fdb/src/asm/dot_commands/txt2bas.asm) dot command on the ZX Spectrum Next (not that I could read the asm code!).
 
-This project provides 3 things:
+This project provides:
 
 - `txt2bas` command line tool
 - `bas2txt` command line tool
-- library for BASIC and text manipulation
+- library for BASIC and text manipulation, validation and renumbering
 
 **Important to note** there is no error checking in the BASIC source you provide as text. This code is simply converts back and forth and performs no error checking (as yet).
 
@@ -47,11 +47,14 @@ Problematically using the library exposes a number of paired functions:
 
 - `line2bas(String: line): Object<Uint8Array: basic, Number: lineNumber, Array: tokens, Number: length>` - the byte data is contained in `result.basic`
 - `bas2line(Uint8Array: data): String` - expects to include the line number, line length and the line itself as bytes
-- `file2bas(String: source, String=3dos: format, filename=UNTITLED: String): Uint8Array` - results full byte array with correct format header
+- `file2bas(String: source, Object<String=3dos: format, filename=UNTITLED: String, validate=false: Boolean>): Uint8Array` - results full byte array with correct format header, if `validate` is true, will throw on token errors
 - `bas2file(Uint8Array: source, String=3dos: format): String` - formatted BASIC text
 - `formatText(String: line): String` - processes the line through `line2bas` then `bas2line` to result the formatted line
+- `validateTxt(String: source): Arrary[String]` - parses each line collecting and returning any token errors
 - `plus3DOSHeader` and `tapHeader` - file headers for the appropriate data formats
 - `codes` an object lookup from NextBASIC numerical value to text value, ie. `0xf5 = 'PRINT'`
+- `statements(String: source): Array[Statement]` - returns the parsed statement which include `lineNumber` and `tokens` for each line.
+- `renumber(String: source, Object<start: Number, end: Number, step=10: Number, base=start: Number>)` - renumbers source lines and `GO TO` line number targets.
 
 ## Licence
 

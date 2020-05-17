@@ -29,6 +29,10 @@ export const validateTxt = (src) => {
   return validate(src);
 };
 
+export const statements = (source, options) => {
+  return parseLines(source, options).statements;
+};
+
 export const tokens = (src) => {
   if (typeof src !== 'string') {
     src = src.toString('binary');
