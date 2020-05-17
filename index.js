@@ -8,7 +8,7 @@ import {
 import { tap2txt, bas2txt, bas2txtLines } from './bas2txt';
 export { plus3DOSHeader, tapHeader } from './headers';
 export { default as codes } from './codes';
-
+export { renumber, shift } from './renumber';
 export const line2bas = parseLineWithData;
 export const line2txt = bas2txtLines;
 
