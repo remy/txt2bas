@@ -64,10 +64,6 @@ class BasicScope extends Array {
     return token;
   }
 
-  peek() {
-    return this.tokens[0];
-  }
-
   reset() {
     this.resetExpression();
     this.lastKeyword = null;
@@ -115,7 +111,7 @@ export function validateStatement(tokens, debug = {}) {
   }
 
   if (tokens.length === 1 && tokens[0].name === WHITE_SPACE) {
-    throw new Error('Empty line');
+    throw new Error('Empty line (or only white space)');
   }
 
   const scope = new BasicScope(tokens);

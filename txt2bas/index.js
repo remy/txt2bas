@@ -29,6 +29,34 @@ import {
   STATEMENT_SEP,
 } from './types';
 
+export class Autoline {
+  constructor(number = 10, step = 10) {
+    this.number = parseInt(number, 10);
+    this.step = parseInt(step, 10);
+    this.active = false;
+  }
+
+  next() {
+    if (!this.active) return null;
+    const res = this.number;
+    this.number += this.step;
+    return res;
+  }
+
+  parse(line) {
+    const args = line.match(/#autoline\s+(\d+)(?:\s*,\s*(\d+))?/);
+    this.active = true;
+    if (args.length) {
+      args.shift();
+      this.number = parseInt(args.shift(), 10);
+
+      if (args.length) {
+        this.step = parseInt(args.shift(), 10);
+      }
+    }
+  }
+}
+
 // const encode = (a) => new TextEncoder().encode(a);
 const encode = (a) => {
   a = a.toString();
@@ -43,17 +71,21 @@ export function validate(text) {
   const lines = text.split('\n');
   let lastLine = -1;
   const errors = [];
+  const autoline = new Autoline();
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i].trim();
 
     if (line) {
       if (line.startsWith('#')) {
+        if (line.startsWith('#autoline')) {
+          autoline.parse(line);
+        }
         // skip
       } else {
         let ln;
         try {
-          let { lineNumber, tokens } = parseBasic(line);
+          let { lineNumber, tokens } = parseBasic(line, autoline.next());
           validateLineNumber(lineNumber, lastLine);
           validateStatement(tokens);
           ln = lineNumber;
@@ -93,6 +125,8 @@ export function parseLines(text, options = { validate: true }) {
   let filename = null;
   let length = 0;
 
+  const autoline = new Autoline();
+
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i].trim();
 
@@ -101,6 +135,10 @@ export function parseLines(text, options = { validate: true }) {
         // comment and directives
         if (line.startsWith('#program ')) {
           filename = line.split(' ')[1];
+        }
+
+        if (line.startsWith('#autoline')) {
+          autoline.parse(line);
         }
 
         if (line.startsWith('#autostart')) {
@@ -114,15 +152,19 @@ export function parseLines(text, options = { validate: true }) {
         }
       } else {
         if (autostart === -1) {
-          const [lineNumber] = Statement.parseLineNumber(line);
-          autostart = lineNumber;
+          if (!autoline.active) {
+            const [lineNumber] = Statement.parseLineNumber(line);
+            autostart = lineNumber;
+          } else {
+            autostart = autoline.number;
+          }
         }
         let statement;
 
         const errorTail = `#${i + 1}\n> ${line}`;
 
         try {
-          statement = parseBasic(line);
+          statement = parseBasic(line, autoline.next());
           if (options.validate) {
             validateStatement(statement.tokens);
           }
@@ -183,7 +225,7 @@ export function statementsToBytes(statements) {
 }
 
 export class Statement {
-  constructor(line) {
+  constructor(line, lineNumber = null) {
     this.line = Statement.processChars(line);
     this.pos = 0;
     this.inIntExpression = false;
@@ -191,13 +233,18 @@ export class Statement {
     this.lastToken = {};
     this.inIf = false;
     this.in = [];
-
     this.tokens = [];
 
-    let [lineNumber, lineText] = Statement.parseLineNumber(line);
-    this.pos = line.indexOf(lineText);
+    let lineText;
 
-    this.lineNumber = lineNumber;
+    if (lineNumber === null) {
+      [lineNumber, lineText] = Statement.parseLineNumber(line);
+      this.pos = line.indexOf(lineText);
+      this.lineNumber = lineNumber;
+    } else {
+      this.pos = 0;
+      this.lineNumber = lineNumber;
+    }
   }
 
   static processChars(line) {
@@ -330,6 +377,7 @@ export class Statement {
       this.inIntExpression = true;
     }
 
+    // this should rarely happen as directives are pre-parsed
     if (
       tests._isDirective(c) &&
       (!this.lastToken.name || this.lastToken.name === WHITE_SPACE)
@@ -684,14 +732,14 @@ export class Statement {
   }
 }
 
-export function parseBasic(line) {
+export function parseBasic(line, lineNumber = null) {
   if (typeof line !== 'string') {
     throw new Error(
       `ParseError: parseBasic expected a line, got ${typeof line}`
     );
   }
 
-  const statement = new Statement(line);
+  const statement = new Statement(line, lineNumber);
 
   while (statement.nextToken()) {
     // keep going

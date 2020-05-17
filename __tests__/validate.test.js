@@ -1,5 +1,9 @@
 import { parseBasic } from '../txt2bas';
 import { validateStatement } from '../txt2bas/validator';
+import { promises as fsPromises } from 'fs';
+import { validateTxt } from '../index';
+const { readFile } = fsPromises;
+
 import tap from 'tap';
 
 function asBasic(s) {
@@ -13,6 +17,23 @@ tap.test('test bad if', (t) => {
   t.throws(() => {
     validateStatement(line);
   }, 'threw');
+});
+
+tap.test('validator works with autoline', async (t) => {
+  const fixture = await readFile(__dirname + '/fixtures/autoline.txt');
+  const res = validateTxt(fixture);
+
+  t.same(res.length, 0, 'no validation errors');
+  t.end();
+});
+
+tap.test('validator errors without autoline', async (t) => {
+  let fixture = await readFile(__dirname + '/fixtures/autoline.txt', 'utf8');
+  fixture = fixture.split('\n').slice(2).join('\n');
+  const res = validateTxt(fixture);
+
+  t.same(res.length, 6, '6 line number');
+  t.end();
 });
 
 tap.test('test bad int expression', (t) => {

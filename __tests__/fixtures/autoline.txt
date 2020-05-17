@@ -1,0 +1,9 @@
+#program basicInvaders
+#autoline 10,20
+#autostart
+; NextBASIC Invaders example game
+;
+RUN AT 2
+PROC main()
+;
+DEFPROC playGame()

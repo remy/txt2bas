@@ -1,6 +1,6 @@
 import { parseLine, parseLines } from '../txt2bas';
 import { toHex } from '../to.js';
-import { line2txt, formatText } from '../index';
+import { line2txt, formatText, file2bas, file2txt, statements } from '../index';
 import tap from 'tap';
 import { promises as fsPromises } from 'fs';
 const { readFile } = fsPromises;
@@ -18,6 +18,15 @@ tap.test('source = output', (t) => {
   src = '10 LET b=%$ea';
   t.same(line2txt(parseLine(src)), src);
 
+  t.end();
+});
+
+tap.test('#autoline feature', async (t) => {
+  const fixture = await readFile(__dirname + '/fixtures/autoline.txt');
+  const res = statements(file2txt(file2bas(fixture)));
+
+  t.same(res.length, 6, 'expecting 6 statements');
+  t.same(res[5].line, '110 DEFPROC playGame()', 'step worked');
   t.end();
 });
 
