@@ -117,8 +117,6 @@ export function parseLines(text, options = { validate: true }) {
           const [lineNumber] = Statement.parseLineNumber(line);
           autostart = lineNumber;
         }
-        let lineNumber;
-        let tokens;
         let statement;
 
         const errorTail = `#${i + 1}\n> ${line}`;

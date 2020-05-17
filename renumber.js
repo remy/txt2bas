@@ -1,4 +1,4 @@
-import { parseLines, statementsToBytes } from './txt2bas';
+import { parseLines, statementsToBytes } from './txt2bas/index';
 import { bas2txtLines } from './bas2txt';
 
 function findOldLine(n, mapping) {
