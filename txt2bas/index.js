@@ -109,7 +109,7 @@ export function parseLine(line) {
 
 export function parseLineWithData(line, autoline = null) {
   const { lineNumber, tokens } = parseBasic(line, autoline);
-  const basic = basicToBytes(lineNumber, tokens);
+  const basic = basicToBytes(autoline ? 10 : lineNumber, tokens);
   const length = basic.length;
   return { basic, length, lineNumber, tokens };
 }
@@ -249,7 +249,7 @@ export class Statement {
       this.lineNumber = lineNumber;
     } else {
       this.pos = 0;
-      this.lineNumber = lineNumber;
+      this.lineNumber = typeof lineNumber === 'number' ? lineNumber : null;
     }
   }
 

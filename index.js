@@ -1,10 +1,5 @@
 import { asTap, plus3DOSHeader } from './headers';
-import {
-  parseLines,
-  parseLine,
-  validate,
-  parseLineWithData,
-} from './txt2bas/index';
+import { parseLines, validate, parseLineWithData } from './txt2bas/index';
 import { tap2txt, bas2txt, bas2txtLines } from './bas2txt';
 export { plus3DOSHeader, tapHeader } from './headers';
 export { default as codes } from './codes';
@@ -12,13 +7,19 @@ export { renumber, shift } from './renumber';
 export const line2bas = parseLineWithData;
 export const line2txt = bas2txtLines;
 
-export const formatText = (line) => {
-  const res = parseLine(line);
-  if (res.length === 0) {
+export const formatText = (line, autoline = null) => {
+  if (line.startsWith('#')) {
     // this is a directive or blank line - give it back
     return line;
   }
-  return bas2txtLines(res);
+  const res = parseLineWithData(line, autoline);
+  let text = bas2txtLines(res.basic);
+  if (autoline) {
+    // manually remove the line
+    text = text.split(' ').slice(1).join(' ');
+  }
+
+  return text;
 };
 
 export const validateTxt = (src) => {

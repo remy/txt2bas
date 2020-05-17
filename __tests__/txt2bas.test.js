@@ -34,6 +34,9 @@ tap.test('#autoline feature', async (t) => {
 
   t.same(res[5].line, '60 DEFPROC playGame()', 'auto step defaulted to 10');
 
+  res = formatText('run at 2', true);
+  t.same(res, 'RUN AT 2', 'format supports autoline');
+
   t.end();
 });
 
