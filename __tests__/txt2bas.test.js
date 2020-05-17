@@ -22,11 +22,18 @@ tap.test('source = output', (t) => {
 });
 
 tap.test('#autoline feature', async (t) => {
-  const fixture = await readFile(__dirname + '/fixtures/autoline.txt');
-  const res = statements(file2txt(file2bas(fixture)));
+  let fixture = await readFile(__dirname + '/fixtures/autoline.txt', 'utf8');
+  let res = statements(file2txt(file2bas(fixture)));
 
   t.same(res.length, 6, 'expecting 6 statements');
   t.same(res[5].line, '110 DEFPROC playGame()', 'step worked');
+
+  // remove auto step
+  fixture = fixture.replace(/#autoline 10,20/, '#autoline 10');
+  res = statements(file2txt(file2bas(fixture)));
+
+  t.same(res[5].line, '60 DEFPROC playGame()', 'auto step defaulted to 10');
+
   t.end();
 });
 

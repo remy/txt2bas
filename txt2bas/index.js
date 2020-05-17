@@ -49,10 +49,7 @@ export class Autoline {
     if (args.length) {
       args.shift();
       this.number = parseInt(args.shift(), 10);
-
-      if (args.length) {
-        this.step = parseInt(args.shift(), 10);
-      }
+      this.step = parseInt(args.shift() || '10', 10);
     }
   }
 }
