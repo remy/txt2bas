@@ -110,14 +110,17 @@ export function parseLine(line) {
   return basicToBytes(lineNumber, tokens);
 }
 
-export function parseLineWithData(line) {
-  const { lineNumber, tokens } = parseBasic(line);
+export function parseLineWithData(line, autoline = null) {
+  const { lineNumber, tokens } = parseBasic(line, autoline);
   const basic = basicToBytes(lineNumber, tokens);
   const length = basic.length;
   return { basic, length, lineNumber, tokens };
 }
 
-export function parseLines(text, options = { validate: true }) {
+export function parseLines(
+  text,
+  { validate = true, keepDirectives = false } = {}
+) {
   const lines = text.split(text.includes('\r') ? '\r' : '\n');
   const res = [];
   let autostart = 0x8000;
@@ -131,7 +134,8 @@ export function parseLines(text, options = { validate: true }) {
     let line = lines[i].trim();
 
     if (line) {
-      if (line.startsWith('#')) {
+      const likeDirective = line.startsWith('#');
+      if (likeDirective) {
         // comment and directives
         if (line.startsWith('#program ')) {
           filename = line.split(' ')[1];
@@ -150,7 +154,9 @@ export function parseLines(text, options = { validate: true }) {
             autostart = n;
           }
         }
-      } else {
+      }
+
+      if ((keepDirectives && likeDirective) || !likeDirective) {
         if (autostart === -1) {
           if (!autoline.active) {
             const [lineNumber] = Statement.parseLineNumber(line);
@@ -165,24 +171,27 @@ export function parseLines(text, options = { validate: true }) {
 
         try {
           statement = parseBasic(line, autoline.next());
-          if (options.validate) {
+          if (validate) {
             validateStatement(statement.tokens);
           }
         } catch (e) {
           throw new Error(e.message + errorTail);
         }
 
-        try {
-          validateLineNumber(statement.lineNumber, lastLine);
-        } catch (e) {
-          throw new Error(e.message + errorTail);
+        if (!likeDirective) {
+          try {
+            validateLineNumber(statement.lineNumber, lastLine);
+          } catch (e) {
+            throw new Error(e.message + errorTail);
+          }
+          lastLine = statement.lineNumber;
+
+          const bytes = basicToBytes(statement.lineNumber, statement.tokens);
+          length += bytes.length;
+          res.push({ statement, bytes });
+        } else {
+          res.push({ statement, bytes: [] });
         }
-
-        lastLine = statement.lineNumber;
-
-        const bytes = basicToBytes(statement.lineNumber, statement.tokens);
-        length += bytes.length;
-        res.push({ statement, bytes });
       }
     }
   }
@@ -257,7 +266,9 @@ export class Statement {
   }
 
   static parseLineNumber(line) {
+    if (line.startsWith('#')) return [null, line];
     const match = line.match(/^\s*(\d{1,4})\s?(.*)$/);
+
     if (match !== null) {
       if (match[2].length === 0) {
         throw new Error('Empty line');
