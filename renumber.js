@@ -69,6 +69,9 @@ export function renumber(text, options = {}) {
 
     if (!relocate) {
       st.lineNumber = line;
+      if (line > 9999) {
+        throw new Error('No room for line');
+      }
     }
     current = line;
   });
@@ -101,13 +104,7 @@ export function renumber(text, options = {}) {
     mapping: newMap,
   });
 
-  [newMap[start], start]; // ?
-  newMap[end]; // ?
-  base; //?
-
   res = parseLines(text, { validate: false }).statements;
-
-  // // console.log(mapping);
 
   text = renumber(bas2txtLines(statementsToBytes(res)), {
     start: newMap[start],

@@ -36,6 +36,29 @@ tap.test('simple renumber', (t) => {
   t.end();
 });
 
+tap.test('renumber with end', (t) => {
+  const src = `5 LAYER 2,1: CLS
+20 LOAD "8x8.spr" BANK 16
+30 TILE BANK 16
+40 BANK 17 POKE 0,0,0,0,0,0,0,0,0,0
+50 TILE DIM 17,0,10,8
+60 TILE 1,1
+70 PAUSE 0
+80  ; STOP
+9998 SAVE "8x8.bas"
+9999 GO TO 10
+
+`;
+  t.throws(() => {
+    res = renumber(src, { start: 9998, end: 9999 });
+  }, 'no room for line');
+
+  res = renumber(src, { start: 9998, end: 9999, step: 1 });
+
+  t.ok(res.includes('GO TO 20'), 'the last line still exists (but realigned)');
+  t.end();
+});
+
 tap.test(
   'relocate',
   (t) => {
