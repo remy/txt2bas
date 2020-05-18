@@ -46,7 +46,7 @@ export class Autoline {
   parse(line) {
     const args = line.match(/#autoline\s+(\d+)(?:\s*,\s*(\d+))?/);
     this.active = true;
-    if (args.length) {
+    if (args) {
       args.shift();
       this.number = parseInt(args.shift(), 10);
       this.step = parseInt(args.shift() || '10', 10);
