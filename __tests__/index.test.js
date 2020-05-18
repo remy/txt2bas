@@ -29,6 +29,18 @@ tap.test('formatText', (t) => {
   t.end();
 });
 
+tap.test('white space formatting', (t) => {
+  let src, res;
+  src = '70 PRINT "Hello, world!"';
+  res = formatText(src);
+  t.same(res, src, 'pre-formatted text remains the same');
+
+  src = '70  PRINT "Hello, world!"';
+  res = formatText(src);
+  t.same(res, src, 'pre-formatted text remains the same');
+  t.end();
+});
+
 tap.test('validateTxt', (t) => {
   const src = '10 print "Hello, world!"';
   const res = validateTxt(src);

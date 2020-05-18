@@ -62,6 +62,8 @@ export function bas2txtLines(data) {
 
     let last = null;
     let inString = false;
+    let inComment = false;
+    let lastNonWhitespace = null;
 
     const data = Array.from(content.data);
 
@@ -79,7 +81,7 @@ export function bas2txtLines(data) {
        * - if it's the first character of the line, then no extra space
        */
 
-      if (inString) {
+      if (inString || inComment) {
         if (BASIC_CHRS[c]) {
           string += BASIC_CHRS[c];
         } else {
@@ -87,6 +89,11 @@ export function bas2txtLines(data) {
         }
       } else {
         if (chr === ';') {
+          // check if we're starting a comment
+          if (lastNonWhitespace === null || lastNonWhitespace === ':') {
+            inComment = true;
+          }
+
           if (BASIC[peek]) {
             string += chr + ' ';
           } else {
@@ -99,9 +106,16 @@ export function bas2txtLines(data) {
             string += chr;
           }
         } else if (BASIC[c]) {
+          if (BASIC[c] === 'REM') {
+            inComment = true;
+          }
           if (BASIC[last] === ':') {
             string += ' ' + BASIC[c] + ' ';
-          } else if (last !== null && !BASIC[last]) {
+          } else if (
+            last !== null &&
+            !BASIC[last] &&
+            !(String.fromCharCode(last) === ' ')
+          ) {
             string += ' ' + BASIC[c] + ' ';
           } else {
             string += BASIC[c] + ' ';
@@ -118,6 +132,10 @@ export function bas2txtLines(data) {
       if (c === 0x22) {
         // a quote
         inString = !inString;
+      }
+
+      if (chr !== ' ') {
+        lastNonWhitespace = chr;
       }
 
       last = c;

@@ -66,6 +66,16 @@ tap.test('comments', (t) => {
   res = Array.from(parseLine(src));
   t.same(res.slice(-expect.length), expect);
 
+  src = '220 ; IF %b<3 THEN GO TO 10';
+  res = statements(src);
+
+  t.same(res[0].tokens.length, 1, 'a single comment statement is found');
+  t.same(
+    res[0].tokens[0].name,
+    'COMMENT',
+    'a single comment statement is found'
+  );
+
   t.end();
 });
 

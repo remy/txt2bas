@@ -1,4 +1,5 @@
 import { line2txt, file2txt } from '../index';
+import { parseLineWithData } from '../txt2bas';
 import tap from 'tap';
 import { promises as fsPromises } from 'fs';
 const { readFile } = fsPromises;
@@ -33,4 +34,27 @@ tap.test('shapes mapped to utf8', async (t) => {
   const line = file2txt(src);
 
   t.ok(line.includes('▛'));
+});
+
+tap.test('comments are parsed as plain text', (t) => {
+  let text, src, res;
+  text = '220 ; IF %b<3 THEN GO TO 10';
+  src = parseLineWithData(text);
+  res = line2txt(src.basic);
+  t.same(res, text, 'comments are untouched with ;');
+
+  text = '220 IF b="rem:;" THEN LET %b<3';
+  src = parseLineWithData(text);
+  res = line2txt(src.basic);
+  t.same(
+    res,
+    '220 IF b="rem:;" THEN LET %b < 3',
+    'ignores comment looking strings'
+  );
+
+  text = '220 REM IF %b<3 THEN GO TO 10';
+  src = parseLineWithData(text);
+  res = line2txt(src.basic);
+  t.same(res, text, 'comments are untouched with REM');
+  t.end();
 });
