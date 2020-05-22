@@ -42,7 +42,7 @@ tap.test('test bad int expression', (t) => {
   let debug = {};
   t.throws(() => {
     validateStatement(line, debug);
-  });
+  }, /Cannot redeclare integer expression whilst already inside one/);
 
   line = asBasic('10 %4 << 1');
   t.doesNotThrow(() => {
@@ -73,9 +73,13 @@ tap.test('In the wild', (t) => {
   }, 'print allows for multiple statements');
 
   line = asBasic('760 IF sgn{(e-a) < 0} THEN %g=%a ELSE %g=%e');
-  t.throws(() => {
-    validateStatement(line);
-  }, 'ELSE should be a separate statement');
+  t.throws(
+    () => {
+      validateStatement(line);
+    },
+    (e) => e.message.includes('Statement separator (:) expected before ELSE'),
+    'ELSE should be a separate statement'
+  );
 
   line = asBasic('760 IF sgn{(e-a) < 0} THEN %g=%a: ELSE %g=%e');
   t.doesNotThrow(() => {
@@ -93,14 +97,23 @@ tap.test('In the wild', (t) => {
   }, 'Line with only white space should fail');
 
   line = asBasic('945 IF %i = %20 ENDPROC');
-  t.throws(() => {
-    validateStatement(line);
-  }, 'Incomplete IF statement');
+  t.throws(
+    () => {
+      validateStatement(line);
+    },
+    (e) => e.message.includes('IF statement must have THEN'),
+    'Incomplete IF statement'
+  );
 
   line = asBasic('945 %i = %20; ENDPROC');
-  t.throws(() => {
-    validateStatement(line);
-  }, 'Only semicolon should be used in PRINT context');
+  t.throws(
+    () => {
+      validateStatement(line);
+    },
+    (e) =>
+      e.message.includes('Semicolons are either used at start of statement'),
+    'Only semicolon should be used in PRINT context'
+  );
 
   line = asBasic('945 %i = %20:; remark');
   t.doesNotThrow(() => {
@@ -146,6 +159,11 @@ tap.test('In the wild', (t) => {
   t.doesNotThrow(() => {
     validateStatement(line, debug);
   }, 'int functions do not reset int expression #3');
+
+  // line = asBasic('10 BANK 14 POKE 0,188+%P+k');
+  // t.throws(() => {
+  //   validateStatement(line, debug);
+  // }, 'int expression must be at the start');
 
   t.end();
 });
