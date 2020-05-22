@@ -340,6 +340,7 @@ export class Statement {
 
         if (token.value === opTable.THEN) {
           this.in.pop();
+          this.inIntExpression = false;
         }
 
         if (token.value === opTable.BIN) {

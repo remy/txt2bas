@@ -247,3 +247,16 @@ tap.test('directives and comments', async (t) => {
   res = parseLine('# this is ignored');
   t.same(res.length, 0, 'comments are stripped');
 });
+
+tap.test('in the wild', (t) => {
+  let src, res;
+
+  src = '10 IF %(12/8) MOD 2 THEN BANK 14 POKE 0,%188';
+  res = statements(src);
+
+  // console.log(res[0].tokens);
+  const index = res[0].tokens.findIndex((_) => _.text === 'BANK');
+  t.same(res[0].tokens[index + 1].integer, false, 'bank 14 is a float type');
+
+  t.end();
+});
