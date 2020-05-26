@@ -449,7 +449,11 @@ export class Statement {
   peekToken(at = this.pos) {
     let pos = at + 1;
     const start = at;
-    while (pos < this.line.length && !tests._isSpace(this.line.charAt(pos))) {
+    while (
+      pos < this.line.length &&
+      !tests._isSpace(this.line.charAt(pos)) &&
+      !tests._isDigit(this.line.charAt(pos))
+    ) {
       pos++;
     }
     return this.line.substring(start, pos);
