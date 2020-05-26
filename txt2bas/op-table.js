@@ -9,5 +9,6 @@ export const opTable = Object.entries(codes).reduce(
     // aliases
     GOTO: 0xec,
     GOSUB: 0xed,
+    RAND: 0xf9,
   }
 );
