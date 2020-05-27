@@ -1,4 +1,4 @@
-export default {
+const tests = {
   _isDirective(c) {
     return c === '#';
   },
@@ -24,7 +24,7 @@ export default {
   },
 
   _isBinary(c) {
-    return c === '1' || c === '0' || c === '@';
+    return c === '1' || c === '0';
   },
 
   _isNewLine(c) {
@@ -86,3 +86,5 @@ export default {
     return c === '.';
   },
 };
+
+export default tests;

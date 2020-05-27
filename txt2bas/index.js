@@ -29,6 +29,39 @@ import {
   STATEMENT_SEP,
 } from './types';
 
+/**
+ * A complete object representation of NextBASIC code
+ * @typedef ParsedBasic
+ * @type {Object}
+ * @property {Uint8Array} data - NextBASIC encoded data
+ * @property {number} length - byte length
+ * @property {Token[]} tokens
+ * @property {Statement[]} statements
+ * @property {number} autostart If not specified in source, will be 0x8000
+ * @property {string|null} filename The program if parsed from the source
+ */
+
+/**
+ * A single token used in the lexing process
+ * @typedef Token
+ * @type {Object}
+ * @property {string} name The token type name
+ * @property {string|number} value
+ * @property {string} text Source text content
+ * @property {number} numeric Numerical value
+ * @property {boolean} integer Flag (only used on number types)
+ */
+
+/**
+ * A statement from a single parsed NextBASIC line
+ * @typedef Statement
+ * @type {Object}
+ * @property {string} line
+ * @property {Token[]} tokens
+ * @property {number} lineNumber
+ * @property {Token} lastToken
+ */
+
 export class Autoline {
   constructor(number = 10, step = 10) {
     this.number = parseInt(number, 10);
@@ -64,6 +97,12 @@ const encode = (a) => {
   return Uint8Array.from(res);
 };
 
+/**
+ * Validates a block of NextBASIC and returns any validation errors
+ *
+ * @param {string} text multiline NextBASIC
+ * @return {string[]} Any errors found
+ */
 export function validate(text) {
   const lines = text.split('\n');
   let lastLine = -1;
@@ -99,6 +138,12 @@ export function validate(text) {
   return errors;
 }
 
+/**
+ * Converts a string to bytes
+ *
+ * @param {string} line Single NextBASIC line
+ * @return {Uint8Array} bytes of encoded NextBASIC
+ */
 export function parseLine(line) {
   if (line.startsWith('#')) {
     return new Uint8Array([]);
@@ -107,11 +152,17 @@ export function parseLine(line) {
   return basicToBytes(lineNumber, tokens);
 }
 
+/**
+ *
+ * @param {text} line A single line of NextBASIC
+ * @param {boolean} [autoline=false] Flag to ignore line numbers
+ * @return {ParsedBasic} fully parsed object
+ */
 export function parseLineWithData(line, autoline = null) {
   const { lineNumber, tokens } = parseBasic(line, autoline);
   const basic = basicToBytes(autoline ? 10 : lineNumber, tokens);
   const length = basic.length;
-  return { basic, length, lineNumber, tokens };
+  return { basic, line, length, lineNumber, tokens };
 }
 
 export function parseLines(
@@ -230,6 +281,11 @@ export function statementsToBytes(statements) {
   return data;
 }
 
+/**
+ * A NextBASIC statement
+ * @class
+ * @param {...Statement}
+ */
 export class Statement {
   constructor(line, lineNumber = null) {
     this.line = Statement.processChars(line);
@@ -284,16 +340,81 @@ export class Statement {
     return this.in.includes(test);
   }
 
-  nextToken() {
-    const token = this.token();
+  pBIN() {
+    // go forward, skip one space, collect spaces, then get a number
+    const token = this.processBinary();
+    if (token.name !== 'BINARY') {
+      throw new Error('BIN expects binary to follow');
+    }
 
+    if (isNaN(token.numeric)) {
+      throw new Error('BIN expects binary to follow');
+    }
+
+    // check it's followed by a symbols
+    if (tests._isDigit(this.peek(this.pos))) {
+      throw new Error('BIN expects binary to follow');
+    }
+
+    return this.captureToken(token);
+  }
+
+  nextToken() {
+    const token = this.manageTokenState(this.token());
+
+    if (!token) return;
+
+    if (token.name !== KEYWORD) {
+      return token;
+    }
+
+    // decide what to do next
+
+    const { text } = token;
+
+    // if there's a following space, then try to slurp space
+    if (this.peek(this.pos) === ' ') {
+      this.captureToken(this.processWhitespace());
+    }
+
+    switch (text) {
+      case 'BIN':
+        this.pBIN();
+        break;
+      case 'REM':
+      case ';':
+        this.captureToken(this.processComment());
+        break;
+      default:
+        break;
+    }
+
+    return token;
+  }
+
+  captureToken(token) {
+    if (!token) return;
+
+    this.lastToken = token;
+
+    this.tokens.push(token);
+    return token;
+  }
+
+  manageTokenState(token) {
     if (!token) return;
 
     if (token.name !== WHITE_SPACE) {
       if (token.value !== '%') this.next = null; // always reset
+
+      // one exception is when we're a semicolon for a comment, we don't slurp
       if (this.peek(this.pos) === ' ') {
-        // eat following space
-        this.pos++;
+        if (token.name === KEYWORD && token.text === ';') {
+          // do nothing
+        } else {
+          // eat following space
+          this.pos++;
+        }
       }
     }
 
@@ -324,9 +445,9 @@ export class Statement {
     if (token) {
       if (token.name === KEYWORD) {
         // FIXME I don't full understand the logic of what comes out of an int expression
-        if (!this.isIn(IF) && intFunctions.indexOf(codes[token.value]) === -1) {
-          this.inIntExpression = false;
-        }
+        // if (!this.isIn(IF) && intFunctions.indexOf(codes[token.value]) === -1) {
+        //   this.inIntExpression = false;
+        // }
 
         // needed to track DEF FN args and to pad them properly
         if (token.value === opTable['DEF FN']) {
@@ -359,9 +480,7 @@ export class Statement {
       }
     }
 
-    this.lastToken = token;
-
-    this.tokens.push(token);
+    this.captureToken(token);
     return token;
   }
 
@@ -370,7 +489,7 @@ export class Statement {
 
     if (this.next === COMMENT) {
       this.next = false;
-      return { name: COMMENT, ...this.processToEnd() };
+      this.processComment();
     }
 
     if (c == '') {
@@ -399,7 +518,8 @@ export class Statement {
       (this.lastToken.name === STATEMENT_SEP ||
         this.tokens.filter((_) => _.name !== WHITE_SPACE).length === 0)
     ) {
-      return { ...this.processToEnd(), name: COMMENT };
+      // return { ...this.processToEnd(), name: COMMENT };
+      return this.processSingleKeyword();
     }
 
     if (tests._isDotCommand(c)) {
@@ -424,6 +544,7 @@ export class Statement {
     }
 
     if (tests._isBinarySymbol(c)) {
+      this.captureToken(this.processSingle());
       return this.processBinary();
     }
 
@@ -493,6 +614,10 @@ export class Statement {
     }
   }
 
+  processComment() {
+    return { name: COMMENT, ...this.processToEnd() };
+  }
+
   processIdentifier() {
     // TODO walk until we have something that looks like a token
     let endPos = this.pos + 1;
@@ -540,10 +665,22 @@ export class Statement {
     return token;
   }
 
+  processSingleKeyword() {
+    const text = this.line.charAt(this.pos, this.pos + 1);
+    const token = {
+      name: KEYWORD,
+      text,
+      value: text.charCodeAt(0),
+      pos: this.pos,
+    };
+    this.pos++;
+    return token;
+  }
   processBinary() {
     const tok = this.simpleSlurp(tests._isBinary, BINARY);
 
-    const numeric = parseInt(tok.value.substring(1), 2);
+    const offset = tok.value.startsWith('@') ? 1 : 0;
+    const numeric = parseInt(tok.value.substring(offset), 2);
 
     tok.numeric = numeric;
     tok.integer = this.inIntExpression;
@@ -745,6 +882,13 @@ export class Statement {
   }
 }
 
+/**
+ * Parse NextBASIC text into a lexer a statement object
+ *
+ * @param {string} line Source NextBASIC line
+ * @param {number} [lineNumber]
+ * @return {Statement} A single statement object
+ */
 export function parseBasic(line, lineNumber = null) {
   if (typeof line !== 'string') {
     throw new Error(
@@ -771,7 +915,10 @@ export function basicToBytes(lineNumber, basic) {
     if (name === KEYWORD) {
       length++;
       tokens.push(token);
-    } else if (name === NUMBER) {
+    } else if (
+      name === NUMBER ||
+      (name === BINARY && token.integer === false)
+    ) {
       length += value.length;
       const { numeric } = token;
 

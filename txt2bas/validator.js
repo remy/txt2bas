@@ -11,12 +11,19 @@ import {
   PRINT,
   HEX,
   DEFFN,
+  NUMBER,
   WHITE_SPACE,
   DEFFN_SIG,
   IF,
+  OPEN_PARENS,
+  INT_PARENS,
   OUTER_IF,
   STATEMENT_SEP,
+  DOT_COMMAND,
   SYMBOL,
+  ASSIGNMENT,
+  COMPARATOR,
+  OPERATOR,
   OPERATION,
 } from './types';
 
@@ -38,11 +45,14 @@ export function validateLineNumber(current, prev) {
   }
 }
 
+/**
+ * Represents the scope state for a single statement
+ * @class
+ */
 class BasicScope extends Array {
   constructor(tokens) {
     super();
-    this.inIntExpression = false;
-    this.inFloatExpression = false;
+    this.reset();
     this.source = Array.from(tokens);
     this.tokens = Array.from(tokens); // ensure this is a copy
     this.position = 0;
@@ -53,10 +63,19 @@ class BasicScope extends Array {
 
   next() {
     this.previousToken = this.currentToken;
+
+    if (this.previousToken) {
+      if (this.previousToken.name === KEYWORD) {
+        this.lastKeyword = this.previousToken;
+      }
+      if (this.previousToken.name !== WHITE_SPACE) {
+        this.statementStack.push(this.previousToken);
+      }
+    }
+
     const token = this.tokens.shift();
     this.currentToken = token;
     this.position++;
-
     if (token.name === STATEMENT_SEP) {
       this.reset();
     }
@@ -66,6 +85,7 @@ class BasicScope extends Array {
 
   reset() {
     this.resetExpression();
+    this.statementStack = [];
     this.lastKeyword = null;
     this.allowHanging = false;
     this.position = -1;
@@ -74,26 +94,13 @@ class BasicScope extends Array {
 
   popTo(type) {
     while (this.last !== type) this.pop();
-    this.pop();
+    const last = this.pop();
+    return type === last;
   }
 
   resetExpression() {
     this.inFloatExpression = false;
     this.inIntExpression = false;
-  }
-
-  isAfterInExpression() {
-    let i = this.source.length - this.tokens.length;
-    while (i >= 0) {
-      if (this.source[i].value === '%') {
-        return true;
-      }
-      if (this.source[i].name !== WHITE_SPACE) {
-        break;
-      }
-      i--;
-    }
-    return false;
   }
 
   get hasTokens() {
@@ -105,9 +112,14 @@ class BasicScope extends Array {
   }
 }
 
+// 10 %a = % sprite over (%1,2)
 export function validateStatement(tokens, debug = {}) {
   if (!Array.isArray(tokens)) {
     throw new Error('validateStatement expects tokens to be an array');
+  }
+
+  if (typeof tokens[0].name === 'undefined') {
+    throw new Error('Bad token argument');
   }
 
   if (tokens.length === 1 && tokens[0].name === WHITE_SPACE) {
@@ -116,20 +128,38 @@ export function validateStatement(tokens, debug = {}) {
 
   const scope = new BasicScope(tokens);
   debug.scope = scope; // allows testing to pull up the scope state
-  let expect = null;
-  let expectError = null;
+  const expect = { name: null, error: null, value: null };
 
   while (scope.hasTokens) {
     const token = scope.next();
     const { name, value } = token;
     try {
       if (name === KEYWORD) {
-        scope.lastKeyword = token;
+        scope.push(OPERATION);
       }
 
-      // expectation checks
-      if (expect && name !== expect) {
-        throw new Error(expectError);
+      // check expectations
+      if (expect.name && name !== expect.name) {
+        if (expect.error) {
+          throw new Error(expect.error);
+        }
+      }
+
+      expect.name = null;
+      expect.value = null;
+      expect.error = null;
+
+      if (value === '(') {
+        scope.push(OPEN_PARENS);
+        if (scope.inIntExpression) {
+          scope.push(INT_PARENS);
+        }
+      }
+
+      if (value === ')') {
+        if (!scope.popTo(OPEN_PARENS)) {
+          throw new Error('Missing closing parenthesis');
+        }
       }
 
       if (value === opTable.IF) {
@@ -150,14 +180,32 @@ export function validateStatement(tokens, debug = {}) {
         scope.push(PRINT);
       }
 
-      if (name === KEYWORD) {
-        if (
-          intFunctions.indexOf(codes[value]) === -1 ||
-          scope.isAfterInExpression()
-        ) {
-          if (bitWiseOperators.indexOf(token.text) == -1) {
-            scope.inIntExpression = false;
+      // reset int expression on keywords
+      if (name === KEYWORD && scope.inIntExpression) {
+        keywordIntCheckBreak: {
+          if (bitWiseOperators.includes(token.text)) {
+            break keywordIntCheckBreak;
           }
+
+          // int functions are only available to assignment operators
+          if (scope.includes(ASSIGNMENT)) {
+            if (intFunctions[token.text]) {
+              break keywordIntCheckBreak;
+            }
+
+            // now check the last keyword isn't a multi keyword function
+            const lastKeyword = intFunctions[scope.lastKeyword.text];
+            if (Array.isArray(lastKeyword)) {
+              if (lastKeyword.includes(token.text)) {
+                break keywordIntCheckBreak;
+              }
+            }
+          }
+          scope; // ?
+          if (scope.includes(INT_PARENS)) {
+            break keywordIntCheckBreak;
+          }
+          scope.inIntExpression = false;
         }
       }
 
@@ -193,7 +241,21 @@ export function validateStatement(tokens, debug = {}) {
         scope.inIntExpression = true;
       }
 
-      if (name === BINARY && !token.integer) {
+      // TODO set the float expression to true if we're not in an expression
+      // and a number or identifier is used - the problem is resetting the
+      // expression tracker is currently wrong.
+
+      // if ([IDENTIFIER, NUMBER, HEX, BINARY].includes(name)) {
+      //   if (
+      //     scope.inFloatExpression === false &&
+      //     scope.inIntExpression === false
+      //   ) {
+      //     token; // ?
+      //     scope.inFloatExpression = true;
+      //   }
+      // }
+
+      if (name === BINARY && value.startsWith('@') && !token.integer) {
         throw new Error('Binary values only allowed in integer expressions');
       }
 
@@ -202,25 +264,43 @@ export function validateStatement(tokens, debug = {}) {
       }
 
       if (value === opTable.BIN) {
-        expect = BINARY;
+        expect.name = BINARY;
       }
 
       if (name == SYMBOL && value === ';' && !scope.includes(PRINT)) {
-        throw new Error(
-          'Semicolons are either used at start of statement as a remark or as separator for PRINT statements'
-        );
+        // check if the semicolon is the only thing on the stack
+        const length = scope.statementStack
+          .slice(0, -1)
+          .filter((_) => _.name !== WHITE_SPACE).length;
+        if (length > 0) {
+          throw new Error(
+            'Semicolons are either used at start of statement as a remark or as separator for PRINT statements'
+          );
+        }
+      }
+
+      if (name === KEYWORD && !scope.includes(COMPARATOR)) {
+        name;
+        // scope.resetExpression();
       }
 
       // symbols that reset the integer expression state
       if (name == SYMBOL) {
         if (value === ',') {
           if (scope.last !== PARAM_SEP) scope.push(PARAM_SEP);
-          scope.resetExpression();
+          if (!scope.includes(OPERATOR)) {
+            scope.resetExpression();
+          }
         }
 
         if (value === '=') {
-          scope.push(OPERATION);
-          scope.resetExpression();
+          scope.push(OPERATOR);
+          if (scope.includes(IF)) {
+            scope.push(COMPARATOR);
+          } else {
+            scope.push(ASSIGNMENT);
+            scope.resetExpression();
+          }
         }
 
         if (value === ';') {
@@ -228,12 +308,10 @@ export function validateStatement(tokens, debug = {}) {
         }
       }
 
-      validateIdentifier(token, scope);
-      validateCharRange(token, scope);
-      validateSymbolRange(token, scope);
-
-      expect = null;
-      expectError = null;
+      validateOpeningStatement(token, scope, expect);
+      validateIdentifier(token, scope, expect);
+      validateCharRange(token, scope, expect);
+      validateSymbolRange(token, scope, expect);
 
       // setting expectations
       if (value === opTable['DEF FN']) {
@@ -242,14 +320,16 @@ export function validateStatement(tokens, debug = {}) {
       }
 
       if (value === opTable.REM) {
-        expect = COMMENT;
-        expectError = 'Parser error, REM keyword should be followed by COMMENT';
+        expect.name = COMMENT;
+        expect.error =
+          'Parser error, REM keyword should be followed by COMMENT';
       }
     } catch (e) {
       let message = e.message;
       message += `, "${token.text || value}" at: ${token.pos + 1}:${
         (token.text || value).length + token.pos + 1
       }`;
+      scope; // ?
       throw new Error(message);
     }
   }
@@ -262,6 +342,8 @@ export function validateStatement(tokens, debug = {}) {
   if (scope.currentToken.name === IDENTIFIER && scope.position === 0) {
     throw new Error('Unexpected token at end of statement');
   }
+
+  scope; //?
 }
 
 export function validateIdentifier({ value, name }, scope = { last: null }) {
@@ -302,6 +384,43 @@ export function validateCharRange(token) {
         throw new Error(`Out of range character "${value[i]}" (${charCode})`);
       }
     }
+  }
+}
+
+export function validateOpeningStatement(token, scope, expect) {
+  /*
+        Allowed starting commands other than a keyword
+        DOT_COMMAND
+        WHITE_SPACE
+        SYMBOL(%)
+        IDENTIFIER followed by ASSIGNMENT
+
+        */
+
+  if (scope.length > 0) {
+    return;
+  }
+
+  if ([DOT_COMMAND, WHITE_SPACE].includes(token.name)) {
+    return;
+  }
+
+  if (token.name === SYMBOL && token.value === '%') {
+    // expect an IDENTIFIER
+    expect.name = IDENTIFIER;
+    expect.error = 'Expected to assign an integer value to an identifier';
+  }
+
+  if (token.name === IDENTIFIER) {
+    expect.name = SYMBOL;
+    expect.value = '=';
+    expect.error = 'Expected to assign a value to an identifier';
+  }
+
+  if (token.name === NUMBER) {
+    throw new Error(
+      'A line cannot start with a number, a keyword or assignment must open a statement'
+    );
   }
 }
 

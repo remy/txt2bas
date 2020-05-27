@@ -12,11 +12,11 @@ function asHex(s) {
 
 tap.test('source = output', (t) => {
   let src = '10 REM marker';
-  t.same(line2txt(parseLine(src)), src);
+  t.same(line2txt(parseLine(src)), src, src);
   src = '5 LET b=%@01111100';
-  t.same(line2txt(parseLine(src)), src);
+  t.same(line2txt(parseLine(src)), src, src);
   src = '10 LET b=%$ea';
-  t.same(line2txt(parseLine(src)), src);
+  t.same(line2txt(parseLine(src)), src, src);
 
   t.end();
 });
@@ -44,12 +44,12 @@ tap.test('binary', (t) => {
   let src = '10 LET %a= BIN 1';
   let expect = [0xc4, 0x31, 0x0e, 0x00, 0x00, 0x01, 0x00, 0x00, 0x0d];
   let res = Array.from(parseLine(src)).slice(-expect.length);
-  t.same(res, expect);
+  t.same(res, expect, 'non int BIN was parsed');
 
   src = '10 LET %b=%@10';
   expect = [0x25, 0x40, 0x31, 0x30, 0x0d];
   res = Array.from(parseLine(src)).slice(-expect.length);
-  t.same(res, expect);
+  t.same(res, expect, 'integer binary was parsed');
 
   t.end();
 });
@@ -69,9 +69,9 @@ tap.test('comments', (t) => {
   src = '220 ; IF %b<3 THEN GO TO 10';
   res = statements(src);
 
-  t.same(res[0].tokens.length, 1, 'a single comment statement is found');
+  t.same(res[0].tokens.length, 3, 'comment token, space, comment');
   t.same(
-    res[0].tokens[0].name,
+    res[0].tokens[2].name,
     'COMMENT',
     'a single comment statement is found'
   );
@@ -114,15 +114,6 @@ tap.test('pound', (t) => {
   const line = line2txt(res);
 
   t.same(line, src);
-  t.end();
-});
-
-tap.test('int expression reset on keyword', (t) => {
-  const src = '10 %x STEP 2 RUN';
-  const res = parseLine(src);
-
-  t.ok(res.includes(0x0e), 'has 5 byte number');
-
   t.end();
 });
 
@@ -257,6 +248,20 @@ tap.test('in the wild', (t) => {
   // console.log(res[0].tokens);
   const index = res[0].tokens.findIndex((_) => _.text === 'BANK');
   t.same(res[0].tokens[index + 1].integer, false, 'bank 14 is a float type');
+
+  src = '40 OPEN #4,"w>4,0,16,20,5"';
+  res = parseLines(src).statements[0];
+
+  t.same(res.tokens[0].name, 'KEYWORD', 'leading keywords');
+  t.same(res.tokens[1].value, 4, 'then channel number');
+
+  src = '370 SPRITE -2,16,0,1,1, BIN 110';
+  res = parseLines(src).statements[0].tokens.pop();
+  t.same(res.numeric, 6, 'binary interpreted as 6 and not 110');
+
+  src = '370 SPRITE -2,16,0,1,1, %@110';
+  res = parseLines(src).statements[0].tokens.pop();
+  t.same(res.numeric, 6, 'shorthand binary interpreted as 6 and not 110');
 
   t.end();
 });

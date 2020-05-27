@@ -168,5 +168,13 @@ export const intFunctions = [
   'BIN',
   'RND',
   'BANK',
+  'SPRITE',
+  'INT',
   ...bitWiseOperators,
-];
+].reduce((acc, curr) => {
+  acc[curr] = true;
+  return acc;
+}, {});
+
+intFunctions.SPRITE = ['CONTINUE', 'AT', 'OVER'];
+intFunctions.BANK = ['USR', 'PEEK', 'DPEEK'];

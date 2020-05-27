@@ -38,16 +38,22 @@ tap.test('validator errors without autoline', async (t) => {
 
 tap.test('test bad int expression', (t) => {
   t.plan(2);
-  let line = asBasic('10 %4 << %1');
+  let line;
   let debug = {};
-  t.throws(() => {
-    validateStatement(line, debug);
-  }, /Cannot redeclare integer expression whilst already inside one/);
 
-  line = asBasic('10 %4 << 1');
+  t.throws(
+    () => {
+      line = asBasic('10 %4 << %1');
+      validateStatement(line, debug);
+    },
+    /Expected to assign an integer value to an identifier/,
+    '10 %4 << %1'
+  );
+
+  line = asBasic('10 a = %4 << 1');
   t.doesNotThrow(() => {
-    validateStatement(line);
-  });
+    validateStatement(line, debug);
+  }, '10 a = %4 << 1');
 });
 
 tap.test('hex looking like dec', (t) => {
@@ -59,7 +65,7 @@ tap.test('hex looking like dec', (t) => {
 });
 
 tap.test('In the wild', (t) => {
-  let line;
+  let line, src;
 
   line = asBasic('374 IF %p=0 THEN TILE 1,HEIGHT AT %x+15,%p TO %r,%p');
   const debug = {};
@@ -105,10 +111,27 @@ tap.test('In the wild', (t) => {
     'Incomplete IF statement'
   );
 
-  line = asBasic('945 %i = %20; ENDPROC');
+  line = asBasic('945 IF %i = %20 THEN PRINT %i');
   t.throws(
     () => {
       validateStatement(line);
+    },
+    (e) =>
+      e.message.includes(
+        'Cannot redeclare integer expression whilst already inside one'
+      ),
+    'IF comparison is bad'
+  );
+
+  line = asBasic('945 IF %i = 20 THEN PRINT %i');
+  t.doesNotThrow(() => {
+    validateStatement(line);
+  }, 'IF comparison is fine and is able to print');
+
+  line = asBasic('945 %i = %20; ENDPROC');
+  t.throws(
+    () => {
+      validateStatement(line, debug);
     },
     (e) =>
       e.message.includes('Semicolons are either used at start of statement'),
@@ -160,10 +183,110 @@ tap.test('In the wild', (t) => {
     validateStatement(line, debug);
   }, 'int functions do not reset int expression #3');
 
+  line = asBasic('10 PRINT %@00000011');
+  t.doesNotThrow(() => {
+    validateStatement(line, debug);
+  }, 'bin shorthand requires int expression');
+
+  line = asBasic('10 PRINT BIN 00000011');
+  t.doesNotThrow(() => {
+    validateStatement(line, debug);
+  }, 'use of bin is allowed');
+
   // line = asBasic('10 BANK 14 POKE 0,188+%P+k');
   // t.throws(() => {
   //   validateStatement(line, debug);
   // }, 'int expression must be at the start');
+
+  line = asBasic('10 LOAD "feet.map" BANK 15:; for the feet');
+  t.doesNotThrow(() => {
+    validateStatement(line, debug);
+  }, 'no space allowed before semicolon');
+
+  line = asBasic('10 LOAD "feet.map" BANK 15:    ; for the feet');
+
+  t.doesNotThrow(() => {
+    validateStatement(line, debug);
+  }, 'more than one space allowed before semicolon');
+
+  // line = asBasic(
+  //   '10 IF %i AND B(i+4) THEN %B(i+4)=0:%B(i+5)|@1000000: PROC takeLife()'
+  // );
+  // t.throws(() => {
+  //   validateStatement(line, debug);
+  // }, 'nonsense');
+
+  src = '10 %j=% SPRITE OVER (b+1,1 TO %c,8,8)';
+  line = asBasic(src);
+  t.throws(
+    () => {
+      validateStatement(line, debug);
+    },
+    (e) => e.message.includes('Cannot redeclare integer expression'),
+    src
+  );
+
+  line = asBasic('10 IF %b=%c THEN ENDPROC');
+  t.throws(
+    () => validateStatement(line, debug),
+    (e) => e.message.includes('Cannot redeclare integer expression'),
+    'integer expression function on either side of IF comparator'
+  );
+
+  line = asBasic('10 FOR %i=%0 TO %3');
+  t.doesNotThrow(() => validateStatement(line, debug), 'FOR %i=%0 TO %3');
+
+  src = '10 %a = % sprite over (1,2)';
+  line = asBasic(src);
+  t.doesNotThrow(() => validateStatement(line, debug), src);
+
+  src = '10 %a = % sprite over (%1,2)';
+  line = asBasic(src);
+  t.throws(() => validateStatement(line, debug), src + ' - invalid arg');
+
+  src = '10 sprite pause 1 to 2';
+  line = asBasic(src);
+  t.doesNotThrow(() => validateStatement(line, debug), src);
+
+  src = '10 sprite pause %1 to 2';
+  line = asBasic(src);
+  t.doesNotThrow(() => validateStatement(line, debug), src);
+
+  src = '10 sprite pause 1 to %2';
+  line = asBasic(src);
+  t.doesNotThrow(() => validateStatement(line, debug), src);
+
+  src = '10 sprite pause %1 to %2';
+  line = asBasic(src);
+  t.doesNotThrow(() => validateStatement(line, debug), src);
+
+  src = '10 % sprite continue %';
+  line = asBasic(src);
+  t.throws(
+    () => validateStatement(line, debug),
+    (e) => e.message.includes('Expected to assign'),
+    src
+  );
+
+  src = '10 sprite pause %1 to %2';
+  line = asBasic(src);
+  t.doesNotThrow(() => validateStatement(line, debug), src);
+
+  src = '10 a = % sprite continue s';
+  line = asBasic(src);
+  t.doesNotThrow(() => validateStatement(line, debug), src);
+
+  src = '10 a = % bank 1 usr 5000';
+  line = asBasic(src);
+  t.doesNotThrow(() => validateStatement(line, debug), src);
+
+  src = '10 bank %a copy to %c';
+  line = asBasic(src);
+  t.doesNotThrow(() => validateStatement(line, debug), src);
+
+  src = '10 bank a copy to %c';
+  line = asBasic(src);
+  t.doesNotThrow(() => validateStatement(line, debug), src);
 
   t.end();
 });
