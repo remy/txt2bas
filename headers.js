@@ -51,7 +51,7 @@ export const plus3DOSHeader = (basic, opts = { autostart: 128 }) => {
     false
   );
   const res = pack(
-    '< A8$sig C$eof C$issue C$version I$length C$hType S$hFileLength n$autostart S$hOffset',
+    '< A8$sig C$eof C$issue C$version I$length C$hType S$hFileLength S$autostart S$hOffset',
     {
       sig: 'PLUS3DOS',
       eof: 26,
