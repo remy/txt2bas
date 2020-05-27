@@ -10,5 +10,6 @@ export const opTable = Object.entries(codes).reduce(
     GOTO: 0xec,
     GOSUB: 0xed,
     RAND: 0xf9,
+    CONT: 0xe8,
   }
 );
