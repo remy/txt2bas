@@ -3,3 +3,4 @@ node_modules/
 cspect.log
 .nyc_output
 coverage/
+tmp
