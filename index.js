@@ -34,12 +34,12 @@ export const statements = (source, options) => {
   return parseLines(source, options).statements;
 };
 
-export const tokens = (src) => {
+export const tokens = (src, options) => {
   if (typeof src !== 'string') {
     src = src.toString('binary');
   }
 
-  const res = parseLines(src);
+  const res = parseLines(src, options);
   return res.tokens;
 };
 

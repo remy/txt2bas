@@ -12,9 +12,11 @@ async function main(type) {
     t: 'test',
     d: 'debug',
     udg: 'udg',
+    H: 'headerless',
     tokens: 'tokens',
+    h: 'help',
   };
-  const bools = ['test', 'debug', 'tokens', 'udg'];
+  const bools = ['test', 'debug', 'tokens', 'udg', 'headerless', 'help'];
   const options = {};
   const args = process.argv.slice(2).map((_) => _.trim());
 
@@ -28,6 +30,10 @@ async function main(type) {
       options[opt] = args[i + 1];
       i++; // jump twice
     }
+  }
+
+  if (options.help) {
+    return help();
   }
 
   if (type === 'bas') {
@@ -79,10 +85,11 @@ async function main(type) {
       res = res.join('\n');
     } else {
       if (options.tokens) {
-        res = JSON.stringify(cli.tokens(src));
+        res = JSON.stringify(cli.tokens(src, { validate: false }));
       } else {
         res = cli['file2' + type](src, {
           ...options,
+          includeHeader: !options.headerless,
           validate: false,
           binary: options.udg,
         });
@@ -119,7 +126,7 @@ async function main(type) {
   process.exit(signal);
 }
 
-if (!process.argv[2] && process.stdin.isTTY) {
+function help() {
   console.log(`  Usage: ${cmd} [-i input-file] [-o output-file]`);
   console.log('');
   console.log(`  Options:`);
@@ -127,6 +134,7 @@ if (!process.argv[2] && process.stdin.isTTY) {
   if (cmd.endsWith('txt2bas')) {
     console.log('  -f 3dos|tap ... set the output format');
     console.log('  -t ............ parse and validate the NextBASIC');
+    console.log('  -H ............ omit the file header');
   }
   console.log('  -udg .......... UDGs are used so encode with binary not utf8');
   console.log('  -v ............ Show current version');
@@ -141,6 +149,10 @@ if (!process.argv[2] && process.stdin.isTTY) {
     '  \x1B[1mAny issues should be filed at \x1B[4mhttps://github.com/remy/txt2bas\x1B[0m'
   );
   console.log('');
+}
+
+if (!process.argv[2] && process.stdin.isTTY) {
+  help();
   process.exit(1);
 }
 
