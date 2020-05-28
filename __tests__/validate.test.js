@@ -288,5 +288,13 @@ tap.test('In the wild', (t) => {
   line = asBasic(src);
   t.doesNotThrow(() => validateStatement(line, debug), src);
 
+  src = '10 %k=% ABS SGN {f}=1: ; k tracks the axis, +1 for X, 0 for Y';
+  line = asBasic(src);
+  t.doesNotThrow(() => validateStatement(line, debug), src);
+
+  src = '10 ENDPROC =%i,%i+1';
+  line = asBasic(src);
+  t.doesNotThrow(() => validateStatement(line, debug), src);
+
   t.end();
 });

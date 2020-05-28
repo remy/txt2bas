@@ -1,6 +1,6 @@
 import { opTable } from './op-table';
 import tests from '../chr-tests.js';
-import codes, { intFunctions, bitWiseOperators } from '../codes';
+import { intFunctions, bitWiseOperators } from '../codes';
 
 import {
   COMMENT,
@@ -112,7 +112,6 @@ class BasicScope extends Array {
   }
 }
 
-// 10 %a = % sprite over (%1,2)
 export function validateStatement(tokens, debug = {}) {
   if (!Array.isArray(tokens)) {
     throw new Error('validateStatement expects tokens to be an array');
@@ -194,14 +193,16 @@ export function validateStatement(tokens, debug = {}) {
             }
 
             // now check the last keyword isn't a multi keyword function
-            const lastKeyword = intFunctions[scope.lastKeyword.text];
-            if (Array.isArray(lastKeyword)) {
-              if (lastKeyword.includes(token.text)) {
-                break keywordIntCheckBreak;
+            if (scope.lastKeyword) {
+              const lastKeyword = intFunctions[scope.lastKeyword.text];
+              if (Array.isArray(lastKeyword)) {
+                if (lastKeyword.includes(token.text)) {
+                  break keywordIntCheckBreak;
+                }
               }
             }
           }
-          scope; // ?
+
           if (scope.includes(INT_PARENS)) {
             break keywordIntCheckBreak;
           }
@@ -226,6 +227,7 @@ export function validateStatement(tokens, debug = {}) {
       }
 
       if (name === SYMBOL && tests._isIntExpression(value)) {
+        scope; //?
         if (scope.inIntExpression) {
           throw new Error(
             'Cannot redeclare integer expression whilst already inside one'
@@ -240,20 +242,6 @@ export function validateStatement(tokens, debug = {}) {
 
         scope.inIntExpression = true;
       }
-
-      // TODO set the float expression to true if we're not in an expression
-      // and a number or identifier is used - the problem is resetting the
-      // expression tracker is currently wrong.
-
-      // if ([IDENTIFIER, NUMBER, HEX, BINARY].includes(name)) {
-      //   if (
-      //     scope.inFloatExpression === false &&
-      //     scope.inIntExpression === false
-      //   ) {
-      //     token; // ?
-      //     scope.inFloatExpression = true;
-      //   }
-      // }
 
       if (name === BINARY && value.startsWith('@') && !token.integer) {
         throw new Error('Binary values only allowed in integer expressions');
@@ -279,16 +267,11 @@ export function validateStatement(tokens, debug = {}) {
         }
       }
 
-      if (name === KEYWORD && !scope.includes(COMPARATOR)) {
-        name;
-        // scope.resetExpression();
-      }
-
       // symbols that reset the integer expression state
       if (name == SYMBOL) {
         if (value === ',') {
           if (scope.last !== PARAM_SEP) scope.push(PARAM_SEP);
-          if (!scope.includes(OPERATOR)) {
+          if (!scope.includes(INT_PARENS)) {
             scope.resetExpression();
           }
         }
@@ -342,8 +325,6 @@ export function validateStatement(tokens, debug = {}) {
   if (scope.currentToken.name === IDENTIFIER && scope.position === 0) {
     throw new Error('Unexpected token at end of statement');
   }
-
-  scope; //?
 }
 
 export function validateIdentifier({ value, name }, scope = { last: null }) {
