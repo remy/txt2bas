@@ -2,6 +2,7 @@ import { parseBasic } from '../txt2bas';
 import { validateStatement } from '../txt2bas/validator';
 import { promises as fsPromises } from 'fs';
 import { validateTxt } from '../index';
+import { validate } from '../txt2bas';
 const { readFile } = fsPromises;
 
 import tap from 'tap';
@@ -288,13 +289,12 @@ tap.test('In the wild', (t) => {
   line = asBasic(src);
   t.doesNotThrow(() => validateStatement(line, debug), src);
 
-  src = '10 %k=% ABS SGN {f}=1: ; k tracks the axis, +1 for X, 0 for Y';
+  src = '10 %k=% ABS SGN {f}=1';
   line = asBasic(src);
   t.doesNotThrow(() => validateStatement(line, debug), src);
 
   src = '10 ENDPROC =%i,%i+1';
-  line = asBasic(src);
-  t.doesNotThrow(() => validateStatement(line, debug), src);
+  t.doesNotThrow(() => validate(src), src);
 
   t.end();
 });

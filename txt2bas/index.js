@@ -1,5 +1,5 @@
 import { opTable } from './op-table';
-import codes, { usesLineNumbers, intFunctions } from '../codes';
+import codes, { usesLineNumbers } from '../codes';
 import { floatToZX } from '../to';
 import tests from '../chr-tests';
 import { TEXT } from '../unicode';
@@ -77,8 +77,11 @@ export class Autoline {
   }
 
   parse(line) {
+    if (!line.startsWith('#autoline')) {
+      throw new Error('#autoline expected');
+    }
     const args = line.match(/#autoline\s+(\d+)(?:\s*,\s*(\d+))?/);
-    this.active = true;
+    this.active = !!args;
     if (args) {
       args.shift();
       this.number = parseInt(args.shift(), 10);

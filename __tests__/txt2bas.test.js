@@ -40,6 +40,18 @@ tap.test('#autoline feature', async (t) => {
   t.end();
 });
 
+tap.test('#autoline stop', async (t) => {
+  let fixture = await readFile(
+    __dirname + '/fixtures/autoline-stop.txt',
+    'utf8'
+  );
+  let res = statements(file2txt(file2bas(fixture)));
+
+  t.same(res.length, 6, 'expecting 6 statements');
+  t.same(res[5].line, '100 DEFPROC playGame()', 'step worked');
+  t.end();
+});
+
 tap.test('binary', (t) => {
   let src = '10 LET %a= BIN 1';
   let expect = [0xc4, 0x31, 0x0e, 0x00, 0x00, 0x01, 0x00, 0x00, 0x0d];
@@ -262,6 +274,11 @@ tap.test('in the wild', (t) => {
   src = '370 SPRITE -2,16,0,1,1, %@110';
   res = parseLines(src).statements[0].tokens.pop();
   t.same(res.numeric, 6, 'shorthand binary interpreted as 6 and not 110');
+
+  src = '10 %k=% ABS SGN {f}=1';
+  t.doesNotThrow(() => {
+    res = parseLines(src);
+  }, src);
 
   t.end();
 });

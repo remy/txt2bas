@@ -1,0 +1,9 @@
+#autoline 10
+#autostart
+; NextBASIC Invaders example game
+;
+RUN AT 2
+PROC main()
+;
+#autoline
+100 DEFPROC playGame()
