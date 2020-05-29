@@ -12,6 +12,10 @@ function asBasic(s) {
   return tokens;
 }
 
+function contains(str) {
+  return (e) => e.message.includes(str);
+}
+
 tap.test('test bad if', (t) => {
   t.plan(1);
   const line = asBasic('10 IF 0');
@@ -47,7 +51,7 @@ tap.test('test bad int expression', (t) => {
       line = asBasic('10 %4 << %1');
       validateStatement(line, debug);
     },
-    /Expected to assign an integer value to an identifier/,
+    contains('Expected to assign an integer value to an identifier'),
     '10 %4 << %1'
   );
 
@@ -84,7 +88,7 @@ tap.test('In the wild', (t) => {
     () => {
       validateStatement(line);
     },
-    (e) => e.message.includes('Statement separator (:) expected before ELSE'),
+    contains('Statement separator (:) expected before ELSE'),
     'ELSE should be a separate statement'
   );
 
@@ -108,19 +112,14 @@ tap.test('In the wild', (t) => {
     () => {
       validateStatement(line);
     },
-    (e) => e.message.includes('IF statement must have THEN'),
+    contains('IF statement must have THEN'),
     'Incomplete IF statement'
   );
 
   line = asBasic('945 IF %i = %20 THEN PRINT %i');
   t.throws(
-    () => {
-      validateStatement(line);
-    },
-    (e) =>
-      e.message.includes(
-        'Cannot redeclare integer expression whilst already inside one'
-      ),
+    () => validateStatement(line),
+    contains('Cannot redeclare integer expression whilst already inside one'),
     'IF comparison is bad'
   );
 
@@ -131,11 +130,8 @@ tap.test('In the wild', (t) => {
 
   line = asBasic('945 %i = %20; ENDPROC');
   t.throws(
-    () => {
-      validateStatement(line, debug);
-    },
-    (e) =>
-      e.message.includes('Semicolons are either used at start of statement'),
+    () => validateStatement(line, debug),
+    contains('Semicolons are either used at start of statement'),
     'Only semicolon should be used in PRINT context'
   );
 
@@ -223,14 +219,14 @@ tap.test('In the wild', (t) => {
     () => {
       validateStatement(line, debug);
     },
-    (e) => e.message.includes('Cannot redeclare integer expression'),
+    contains('Cannot redeclare integer expression'),
     src
   );
 
   line = asBasic('10 IF %b=%c THEN ENDPROC');
   t.throws(
     () => validateStatement(line, debug),
-    (e) => e.message.includes('Cannot redeclare integer expression'),
+    contains('Cannot redeclare integer expression'),
     'integer expression function on either side of IF comparator'
   );
 
@@ -265,7 +261,7 @@ tap.test('In the wild', (t) => {
   line = asBasic(src);
   t.throws(
     () => validateStatement(line, debug),
-    (e) => e.message.includes('Expected to assign'),
+    contains('Expected to assign'),
     src
   );
 
@@ -295,6 +291,33 @@ tap.test('In the wild', (t) => {
 
   src = '10 ENDPROC =%i,%i+1';
   t.doesNotThrow(() => validate(src), src);
+
+  src = '10 PROC _foo()';
+  t.throws(
+    () => validateStatement(asBasic(src)),
+    contains(
+      'Function names can only contain letters and numbers and must start'
+    ),
+    src
+  );
+
+  src = '10 DEFPROC _foo()';
+  t.throws(
+    () => validateStatement(asBasic(src)),
+    contains(
+      'Function names can only contain letters and numbers and must start'
+    ),
+    src
+  );
+
+  src = '10 DEFPROC 5foo()';
+  t.throws(
+    () => validateStatement(asBasic(src)),
+    contains(
+      'Function names can only contain letters and numbers and must start'
+    ),
+    src
+  );
 
   t.end();
 });

@@ -292,6 +292,7 @@ export function validateStatement(tokens, debug = {}) {
       }
 
       validateOpeningStatement(token, scope, expect);
+      validateFunctionSignature(token, scope, expect);
       validateIdentifier(token, scope, expect);
       validateCharRange(token, scope, expect);
       validateSymbolRange(token, scope, expect);
@@ -330,6 +331,12 @@ export function validateStatement(tokens, debug = {}) {
 export function validateIdentifier({ value, name }, scope = { last: null }) {
   if (name !== IDENTIFIER) {
     return;
+  }
+
+  if (/^([a-z][0-9a-z]*(?:\$)?)$/i.test(value) === false) {
+    throw new Error(
+      'Identifiers can only contain letters and numbers and must start with a letter'
+    );
   }
 
   // this is a generic identifier
@@ -419,3 +426,20 @@ export function validateSymbolRange(token) {
     }
   }
 }
+
+export function validateFunctionSignature({ name, text }, scope, expect) {
+  if (name !== KEYWORD) return;
+  if (text !== 'PROC' && text !== 'DEFPROC') return;
+
+  expect.name = IDENTIFIER;
+  expect.error =
+    'Function names can only contain letters and numbers and must start with a letter';
+}
+
+// validateStatement([
+//   { name: 'KEYWORD', text: 'PROC', value: 147, pos: 3 },
+//   { name: 'SYMBOL', value: '_', pos: 8 },
+//   { name: 'IDENTIFIER', value: 'foo', pos: 9 },
+//   { name: 'SYMBOL', value: '(', pos: 12 },
+//   { name: 'SYMBOL', value: ')', pos: 13 },
+// ]);
