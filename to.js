@@ -1,27 +1,6 @@
-export const toBinary = (n, size = 8) => {
-  if (n < 0) {
-    return Array.from({ length: size }, (_, i) => {
-      return ((n >> i) & 1) === 1 ? 1 : 0;
-    })
-      .reverse()
-      .join('');
-  }
-  return n.toString(2).padStart(size, 0);
-};
-
-export const toHex = (n, size = 8) => {
-  if (n < 0) {
-    n = parseInt(toBinary(n, size), 2);
-  }
-  return n
-    .toString(16)
-    .padStart(size / (8 / 2), 0)
-    .toUpperCase();
-};
-
 // https://www.facebook.com/groups/ZXNextBasic/permalink/792585537934454/?comment_id=792727721253569
 // by Daniel A. Nagy originally in C, bless his socks
-export const floatToZX = input => {
+export const floatToZX = (input) => {
   const sign = input < 0;
   const out = new Uint8Array(5);
 
@@ -53,25 +32,4 @@ export const floatToZX = input => {
   if (!sign) out[1] &= 0x7f;
 
   return out;
-};
-
-export const zxToFloat = source => {
-  const view = new DataView(source.buffer);
-  const exp = view.getUint8(0) - 128;
-  let mantissa = view.getUint32(1, false);
-  let sign = mantissa >>> 31 ? -1 : 1;
-
-  mantissa = mantissa | 0x80000000;
-  let frac = 0;
-  for (let i = 0; i < 32; i++) {
-    if ((mantissa >> i) & 1) {
-      const v = Math.pow(2, -(32 - i));
-      frac += v;
-    }
-  }
-
-  frac = frac.toFixed(8);
-
-  const value = frac * Math.pow(2, exp);
-  return value * sign;
 };
