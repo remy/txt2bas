@@ -189,6 +189,11 @@ throws(
   { message: 'Only semicolon should be used in PRINT context' }
 );
 
+throws('10 let a(0 = 10', 'Expected to see closing');
+throws('10 let a[0 = 10', 'Expected to see closing');
+throws('10 let a{0 = 10', 'Expected to see closing');
+throws('10 LET %A[i*j=% RND 192: ; 0 = x', 'Expected to see ');
+
 // throws('10 BANK 14 POKE 0,188+%P+k', null, {
 //   message: 'int expression must be at the start',
 // });

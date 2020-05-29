@@ -16,6 +16,8 @@ import {
   DEFFN_SIG,
   IF,
   OPEN_PARENS,
+  OPEN_BRACKETS,
+  OPEN_BRACES,
   INT_PARENS,
   OUTER_IF,
   STATEMENT_SEP,
@@ -77,6 +79,7 @@ class BasicScope extends Array {
     this.currentToken = token;
     this.position++;
     if (token.name === STATEMENT_SEP) {
+      validateEndOfStatement(this);
       this.reset();
     }
 
@@ -93,7 +96,10 @@ class BasicScope extends Array {
   }
 
   popTo(type) {
-    while (this.last !== type) this.pop();
+    while (this.length && this.last !== type) this.pop();
+    if (this.length === 0) {
+      return false;
+    }
     const last = this.pop();
     return type === last;
   }
@@ -155,9 +161,29 @@ export function validateStatement(tokens, debug = {}) {
         }
       }
 
+      if (value === '{') {
+        scope.push(OPEN_BRACES);
+      }
+
+      if (value === '[') {
+        scope.push(OPEN_BRACKETS);
+      }
+
+      if (value === '}') {
+        if (!scope.popTo(OPEN_BRACES)) {
+          throw new Error('Missing opening `{` brace');
+        }
+      }
+
+      if (value === ']') {
+        if (!scope.popTo(OPEN_BRACKETS)) {
+          throw new Error('Missing opening `[` bracket');
+        }
+      }
+
       if (value === ')') {
         if (!scope.popTo(OPEN_PARENS)) {
-          throw new Error('Missing closing parenthesis');
+          throw new Error('Missing opening `(` parenthesis');
         }
       }
 
@@ -319,8 +345,27 @@ export function validateStatement(tokens, debug = {}) {
   }
 
   // check if anything is hanging on the scope
+  validateEndOfStatement(scope);
+}
+
+export function validateEndOfStatement(scope) {
   if (scope.includes(IF)) {
     throw new Error('IF statement must have THEN');
+  }
+
+  const open = scope.findIndex((_) => _.startsWith('OPEN_'));
+  if (open > -1) {
+    let what = '';
+    if (scope[open] === OPEN_BRACES) {
+      what = '`}` brace';
+    }
+    if (scope[open] === OPEN_BRACKETS) {
+      what = '`]` bracket';
+    }
+    if (scope[open] === OPEN_PARENS) {
+      what = '`)` parenthesis';
+    }
+    throw new Error('Expected to see closing ' + what);
   }
 
   if (scope.currentToken.name === IDENTIFIER && scope.position === 0) {
