@@ -1,19 +1,17 @@
+import test from 'ava';
 import { parseLine } from '../txt2bas';
 import { bas2txtLines } from '../bas2txt';
 import { line2bas, line2txt, formatText, validateTxt } from '../index';
-import tap from 'tap';
 
-tap.test('root module matches inner libs', (t) => {
+test('root module matches inner libs', (t) => {
   let src;
   src = '10 REM marker';
-  t.same(formatText(src), src);
-  t.same(line2bas(src).basic, parseLine(src));
-  t.same(line2txt(parseLine(src)), bas2txtLines(parseLine(src)));
-
-  t.end();
+  t.is(formatText(src), src);
+  t.deepEqual(line2bas(src).basic, parseLine(src));
+  t.is(line2txt(parseLine(src)), bas2txtLines(parseLine(src)));
 });
 
-tap.test('formatText', (t) => {
+test('formatText', (t) => {
   const src = `# this is ignored\n#program hello\n10 print "ok"\n#autostart 10\n20 goto 10`;
   const expect = [
     '# this is ignored',
@@ -24,26 +22,23 @@ tap.test('formatText', (t) => {
   ];
   src.split('\n').forEach((line, i) => {
     const res = formatText(line);
-    t.same(res, expect[i]);
+    t.is(res, expect[i]);
   });
-  t.end();
 });
 
-tap.test('white space formatting', (t) => {
+test('white space formatting', (t) => {
   let src, res;
   src = '70 PRINT "Hello, world!"';
   res = formatText(src);
-  t.same(res, src, 'pre-formatted text remains the same');
+  t.is(res, src, 'pre-formatted text remains the same');
 
   src = '70  PRINT "Hello, world!"';
   res = formatText(src);
-  t.same(res, src, 'pre-formatted text remains the same');
-  t.end();
+  t.is(res, src, 'pre-formatted text remains the same');
 });
 
-tap.test('validateTxt', (t) => {
+test('validateTxt', (t) => {
   const src = '10 print "Hello, world!"';
   const res = validateTxt(src);
-  t.same(res.length, 0, 'no errors');
-  t.end();
+  t.is(res.length, 0, 'no errors');
 });

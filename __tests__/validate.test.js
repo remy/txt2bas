@@ -1,11 +1,9 @@
+import test from 'ava';
 import { parseBasic } from '../txt2bas';
 import { validateStatement } from '../txt2bas/validator';
 import { promises as fsPromises } from 'fs';
 import { validateTxt } from '../index';
-import { validate } from '../txt2bas';
 const { readFile } = fsPromises;
-
-import tap from 'tap';
 
 function asBasic(s) {
   const { tokens } = parseBasic(s);
@@ -13,35 +11,40 @@ function asBasic(s) {
 }
 
 function contains(str) {
-  return (e) => e.message.includes(str);
+  if (!str) return null;
+  return {
+    message: new RegExp(str.replace(/\(/g, '\\(').replace(/\)/g, '\\)')),
+  };
 }
 
-tap.test('test bad if', (t) => {
-  t.plan(1);
-  const line = asBasic('10 IF 0');
-  t.throws(() => {
-    validateStatement(line);
-  }, 'threw');
+test('test bad if', (t) => {
+  const src = '10 IF 0';
+  const line = asBasic(src);
+  t.throws(
+    () => {
+      validateStatement(line);
+    },
+    contains('IF statement must have THEN'),
+    src
+  );
 });
 
-tap.test('validator works with autoline', async (t) => {
+test('validator works with autoline', async (t) => {
   const fixture = await readFile(__dirname + '/fixtures/autoline.txt');
   const res = validateTxt(fixture);
 
-  t.same(res.length, 0, 'no validation errors');
-  t.end();
+  t.is(res.length, 0, 'no validation errors');
 });
 
-tap.test('validator errors without autoline', async (t) => {
+test('validator errors without autoline', async (t) => {
   let fixture = await readFile(__dirname + '/fixtures/autoline.txt', 'utf8');
   fixture = fixture.split('\n').slice(2).join('\n');
   const res = validateTxt(fixture);
 
-  t.same(res.length, 6, '6 line number');
-  t.end();
+  t.is(res.length, 6, '6 line number');
 });
 
-tap.test('test bad int expression', (t) => {
+test('test bad int expression', (t) => {
   t.plan(2);
   let line;
   let debug = {};
@@ -56,268 +59,142 @@ tap.test('test bad int expression', (t) => {
   );
 
   line = asBasic('10 a = %4 << 1');
-  t.doesNotThrow(() => {
+  t.notThrows(() => {
     validateStatement(line, debug);
   }, '10 a = %4 << 1');
 });
 
-tap.test('hex looking like dec', (t) => {
+test('hex looking like dec', (t) => {
   t.plan(1);
   const line = asBasic('740 let %a=$10');
   t.throws(() => {
     validateStatement(line);
-  }, 'hex needs int expression');
+  });
 });
 
-tap.test('In the wild', (t) => {
-  let line, src;
+function throws(src, expect, { debug, message } = {}) {
+  test(src, (t) => {
+    t.throws(
+      () => {
+        const line = asBasic(src);
+        validateStatement(line, debug);
+      },
+      contains(expect),
+      message
+    );
+  });
+}
 
-  line = asBasic('374 IF %p=0 THEN TILE 1,HEIGHT AT %x+15,%p TO %r,%p');
-  const debug = {};
-  t.doesNotThrow(() => {
-    validateStatement(line, debug);
-  }, 'valid use of ints in TO');
+function notThrows(src, { debug, message } = {}) {
+  test(src, (t) => {
+    const line = asBasic(src);
+    t.notThrows(() => validateStatement(line, debug), message);
+  });
+}
 
-  line = asBasic('590 PRINT AT 0,0;%x;":";%y;"(";ctr;")  "');
-  t.doesNotThrow(() => {
-    validateStatement(line);
-  }, 'print allows for multiple statements');
-
-  line = asBasic('760 IF sgn{(e-a) < 0} THEN %g=%a ELSE %g=%e');
-  t.throws(
-    () => {
-      validateStatement(line);
-    },
-    contains('Statement separator (:) expected before ELSE'),
-    'ELSE should be a separate statement'
-  );
-
-  line = asBasic('760 IF sgn{(e-a) < 0} THEN %g=%a: ELSE %g=%e');
-  t.doesNotThrow(() => {
-    validateStatement(line, debug);
-  }, 'ELSE comes after colon');
-
-  t.throws(() => {
-    line = asBasic('760 ');
-    validateStatement(line);
-  }, 'Line with no content should fail');
-
-  line = asBasic('760       ');
-  t.throws(() => {
-    validateStatement(line);
-  }, 'Line with only white space should fail');
-
-  line = asBasic('945 IF %i = %20 ENDPROC');
-  t.throws(
-    () => {
-      validateStatement(line);
-    },
-    contains('IF statement must have THEN'),
-    'Incomplete IF statement'
-  );
-
-  line = asBasic('945 IF %i = %20 THEN PRINT %i');
-  t.throws(
-    () => validateStatement(line),
-    contains('Cannot redeclare integer expression whilst already inside one'),
-    'IF comparison is bad'
-  );
-
-  line = asBasic('945 IF %i = 20 THEN PRINT %i');
-  t.doesNotThrow(() => {
-    validateStatement(line);
-  }, 'IF comparison is fine and is able to print');
-
-  line = asBasic('945 %i = %20; ENDPROC');
-  t.throws(
-    () => validateStatement(line, debug),
-    contains('Semicolons are either used at start of statement'),
-    'Only semicolon should be used in PRINT context'
-  );
-
-  line = asBasic('945 %i = %20:; remark');
-  t.doesNotThrow(() => {
-    validateStatement(line);
-  }, '; is fine for remarks');
-
-  line = asBasic('945; remark');
-  t.doesNotThrow(() => {
-    validateStatement(line);
-  }, '; is fine for remarks');
-
-  line = asBasic('945 PRINT AT 0,1;"Remy":;remark');
-  t.doesNotThrow(() => {
-    validateStatement(line, debug);
-  }, '; is fine for remarks');
-
-  line = asBasic('1198  ;PRINT AT 10,0;%o;"--";%o & @1000;"   "');
-  t.doesNotThrow(() => {
-    validateStatement(line, debug);
-  }, 'comments with leading white space are allowed');
-
-  line = asBasic('430 LAYER PALETTE %0 BANK %b,%256');
-  t.doesNotThrow(() => {
-    validateStatement(line, debug);
-  }, 'keyword resets int expression');
-
-  line = asBasic('360 BANK %b COPY %( SGN {n}+7)*7+512,%7 TO %b,%c-1*7+258');
-  t.doesNotThrow(() => {
-    validateStatement(line);
-  }, 'keyword resets int expression #2');
-
-  line = asBasic('10 LET %a=% RND 16384:PRINT %a,% PEEK a');
-  t.doesNotThrow(() => {
-    validateStatement(line, debug);
-  }, 'int functions do not reset int expression');
-
-  line = asBasic('10 LET %a = % IN 254');
-  t.doesNotThrow(() => {
-    validateStatement(line, debug);
-  }, 'int functions do not reset int expression #2');
-
-  line = asBasic('10 PRINT %REG 7 & BIN 00000011');
-  t.doesNotThrow(() => {
-    validateStatement(line, debug);
-  }, 'int functions do not reset int expression #3');
-
-  line = asBasic('10 PRINT %@00000011');
-  t.doesNotThrow(() => {
-    validateStatement(line, debug);
-  }, 'bin shorthand requires int expression');
-
-  line = asBasic('10 PRINT BIN 00000011');
-  t.doesNotThrow(() => {
-    validateStatement(line, debug);
-  }, 'use of bin is allowed');
-
-  // line = asBasic('10 BANK 14 POKE 0,188+%P+k');
-  // t.throws(() => {
-  //   validateStatement(line, debug);
-  // }, 'int expression must be at the start');
-
-  line = asBasic('10 LOAD "feet.map" BANK 15:; for the feet');
-  t.doesNotThrow(() => {
-    validateStatement(line, debug);
-  }, 'no space allowed before semicolon');
-
-  line = asBasic('10 LOAD "feet.map" BANK 15:    ; for the feet');
-
-  t.doesNotThrow(() => {
-    validateStatement(line, debug);
-  }, 'more than one space allowed before semicolon');
-
-  // line = asBasic(
-  //   '10 IF %i AND B(i+4) THEN %B(i+4)=0:%B(i+5)|@1000000: PROC takeLife()'
-  // );
-  // t.throws(() => {
-  //   validateStatement(line, debug);
-  // }, 'nonsense');
-
-  src = '10 %j=% SPRITE OVER (b+1,1 TO %c,8,8)';
-  line = asBasic(src);
-  t.throws(
-    () => {
-      validateStatement(line, debug);
-    },
-    contains('Cannot redeclare integer expression'),
-    src
-  );
-
-  line = asBasic('10 IF %b=%c THEN ENDPROC');
-  t.throws(
-    () => validateStatement(line, debug),
-    contains('Cannot redeclare integer expression'),
-    'integer expression function on either side of IF comparator'
-  );
-
-  line = asBasic('10 FOR %i=%0 TO %3');
-  t.doesNotThrow(() => validateStatement(line, debug), 'FOR %i=%0 TO %3');
-
-  src = '10 %a = % sprite over (1,2)';
-  line = asBasic(src);
-  t.doesNotThrow(() => validateStatement(line, debug), src);
-
-  src = '10 %a = % sprite over (%1,2)';
-  line = asBasic(src);
-  t.throws(() => validateStatement(line, debug), src + ' - invalid arg');
-
-  src = '10 sprite pause 1 to 2';
-  line = asBasic(src);
-  t.doesNotThrow(() => validateStatement(line, debug), src);
-
-  src = '10 sprite pause %1 to 2';
-  line = asBasic(src);
-  t.doesNotThrow(() => validateStatement(line, debug), src);
-
-  src = '10 sprite pause 1 to %2';
-  line = asBasic(src);
-  t.doesNotThrow(() => validateStatement(line, debug), src);
-
-  src = '10 sprite pause %1 to %2';
-  line = asBasic(src);
-  t.doesNotThrow(() => validateStatement(line, debug), src);
-
-  src = '10 % sprite continue %';
-  line = asBasic(src);
-  t.throws(
-    () => validateStatement(line, debug),
-    contains('Expected to assign'),
-    src
-  );
-
-  src = '10 sprite pause %1 to %2';
-  line = asBasic(src);
-  t.doesNotThrow(() => validateStatement(line, debug), src);
-
-  src = '10 a = % sprite continue s';
-  line = asBasic(src);
-  t.doesNotThrow(() => validateStatement(line, debug), src);
-
-  src = '10 a = % bank 1 usr 5000';
-  line = asBasic(src);
-  t.doesNotThrow(() => validateStatement(line, debug), src);
-
-  src = '10 bank %a copy to %c';
-  line = asBasic(src);
-  t.doesNotThrow(() => validateStatement(line, debug), src);
-
-  src = '10 bank a copy to %c';
-  line = asBasic(src);
-  t.doesNotThrow(() => validateStatement(line, debug), src);
-
-  src = '10 %k=% ABS SGN {f}=1';
-  line = asBasic(src);
-  t.doesNotThrow(() => validateStatement(line, debug), src);
-
-  src = '10 ENDPROC =%i,%i+1';
-  t.doesNotThrow(() => validate(src), src);
-
-  src = '10 PROC _foo()';
-  t.throws(
-    () => validateStatement(asBasic(src)),
-    contains(
-      'Function names can only contain letters and numbers and must start'
-    ),
-    src
-  );
-
-  src = '10 DEFPROC _foo()';
-  t.throws(
-    () => validateStatement(asBasic(src)),
-    contains(
-      'Function names can only contain letters and numbers and must start'
-    ),
-    src
-  );
-
-  src = '10 DEFPROC 5foo()';
-  t.throws(
-    () => validateStatement(asBasic(src)),
-    contains(
-      'Function names can only contain letters and numbers and must start'
-    ),
-    src
-  );
-
-  t.end();
+// const debug = {};
+notThrows('374 IF %p=0 THEN TILE 1,HEIGHT AT %x+15,%p TO %r,%p');
+notThrows('945 IF %i = 20 THEN PRINT %i', {
+  message: 'IF comparison is fine and is able to print',
 });
+notThrows('590 PRINT AT 0,0;%x;":";%y;"(";ctr;")  "');
+notThrows('760 IF sgn{(e-a) < 0} THEN %g=%a: ELSE %g=%e');
+notThrows('945 %i = %20:; remark', { message: '; is fine for remarks' });
+notThrows('10 FOR %i=%0 TO %3');
+notThrows('10 %a = % sprite over (1,2)');
+notThrows('10 sprite pause 1 to 2');
+notThrows('10 sprite pause 1 to %2');
+notThrows('10 sprite pause %1 to 2');
+notThrows('10 sprite pause %1 to %2');
+notThrows('10 a = % sprite continue s');
+notThrows('10 a = % bank 1 usr 5000');
+notThrows('10 bank %a copy to %c');
+notThrows('10 bank a copy to %c');
+notThrows('10 %k=% ABS SGN {f}=1');
+notThrows('10 ENDPROC =%i,%i+1');
+notThrows('10 INPUT "New project name? ";f$');
+notThrows('945; remark', { message: '; is fine for remarks' });
+notThrows('945 PRINT AT 0,1;"Remy":;remark', {
+  message: '; is fine for remarks',
+});
+notThrows('1198  ;PRINT AT 10,0;%o;"--";%o & @1000;"   "', {
+  message: 'comments with leading white space are allowed',
+});
+notThrows('430 LAYER PALETTE %0 BANK %b,%256', {
+  message: 'keyword resets int expression',
+});
+notThrows('360 BANK %b COPY %( SGN {n}+7)*7+512,%7 TO %b,%c-1*7+258', {
+  message: 'keyword resets int expression #2',
+});
+notThrows('10 LET %a=% RND 16384:PRINT %a,% PEEK a', {
+  message: 'int functions do not reset int expression',
+});
+notThrows('10 LET %a = % IN 254', {
+  message: 'int functions do not reset int expression #2',
+});
+notThrows('10 PRINT %REG 7 & BIN 00000011', {
+  message: 'int functions do not reset int expression #3',
+});
+notThrows('10 PRINT %@00000011', {
+  message: 'bin shorthand requires int expression',
+});
+notThrows('10 PRINT BIN 00000011', { message: 'use of bin is allowed' });
+
+notThrows('10 LOAD "feet.map" BANK 15:; for the feet', {
+  message: 'no space allowed before semicolon',
+});
+notThrows('10 LOAD "feet.map" BANK 15:    ; for the feet', {
+  message: 'more than one space allowed before semicolon',
+});
+
+/********************************************/
+
+throws('760 ', 'Empty line');
+throws('945 IF %i = 20 ENDPROC', 'IF statement must have THEN');
+throws('10 % sprite continue %', 'Expected to assign');
+throws('10 %a = % sprite over (%1,2)');
+throws(
+  '10 %j=% SPRITE OVER (b+1,1 TO %c,8,8)',
+  'Cannot redeclare integer expression'
+);
+throws('10 IF %b=%c THEN ENDPROC', 'Cannot redeclare integer expression', {
+  message: 'integer expression function on either side of IF comparator',
+});
+throws(
+  '10 PROC _foo()',
+  'Function names can only contain letters and numbers and must start'
+);
+throws(
+  '10 DEFPROC _foo()',
+  'Function names can only contain letters and numbers and must start'
+);
+throws(
+  '10 DEFPROC 5foo()',
+  'Function names can only contain letters and numbers and must start'
+);
+throws(
+  '760 IF sgn{(e-a) < 0} THEN %g=%a ELSE %g=%e',
+  'Statement separator (:) expected before ELSE'
+);
+throws('760       ', 'Empty line', {
+  message: 'Line with only white space should fail',
+});
+throws(
+  '945 IF %i = %20 THEN PRINT %i',
+  'Cannot redeclare integer expression whilst already inside one'
+);
+throws(
+  '945 %i = %20; ENDPROC',
+  'Semicolons are either used at start of statement',
+  { message: 'Only semicolon should be used in PRINT context' }
+);
+
+// throws('10 BANK 14 POKE 0,188+%P+k', null, {
+//   message: 'int expression must be at the start',
+// });
+
+// throws(
+//   '10 IF %i AND B(i+4) THEN %B(i+4)=0:%B(i+5)|@1000000: PROC takeLife()',
+//   null,
+//   { message: 'nonsense' }
+// );

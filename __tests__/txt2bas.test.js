@@ -1,97 +1,84 @@
+import test from 'ava';
 import { parseLine, parseLines } from '../txt2bas';
-import { toHex } from '../to.js';
 import { line2txt, formatText, file2bas, file2txt, statements } from '../index';
-import tap from 'tap';
 import { promises as fsPromises } from 'fs';
 const { readFile } = fsPromises;
 
-// eslint-disable-next-line no-unused-vars
-function asHex(s) {
-  return s.split('').map((_) => toHex(_.charCodeAt(0)));
-}
-
-tap.test('source = output', (t) => {
+test('source = output', (t) => {
   let src = '10 REM marker';
-  t.same(line2txt(parseLine(src)), src, src);
+  t.is(line2txt(parseLine(src)), src, src);
   src = '5 LET b=%@01111100';
-  t.same(line2txt(parseLine(src)), src, src);
+  t.is(line2txt(parseLine(src)), src, src);
   src = '10 LET b=%$ea';
-  t.same(line2txt(parseLine(src)), src, src);
-
-  t.end();
+  t.is(line2txt(parseLine(src)), src, src);
 });
 
-tap.test('#autoline feature', async (t) => {
+test('beep and encoded numbers', (t) => {
+  let src = '10 BEEP .01,2';
+  const res = parseLine(src);
+  t.is(res.length, 23);
+});
+
+test('#autoline feature', async (t) => {
   let fixture = await readFile(__dirname + '/fixtures/autoline.txt', 'utf8');
   let res = statements(file2txt(file2bas(fixture)));
 
-  t.same(res.length, 6, 'expecting 6 statements');
-  t.same(res[5].line, '110 DEFPROC playGame()', 'step worked');
+  t.is(res.length, 6, 'expecting 6 statements');
+  t.is(res[5].line, '110 DEFPROC playGame()', 'step worked');
 
   // remove auto step
   fixture = fixture.replace(/#autoline 10,20/, '#autoline 10');
   res = statements(file2txt(file2bas(fixture)));
 
-  t.same(res[5].line, '60 DEFPROC playGame()', 'auto step defaulted to 10');
+  t.is(res[5].line, '60 DEFPROC playGame()', 'auto step defaulted to 10');
 
   res = formatText('run at 2', true);
-  t.same(res, 'RUN AT 2', 'format supports autoline');
-
-  t.end();
+  t.is(res, 'RUN AT 2', 'format supports autoline');
 });
 
-tap.test('#autoline stop', async (t) => {
+test('#autoline stop', async (t) => {
   let fixture = await readFile(
     __dirname + '/fixtures/autoline-stop.txt',
     'utf8'
   );
   let res = statements(file2txt(file2bas(fixture)));
 
-  t.same(res.length, 6, 'expecting 6 statements');
-  t.same(res[5].line, '100 DEFPROC playGame()', 'step worked');
-  t.end();
+  t.is(res.length, 6, 'expecting 6 statements');
+  t.is(res[5].line, '100 DEFPROC playGame()', 'step worked');
 });
 
-tap.test('binary', (t) => {
+test('binary', (t) => {
   let src = '10 LET %a= BIN 1';
   let expect = [0xc4, 0x31, 0x0e, 0x00, 0x00, 0x01, 0x00, 0x00, 0x0d];
   let res = Array.from(parseLine(src)).slice(-expect.length);
-  t.same(res, expect, 'non int BIN was parsed');
+  t.deepEqual(res, expect, 'non int BIN was parsed');
 
   src = '10 LET %b=%@10';
   expect = [0x25, 0x40, 0x31, 0x30, 0x0d];
   res = Array.from(parseLine(src)).slice(-expect.length);
-  t.same(res, expect, 'integer binary was parsed');
-
-  t.end();
+  t.deepEqual(res, expect, 'integer binary was parsed');
 });
 
-tap.test('comments', (t) => {
+test('comments', (t) => {
   let src, expect, res;
   src = '10; one';
   expect = [0x06, 0x00, 0x3b, 0x20, 0x6f, 0x6e, 0x65, 0x0d];
   res = Array.from(parseLine(src));
-  t.same(res.slice(-expect.length), expect);
+  t.deepEqual(res.slice(-expect.length), expect);
 
   src = '10 REM one';
   expect = [0xea, 0x6f, 0x6e, 0x65, 0x0d];
   res = Array.from(parseLine(src));
-  t.same(res.slice(-expect.length), expect);
+  t.deepEqual(res.slice(-expect.length), expect);
 
   src = '220 ; IF %b<3 THEN GO TO 10';
   res = statements(src);
 
-  t.same(res[0].tokens.length, 3, 'comment token, space, comment');
-  t.same(
-    res[0].tokens[2].name,
-    'COMMENT',
-    'a single comment statement is found'
-  );
-
-  t.end();
+  t.is(res[0].tokens.length, 3, 'comment token, space, comment');
+  t.is(res[0].tokens[2].name, 'COMMENT', 'a single comment statement is found');
 });
 
-tap.test('end with $', (t) => {
+test('end with $', (t) => {
   let src = '202 IF INKEY$="s"';
   let expect = [
     0x00,
@@ -108,93 +95,81 @@ tap.test('end with $', (t) => {
   ];
 
   const res = Array.from(parseLine(src));
-  t.same(res.slice(-expect.length), expect);
-
-  t.end();
+  t.deepEqual(res.slice(-expect.length), expect);
 });
 
-tap.test('line', (t) => {
+test('line', (t) => {
   const src = `10 PRINT 10: ; This is a comment`;
   const res = formatText(src);
-  t.same(res, src);
-  t.end();
+  t.is(res, src);
 });
 
-tap.test('pound', (t) => {
+test('pound', (t) => {
   const src = `10 PRINT "£"`;
   const res = parseLine(src);
   const line = line2txt(res);
 
-  t.same(line, src);
-  t.end();
+  t.is(line, src);
 });
 
-tap.test('preserve white space', (t) => {
+test('preserve white space', (t) => {
   const src = '10     IF 1 THEN %x=1';
   const res = parseLine(src);
 
-  t.same(
+  t.deepEqual(
     res.slice(4, 7),
     new Uint8Array([0x20, 0x20, 0x20]),
     'contains leading white space'
   );
-
-  t.end();
 });
 
-tap.test('shortcut on goto', (t) => {
+test('shortcut on goto', (t) => {
   const src = '10 goto 20';
   const res = formatText(src);
 
-  t.same(res, '10 GO TO 20');
-
-  t.end();
+  t.is(res, '10 GO TO 20');
 });
 
-tap.test('def fn and others with spaces work', (t) => {
+test('def fn and others with spaces work', (t) => {
   let src, res;
 
   src = '10 DEF FN'; // s(x)=x*x: REM square of x';
   res = parseLine(src);
 
-  t.same(line2txt(res), src);
-  t.same(res.slice(4, 5)[0], 0xce);
-
-  t.end();
+  t.is(line2txt(res), src);
+  t.is(res.slice(4, 5)[0], 0xce);
 });
 
-tap.test('comment only lines', (t) => {
+test('comment only lines', (t) => {
   const src = '10 ;';
   const res = parseLine(src);
 
-  t.same(line2txt(res), src);
-  t.end();
+  t.is(line2txt(res), src);
 });
 
-tap.test('dot commands', (t) => {
+test('dot commands', (t) => {
   let src, res;
   src = '1040 .ls';
   res = parseLine(src);
-  t.same(line2txt(res), src);
+  t.is(line2txt(res), src);
 
   src = '1050 .bas2txt "this.bas" "this.txt"';
   res = parseLine(src);
-  t.same(line2txt(res), src);
-  t.end();
+  t.is(line2txt(res), src);
 });
 
-tap.test('handles DOS CR', async (t) => {
+test('handles DOS CR', async (t) => {
   t.plan(2);
 
   const fixture = await readFile(__dirname + '/fixtures/from-next-bas2txt.txt');
 
   const res = parseLines(fixture.toString());
 
-  t.same(res.tokens.length, 1, 'one line of code');
-  t.same(res.filename, 'test', 'correct program name');
+  t.is(res.tokens.length, 1, 'one line of code');
+  t.is(res.filename, 'test', 'correct program name');
 });
 
-tap.test('def fn args', async (t) => {
+test('def fn args', async (t) => {
   t.plan(1);
 
   const fixture = await readFile(
@@ -205,53 +180,55 @@ tap.test('def fn args', async (t) => {
 
   const res = parseLines(fixture.toString());
 
-  t.same(
+  t.is(
     res.bytes.length + 128,
     Uint8Array.from(expect).length,
     'same length bytes'
   );
 });
 
-tap.test('tight lines', (t) => {
+test('tight lines', (t) => {
   t.plan(1);
   let src, res;
   src = '20 plot0,0:draw f,175:plot 255,0:draw -f,175';
   res = line2txt(parseLines(src).bytes);
 
-  t.same(res, '20 PLOT 0,0: DRAW f,175: PLOT 255,0: DRAW -f,175');
+  t.is(res, '20 PLOT 0,0: DRAW f,175: PLOT 255,0: DRAW -f,175');
 });
 
-tap.test('UDG char encoding', async (t) => {
+test('UDG char encoding', async (t) => {
   t.plan(1);
 
   const src = (await readFile(__dirname + '/fixtures/udg.txt')).toString(
     'binary'
   );
   const res = parseLines(src);
-  t.same(res.bytes.slice(-5), new Uint8Array([0x9e, 0x80, 0x9f, 0x22, 0x0d]));
+  t.deepEqual(
+    res.bytes.slice(-5),
+    new Uint8Array([0x9e, 0x80, 0x9f, 0x22, 0x0d])
+  );
 });
 
-tap.test('throwing shapes', (t) => {
+test('throwing shapes', (t) => {
   const src = `10 print "▛▜"'"▙▟"`;
   const res = parseLines(src);
-  t.same(res.bytes.length, 15, 'expecting 16 bytes');
-  t.end();
+  t.is(res.bytes.length, 15, 'expecting 16 bytes');
 });
 
-tap.test('directives and comments', async (t) => {
+test('directives and comments', async (t) => {
   const src = `# this is ignored\n#program hello\n10 print "ok"\n#autostart 10\n20 goto 10`;
 
   let res = parseLines(src);
 
-  t.same(res.filename, 'hello', 'found filename');
-  t.same(res.autostart, 10, 'autostart correct');
-  t.same(res.statements.length, 2, 'has two lines');
+  t.is(res.filename, 'hello', 'found filename');
+  t.is(res.autostart, 10, 'autostart correct');
+  t.is(res.statements.length, 2, 'has two lines');
 
   res = parseLine('# this is ignored');
-  t.same(res.length, 0, 'comments are stripped');
+  t.is(res.length, 0, 'comments are stripped');
 });
 
-tap.test('in the wild', (t) => {
+test('in the wild', (t) => {
   let src, res;
 
   src = '10 IF %(12/8) MOD 2 THEN BANK 14 POKE 0,%188';
@@ -259,26 +236,24 @@ tap.test('in the wild', (t) => {
 
   // console.log(res[0].tokens);
   const index = res[0].tokens.findIndex((_) => _.text === 'BANK');
-  t.same(res[0].tokens[index + 1].integer, false, 'bank 14 is a float type');
+  t.is(res[0].tokens[index + 1].integer, false, 'bank 14 is a float type');
 
   src = '40 OPEN #4,"w>4,0,16,20,5"';
   res = parseLines(src).statements[0];
 
-  t.same(res.tokens[0].name, 'KEYWORD', 'leading keywords');
-  t.same(res.tokens[1].value, 4, 'then channel number');
+  t.is(res.tokens[0].name, 'KEYWORD', 'leading keywords');
+  t.is(res.tokens[1].value, '4', 'then channel number');
 
   src = '370 SPRITE -2,16,0,1,1, BIN 110';
   res = parseLines(src).statements[0].tokens.pop();
-  t.same(res.numeric, 6, 'binary interpreted as 6 and not 110');
+  t.is(res.numeric, 6, 'binary interpreted as 6 and not 110');
 
   src = '370 SPRITE -2,16,0,1,1, %@110';
   res = parseLines(src).statements[0].tokens.pop();
-  t.same(res.numeric, 6, 'shorthand binary interpreted as 6 and not 110');
+  t.is(res.numeric, 6, 'shorthand binary interpreted as 6 and not 110');
 
   src = '10 %k=% ABS SGN {f}=1';
-  t.doesNotThrow(() => {
+  t.notThrows(() => {
     res = parseLines(src);
   }, src);
-
-  t.end();
 });
