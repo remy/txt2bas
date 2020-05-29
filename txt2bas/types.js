@@ -27,3 +27,4 @@ export const OPERATOR = 'OPERATOR';
 export const OPERATION = 'OPERATION';
 export const OPEN_PARENS = 'OPEN_PARENS';
 export const INT_PARENS = 'INT_PARENS';
+export const UNKNOWN = 'UNKNOWN';

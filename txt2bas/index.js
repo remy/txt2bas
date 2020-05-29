@@ -14,6 +14,7 @@ import {
   NUMBER,
   HEX,
   STRING,
+  UNKNOWN,
   LITERAL_NUMBER,
   DOT_COMMAND,
   IDENTIFIER,
@@ -339,6 +340,13 @@ export class Statement {
     return this.in[this.in.length - 1];
   }
 
+  get startOfStatement() {
+    return (
+      this.lastToken.name === STATEMENT_SEP ||
+      this.tokens.filter((_) => _.name !== WHITE_SPACE).length === 0
+    );
+  }
+
   isIn(test) {
     return this.in.includes(test);
   }
@@ -509,24 +517,18 @@ export class Statement {
     }
 
     // this should rarely happen as directives are pre-parsed
-    if (
-      tests._isDirective(c) &&
-      (!this.lastToken.name || this.lastToken.name === WHITE_SPACE)
-    ) {
-      return this.processDirective();
-    }
+    if (this.startOfStatement) {
+      if (tests._isDirective(c)) {
+        return this.processDirective();
+      }
 
-    if (
-      tests._isStartOfComment(c) &&
-      (this.lastToken.name === STATEMENT_SEP ||
-        this.tokens.filter((_) => _.name !== WHITE_SPACE).length === 0)
-    ) {
-      // return { ...this.processToEnd(), name: COMMENT };
-      return this.processSingleKeyword();
-    }
+      if (tests._isStartOfComment(c)) {
+        return this.processSingleKeyword();
+      }
 
-    if (tests._isDotCommand(c)) {
-      return { ...this.processToEndOfStatement(), name: DOT_COMMAND };
+      if (tests._isDotCommand(c)) {
+        return { ...this.processToEndOfStatement(), name: DOT_COMMAND };
+      }
     }
 
     if (tests._isSpace(c)) {
@@ -555,7 +557,7 @@ export class Statement {
       return this.processHex();
     }
 
-    if (tests._isDigit(c)) {
+    if (tests._isDigit(c) || tests._isStartOfFloat(c)) {
       return this.processNumber();
     }
 
@@ -563,7 +565,11 @@ export class Statement {
       return this.processQuote();
     }
 
-    return this.processSingle();
+    if (tests._isSymbol(c)) {
+      return this.processSingle();
+    }
+
+    return { ...this.processSingle(), name: UNKNOWN };
   }
 
   peek(at = this.pos + 1) {

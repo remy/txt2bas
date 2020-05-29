@@ -35,6 +35,10 @@ const tests = {
     return c >= '0' && c <= '9';
   },
 
+  _isStartOfFloat(c) {
+    return c == '.';
+  },
+
   _isHex(c) {
     c = c.toUpperCase();
     return c === '$' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F');
@@ -53,7 +57,7 @@ const tests = {
   },
 
   _isSymbol(c) {
-    return '!,;-+/*()<>#%${}[]|&^'.includes(c);
+    return '=!,;-+/*()<>#%${}[]|&^'.includes(c);
   },
 
   _isAlpha(c) {
