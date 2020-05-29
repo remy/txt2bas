@@ -175,7 +175,7 @@ export function validateStatement(tokens, debug = {}) {
         throw new Error('Statement separator (:) expected before ELSE');
       }
 
-      if (value == opTable.PRINT) {
+      if (value == opTable.PRINT || value == opTable.INPUT) {
         scope.push(PRINT);
       }
 
@@ -292,7 +292,7 @@ export function validateStatement(tokens, debug = {}) {
       }
 
       validateOpeningStatement(token, scope, expect);
-      validateFunctionSignature(token, scope, expect);
+      validateIdentifierDeclaration(token, scope, expect);
       validateIdentifier(token, scope, expect);
       validateCharRange(token, scope, expect);
       validateSymbolRange(token, scope, expect);
@@ -313,7 +313,7 @@ export function validateStatement(tokens, debug = {}) {
       message += `, "${token.text || value}" at: ${token.pos + 1}:${
         (token.text || value).length + token.pos + 1
       }`;
-      scope; // ?
+
       throw new Error(message);
     }
   }
@@ -427,19 +427,17 @@ export function validateSymbolRange(token) {
   }
 }
 
-export function validateFunctionSignature({ name, text }, scope, expect) {
+export function validateIdentifierDeclaration({ name, text }, scope, expect) {
   if (name !== KEYWORD) return;
-  if (text !== 'PROC' && text !== 'DEFPROC') return;
+  if (
+    text !== 'PROC' &&
+    text !== 'DEFPROC' &&
+    text !== 'DEF FN' &&
+    text !== 'FN'
+  )
+    return;
 
   expect.name = IDENTIFIER;
   expect.error =
     'Function names can only contain letters and numbers and must start with a letter';
 }
-
-// validateStatement([
-//   { name: 'KEYWORD', text: 'PROC', value: 147, pos: 3 },
-//   { name: 'SYMBOL', value: '_', pos: 8 },
-//   { name: 'IDENTIFIER', value: 'foo', pos: 9 },
-//   { name: 'SYMBOL', value: '(', pos: 12 },
-//   { name: 'SYMBOL', value: ')', pos: 13 },
-// ]);
