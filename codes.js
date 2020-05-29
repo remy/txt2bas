@@ -132,7 +132,6 @@ export const usesLineNumbers = [
   'GO SUB',
   'GO TO',
   'LIST',
-  'ERASE',
   'LINE',
   'LLIST',
   'RESTORE',
