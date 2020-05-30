@@ -147,31 +147,25 @@ notThrows('10 LOAD "feet.map" BANK 15:    ; for the feet', {
   message: 'more than one space allowed before semicolon',
 });
 
+notThrows('342 LET kID=% INT {kID}+1', { message: 'float cast to int' });
+
 /********************************************/
+
+throws('10 %a = % sprite over (%1,2)', 'Cannot redeclare integer');
+throws('10 IF %f=0 OR (%f=b) THEN ENDPROC =%0', 'Cannot redeclare integer');
+throws('10 %j=% SPRITE OVER (b+1,1 TO %c,8,8)', 'Cannot redeclare integer');
+throws('945 IF %i = %20 THEN PRINT %i', 'Cannot redeclare integer');
+
+throws('10 PROC _foo()', 'Function names can only contain letters');
+throws('10 DEFPROC _foo()', 'Function names can only contain letters');
+throws('10 DEFPROC 5foo()', 'Function names can only contain letters');
 
 throws('760 ', 'Empty line');
 throws('945 IF %i = 20 ENDPROC', 'IF statement must have THEN');
 throws('10 % sprite continue %', 'Expected to assign');
-throws('10 %a = % sprite over (%1,2)');
-throws(
-  '10 %j=% SPRITE OVER (b+1,1 TO %c,8,8)',
-  'Cannot redeclare integer expression'
-);
 throws('10 IF %b=%c THEN ENDPROC', 'Cannot redeclare integer expression', {
   message: 'integer expression function on either side of IF comparator',
 });
-throws(
-  '10 PROC _foo()',
-  'Function names can only contain letters and numbers and must start'
-);
-throws(
-  '10 DEFPROC _foo()',
-  'Function names can only contain letters and numbers and must start'
-);
-throws(
-  '10 DEFPROC 5foo()',
-  'Function names can only contain letters and numbers and must start'
-);
 throws(
   '760 IF sgn{(e-a) < 0} THEN %g=%a ELSE %g=%e',
   'Statement separator (:) expected before ELSE'
@@ -179,10 +173,6 @@ throws(
 throws('760       ', 'Empty line', {
   message: 'Line with only white space should fail',
 });
-throws(
-  '945 IF %i = %20 THEN PRINT %i',
-  'Cannot redeclare integer expression whilst already inside one'
-);
 throws(
   '945 %i = %20; ENDPROC',
   'Semicolons are either used at start of statement',

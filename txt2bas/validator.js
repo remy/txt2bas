@@ -1,6 +1,6 @@
 import { opTable } from './op-table';
 import tests from '../chr-tests.js';
-import { intFunctions, bitWiseOperators } from '../codes';
+import { intFunctions, operators } from '../codes';
 
 import {
   COMMENT,
@@ -208,7 +208,7 @@ export function validateStatement(tokens, debug = {}) {
       // reset int expression on keywords
       if (name === KEYWORD && scope.inIntExpression) {
         keywordIntCheckBreak: {
-          if (bitWiseOperators.includes(token.text)) {
+          if (operators.includes(token.text)) {
             break keywordIntCheckBreak;
           }
 
@@ -389,7 +389,7 @@ export function validateIdentifier({ value, name }, scope = { last: null }) {
     const dollar = value.endsWith('$');
     const isString = dollar && value.length === 2;
 
-    if (scope.inIntExpression) {
+    if (scope.inIntExpression && scope.lastKeyword.text !== 'INT') {
       throw new Error(
         'Only integer variables (single character vars) are allowed in integer expressions'
       );
