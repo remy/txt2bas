@@ -9,6 +9,7 @@ import {
   IDENTIFIER,
   KEYWORD,
   SEMI_COLON_ALLOWED,
+  LITERAL_NUMBER,
   HEX,
   DEFFN,
   NUMBER,
@@ -23,6 +24,7 @@ import {
   STATEMENT_SEP,
   DOT_COMMAND,
   SYMBOL,
+  PRINT,
   ASSIGNMENT,
   COMPARATOR,
   OPERATOR,
@@ -201,6 +203,10 @@ export function validateStatement(tokens, debug = {}) {
         throw new Error('Statement separator (:) expected before ELSE');
       }
 
+      if (value === opTable.PRINT) {
+        scope.push(PRINT);
+      }
+
       if (
         value == opTable.PRINT ||
         value == opTable.INPUT ||
@@ -217,7 +223,7 @@ export function validateStatement(tokens, debug = {}) {
           }
 
           // int functions are only available to assignment operators
-          if (scope.includes(ASSIGNMENT)) {
+          if (scope.includes(ASSIGNMENT) || scope.includes(PRINT)) {
             if (intFunctions[token.text]) {
               break keywordIntCheckBreak;
             }
@@ -330,6 +336,7 @@ export function validateStatement(tokens, debug = {}) {
       validateIdentifier(token, scope, expect);
       validateCharRange(token, scope, expect);
       validateSymbolRange(token, scope, expect);
+      validateNumberTypes(token, scope, expect);
 
       // setting expectations
       if (value === opTable['DEF FN']) {
@@ -354,6 +361,14 @@ export function validateStatement(tokens, debug = {}) {
 
   // check if anything is hanging on the scope
   validateEndOfStatement(scope);
+}
+
+export function validateNumberTypes(token, scope) {
+  if (token.name !== LITERAL_NUMBER) return;
+
+  if (!scope.inIntExpression) {
+    throw new Error('Parsing error, did not expect an integer number');
+  }
 }
 
 export function validateEndOfStatement(scope) {

@@ -1,5 +1,5 @@
 import { opTable } from './op-table';
-import codes, { usesLineNumbers } from '../codes';
+import codes, { usesLineNumbers, intFunctions } from '../codes';
 import { floatToZX } from '../to';
 import tests from '../chr-tests';
 import { TEXT } from '../unicode';
@@ -10,6 +10,7 @@ import {
   COMMENT,
   DIRECTIVE,
   LINE_NUMBER,
+  INT_EXPRESSION,
   BINARY,
   NUMBER,
   HEX,
@@ -455,10 +456,13 @@ export class Statement {
 
     if (token) {
       if (token.name === KEYWORD) {
-        // FIXME I don't full understand the logic of what comes out of an int expression
-        // if (!this.isIn(IF) && intFunctions.indexOf(codes[token.value]) === -1) {
-        //   this.inIntExpression = false;
-        // }
+        if (this.inIntExpression && intFunctions[token.text]) {
+          this.in.push(INT_EXPRESSION);
+        }
+
+        if (!this.isIn(IF) && !this.isIn(INT_EXPRESSION)) {
+          this.inIntExpression = false;
+        }
 
         // needed to track DEF FN args and to pad them properly
         if (token.value === opTable['DEF FN']) {
@@ -911,7 +915,7 @@ export function parseBasic(line, lineNumber = null) {
     // keep going
   }
 
-  return statement; //[statement.lineNumber, tokens];
+  return statement;
 }
 
 export function basicToBytes(lineNumber, basic) {

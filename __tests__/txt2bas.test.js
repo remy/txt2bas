@@ -228,6 +228,27 @@ test('directives and comments', async (t) => {
   t.is(res.length, 0, 'comments are stripped');
 });
 
+test('int expression encoding', (t) => {
+  let src = '10 sprite pause %1 to 2';
+  let res = statements(src, { validate: false });
+  let last = res[0].tokens.pop();
+  t.is(last.name, 'NUMBER');
+
+  src = '10 print % reg 7 & BIN 11';
+  res = statements(src, { validate: false })[0].tokens;
+  res.shift(); // print
+  res.shift(); // %
+  res.shift(); // reg
+  let token = res.shift(); // 7
+  t.is(token.integer, true);
+  t.is(token.numeric, 7);
+  res.shift(); // &
+  res.shift(); // bin
+  token = res.shift(); // 0b11
+  t.is(token.integer, true);
+  t.is(token.numeric, 3);
+});
+
 test('in the wild', (t) => {
   let src, res;
 

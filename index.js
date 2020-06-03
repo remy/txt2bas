@@ -103,7 +103,9 @@ export const file2txt = (src, options = {}) => {
   if (!src || !src.length) {
     throw new Error('Source must be an array of byte data');
   }
-  if (format === '3dos') {
+  if (options.includeHeader === false) {
+    return bas2txtLines(new Uint8Array(src)) + '\n';
+  } else if (format === '3dos') {
     return bas2txt(new Uint8Array(src)) + '\n';
   } else if (format === 'tap') {
     return tap2txt(new Uint8Array(src)) + '\n';
