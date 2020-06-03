@@ -1,5 +1,4 @@
-import { pack as _pack } from '@remy/unpack';
-const pack = _pack.default; // sigh
+import { pack } from '@remy/unpack';
 
 export const calculateXORChecksum = (array) =>
   Uint8Array.of(array.reduce((checksum, item) => checksum ^ item, 0))[0];

@@ -8,7 +8,7 @@ import {
   BINARY,
   IDENTIFIER,
   KEYWORD,
-  PRINT,
+  SEMI_COLON_ALLOWED,
   HEX,
   DEFFN,
   NUMBER,
@@ -201,8 +201,12 @@ export function validateStatement(tokens, debug = {}) {
         throw new Error('Statement separator (:) expected before ELSE');
       }
 
-      if (value == opTable.PRINT || value == opTable.INPUT) {
-        scope.push(PRINT);
+      if (
+        value == opTable.PRINT ||
+        value == opTable.INPUT ||
+        value === opTable.DRAW
+      ) {
+        scope.push(SEMI_COLON_ALLOWED);
       }
 
       // reset int expression on keywords
@@ -281,14 +285,18 @@ export function validateStatement(tokens, debug = {}) {
         expect.name = BINARY;
       }
 
-      if (name == SYMBOL && value === ';' && !scope.includes(PRINT)) {
+      if (
+        name == SYMBOL &&
+        value === ';' &&
+        !scope.includes(SEMI_COLON_ALLOWED)
+      ) {
         // check if the semicolon is the only thing on the stack
         const length = scope.statementStack
           .slice(0, -1)
           .filter((_) => _.name !== WHITE_SPACE).length;
         if (length > 0) {
           throw new Error(
-            'Semicolons are either used at start of statement as a remark or as separator for PRINT statements'
+            'Semicolons are either used at start of statement as a remark or as separator for PRINT, INPUT, PLOT and DRAW statements'
           );
         }
       }

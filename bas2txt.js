@@ -1,7 +1,6 @@
 import BASIC from './codes.js';
 import { BASIC as BASIC_CHRS } from './unicode.js';
-import { unpack } from '@remy/unpack';
-const Unpack = unpack.Unpack;
+import { Unpack } from '@remy/unpack';
 
 export function tap2txt(data) {
   const unpack = new Unpack(data);
