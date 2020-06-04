@@ -223,7 +223,11 @@ export function validateStatement(tokens, debug = {}) {
           }
 
           // int functions are only available to assignment operators
-          if (scope.includes(ASSIGNMENT) || scope.includes(PRINT)) {
+          if (
+            scope.includes(ASSIGNMENT) ||
+            scope.includes(PRINT) ||
+            scope.includes(IF)
+          ) {
             if (intFunctions[token.text]) {
               break keywordIntCheckBreak;
             }
@@ -263,7 +267,7 @@ export function validateStatement(tokens, debug = {}) {
       }
 
       if (name === SYMBOL && tests._isIntExpression(value)) {
-        scope; //?
+        // scope; //?
         if (scope.inIntExpression) {
           throw new Error(
             'Cannot redeclare integer expression whilst already inside one'
