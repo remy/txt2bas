@@ -6,9 +6,8 @@ This project provides:
 
 - `txt2bas` command line tool
 - `bas2txt` command line tool
+- NextBASIC validation
 - library for BASIC and text manipulation, validation and renumbering
-
-**Important to note** there is no error checking in the BASIC source you provide as text. This code is simply converts back and forth and performs no error checking (as yet).
 
 ## Installation
 
@@ -40,6 +39,19 @@ txt2bas -i source.txt -o result.tap # generates a tap file
 The command line can also read from `stdin` though this works best on `txt2bas` and not recommended for `bas2txt`.
 
 Note that `#autostart` directive is also supported.
+
+### Command line options
+
+* `-i FILENAME` - input filename
+* `-o FILENAME` - output filename
+* `-t` - (txt2bas only) test and validate the NextBASIC source
+* `-f 3dos|tap` - set the output format
+* `-H`- omit the file header (either in output or in parsing input)
+* `-udg` - UDGs are used so encode with binary not utf8
+* `-tokens` - (txt2bas only) show parser tokens (for debugging)
+* `-h` - Show help options
+* `-v` - Show current version
+
 
 ## Library API
 

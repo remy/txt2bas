@@ -10,6 +10,7 @@ export const DEFFN_ARGS = 'DEFFN_ARGS';
 export const WHITE_SPACE = 'WHITE_SPACE';
 export const STATEMENT_SEP = 'STATEMENT_SEP';
 export const INT_EXPRESSION = 'INT_EXPRESSION';
+export const FLOAT_EXPRESSION = 'FLOAT_EXPRESSION';
 export const SYMBOL = 'SYMBOL';
 export const KEYWORD = 'KEYWORD';
 export const NUMBER_DATA = 'NUMBER_DATA';

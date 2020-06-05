@@ -249,6 +249,15 @@ test('int expression encoding', (t) => {
   t.is(token.numeric, 3);
 });
 
+test('INT function', (t) => {
+  let src, res, token;
+  src = '10 LET a=% INT {1}';
+  res = statements(src, { validate: false })[0].tokens;
+  res.pop(); // }
+  token = res.pop();
+  t.is(token.name, 'NUMBER');
+});
+
 test('in the wild', (t) => {
   let src, res;
 

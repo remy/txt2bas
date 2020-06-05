@@ -371,6 +371,14 @@ export class Statement {
     return this.captureToken(token);
   }
 
+  pINT() {
+    if (this.peek(this.pos) === '{') {
+      // turn of any int expression state
+      this.inIntExpression = false;
+      return;
+    }
+  }
+
   nextToken() {
     const token = this.manageTokenState(this.token());
 
@@ -390,6 +398,9 @@ export class Statement {
     }
 
     switch (text) {
+      case 'INT':
+        this.pINT();
+        break;
       case 'BIN':
         this.pBIN();
         break;

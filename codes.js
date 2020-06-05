@@ -169,6 +169,7 @@ export const intFunctions = [
   'BANK',
   'SPRITE',
   'INT',
+  'SGN',
   ...bitWiseOperators,
 ].reduce((acc, curr) => {
   acc[curr] = true;

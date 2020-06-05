@@ -148,9 +148,7 @@ notThrows('10 LOAD "feet.map" BANK 15:    ; for the feet', {
 });
 
 notThrows('342 LET kID=% INT {kID}+1', { message: 'float cast to int' });
-
 notThrows('10 IF % SPRITE AT (0,1) > 220 THEN SPRITE 0,,32');
-
 notThrows('90 DRAW INK c;x2-x1,y2-y1');
 notThrows('90 DRAW PAPER c;x2-x1,y2-y1');
 notThrows('90 DRAW BRIGHT c;x2-x1,y2-y1');
@@ -158,6 +156,7 @@ notThrows('90 DRAW INVERSE c;x2-x1,y2-y1');
 notThrows('90 DRAW OVER c;x2-x1,y2-y1');
 notThrows('10 IF %in 49150 & @1 = 0 THEN PRINT "OK"');
 notThrows('20 IF % SPRITE 20=1 THEN SPRITE 20,smx,smy,12,0');
+notThrows('10 IF % SGN {f < 0} THEN %g=%a');
 
 /********************************************/
 
@@ -193,6 +192,7 @@ throws('10 let a(0 = 10', 'Expected to see closing');
 throws('10 let a[0 = 10', 'Expected to see closing');
 throws('10 let a{0 = 10', 'Expected to see closing');
 throws('10 LET %A[i*j=% RND 192: ; 0 = x', 'Expected to see ');
+throws('10 LET a=% INT {% 1}');
 
 // throws('10 BANK 14 POKE 0,188+%P+k', null, {
 //   message: 'int expression must be at the start',
