@@ -157,6 +157,8 @@ notThrows('90 DRAW OVER c;x2-x1,y2-y1');
 notThrows('10 IF %in 49150 & @1 = 0 THEN PRINT "OK"');
 notThrows('20 IF % SPRITE 20=1 THEN SPRITE 20,smx,smy,12,0');
 notThrows('10 IF % SGN {f < 0} THEN %g=%a');
+notThrows('1340 REG 6,% REG 6&119');
+notThrows('950       INK % RND 2+1');
 
 /********************************************/
 

@@ -224,22 +224,17 @@ export function validateStatement(tokens, debug = {}) {
           }
 
           // int functions are only available to assignment operators
-          if (
-            scope.includes(ASSIGNMENT) ||
-            scope.includes(PRINT) ||
-            scope.includes(IF)
-          ) {
-            if (intFunctions[token.text]) {
-              break keywordIntCheckBreak;
-            }
 
-            // now check the last keyword isn't a multi keyword function
-            if (scope.lastKeyword) {
-              const lastKeyword = intFunctions[scope.lastKeyword.text];
-              if (Array.isArray(lastKeyword)) {
-                if (lastKeyword.includes(token.text)) {
-                  break keywordIntCheckBreak;
-                }
+          if (intFunctions[token.text] && scope.previousToken.value === '%') {
+            break keywordIntCheckBreak;
+          }
+
+          // now check the last keyword isn't a multi keyword function
+          if (scope.lastKeyword) {
+            const lastKeyword = intFunctions[scope.lastKeyword.text];
+            if (Array.isArray(lastKeyword)) {
+              if (lastKeyword.includes(token.text)) {
+                break keywordIntCheckBreak;
               }
             }
           }
