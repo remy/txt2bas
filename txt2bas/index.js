@@ -108,7 +108,7 @@ const encode = (a) => {
  * @param {string} text multiline NextBASIC
  * @return {string[]} Any errors found
  */
-export function validate(text) {
+export function validate(text, debug = {}) {
   const lines = text.split('\n');
   let lastLine = -1;
   const errors = [];
@@ -128,7 +128,7 @@ export function validate(text) {
         try {
           let { lineNumber, tokens } = parseBasic(line, autoline.next());
           validateLineNumber(lineNumber, lastLine);
-          validateStatement(tokens);
+          validateStatement(tokens, debug);
           ln = lineNumber;
         } catch (e) {
           const errorTail = `#${i + 1}\n> ${line}`;
@@ -348,6 +348,16 @@ export class Statement {
     );
   }
 
+  popTo(type) {
+    const state = this.in;
+    while (state.length && state.last !== type) state.pop();
+    if (state.length === 0) {
+      return false;
+    }
+    const last = state.pop();
+    return type === last;
+  }
+
   isIn(test) {
     return this.in.includes(test);
   }
@@ -486,7 +496,7 @@ export class Statement {
         }
 
         if (token.value === opTable.THEN) {
-          this.in.pop();
+          this.popTo(IF);
           this.inIntExpression = false;
         }
 
@@ -502,6 +512,12 @@ export class Statement {
         if (usesLineNumbers.includes(token.text)) {
           // this is just a hint
           this.next = LINE_NUMBER;
+        }
+      }
+
+      if (token.value === '=') {
+        if (!this.isIn(IF)) {
+          this.inIntExpression = false;
         }
       }
     }
