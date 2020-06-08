@@ -93,6 +93,14 @@ function notThrows(src, { debug, message } = {}) {
 }
 
 // const debug = {};
+notThrows('10 let %a = % BANK b USR 0');
+notThrows('20 LET %a = % IN 254');
+notThrows('20 PRINT %REG 7 & BIN 00000011');
+notThrows('20 LET %a=% RND 16384:PRINT %a,% PEEK a');
+notThrows('10 %g = % RND 5');
+notThrows('10 %g = %40 * RND 5');
+notThrows('10 %g = % BANK 5');
+notThrows('10 LAYER PALETTE %0 BANK %5');
 notThrows('374 IF %p=0 THEN TILE 1,HEIGHT AT %x+15,%p TO %r,%p');
 notThrows('945 IF %i = 20 THEN PRINT %i', {
   message: 'IF comparison is fine and is able to print',
@@ -158,7 +166,8 @@ notThrows('10 IF %in 49150 & @1 = 0 THEN PRINT "OK"');
 notThrows('20 IF % SPRITE 20=1 THEN SPRITE 20,smx,smy,12,0');
 notThrows('10 IF % SGN {f < 0} THEN %g=%a');
 notThrows('1340 REG 6,% REG 6&119');
-notThrows('950       INK % RND 2+1');
+notThrows('950 INK % RND 2+1');
+notThrows('10 LET %A[i*j]=%48* RND 6');
 
 /********************************************/
 

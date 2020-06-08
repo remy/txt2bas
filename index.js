@@ -22,12 +22,12 @@ export const formatText = (line, autoline = null) => {
   return text;
 };
 
-export const validateTxt = (src) => {
+export const validateTxt = (src, debug) => {
   if (typeof src !== 'string') {
     src = src.toString('binary');
   }
 
-  return validate(src);
+  return validate(src, debug);
 };
 
 export const statements = (source, options) => {

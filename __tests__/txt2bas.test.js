@@ -1,5 +1,5 @@
 import test from 'ava';
-import { parseLine, parseLines } from '../txt2bas';
+import { parseLine, parseLines, parseBasic } from '../txt2bas';
 import { line2txt, formatText, file2bas, file2txt, statements } from '../index';
 import { promises as fsPromises } from 'fs';
 const { readFile } = fsPromises;
@@ -286,4 +286,13 @@ test('in the wild', (t) => {
   t.notThrows(() => {
     res = parseLines(src);
   }, src);
+
+  src = '10 %k=%x MOD 48 <> 0';
+  res = parseLines(src).statements[0].tokens.pop();
+  t.is(res.integer, true, '10 %k=%x MOD 48 <> 0');
+
+  src = '10 IF %g > 20 THEN %g=20';
+  res = parseBasic(src).tokens.pop();
+
+  t.is(res.integer, false, 'IF %g > 20 THEN %g=20');
 });

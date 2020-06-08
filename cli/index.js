@@ -80,9 +80,14 @@ async function main(type) {
 
   try {
     if (options.test) {
-      res = cli.validateTxt(src.toString());
+      const debug = {};
+      res = cli.validateTxt(src.toString(), debug);
       signal = res.length > 0 ? 1 : 0;
-      res = res.join('\n');
+      if (options.debug) {
+        res = JSON.stringify({ scope: debug.scope, errors: res });
+      } else {
+        res = res.join('\n');
+      }
     } else {
       if (options.tokens) {
         res = JSON.stringify(cli.tokens(src, { validate: false }));
