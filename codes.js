@@ -170,7 +170,7 @@ export const intFunctions = [
   'SPRITE',
   'INT',
   'SGN',
-  ...bitWiseOperators,
+  ...operators,
 ].reduce((acc, curr) => {
   acc[curr] = true;
   return acc;
