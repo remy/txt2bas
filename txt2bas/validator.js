@@ -54,9 +54,8 @@ export function validateLineNumber(current, prev) {
  * Represents the scope state for a single statement
  * @class
  */
-class BasicScope extends Array {
+class BasicScope {
   constructor(tokens) {
-    super();
     this.reset();
     this.source = Array.from(tokens);
     this.tokens = Array.from(tokens); // ensure this is a copy
@@ -69,7 +68,7 @@ class BasicScope extends Array {
   next() {
     this.previousToken = this.currentToken;
 
-    if (this.previousToken) {
+    if (this.previousToken && this.previousToken.name) {
       if (this.previousToken.name === KEYWORD) {
         this.lastKeyword = this.previousToken;
       }
@@ -95,12 +94,28 @@ class BasicScope extends Array {
     this.lastKeyword = null;
     this.allowHanging = false;
     this.position = -1;
-    this.length = 0;
+    this.stack = [];
+  }
+
+  findIndex(...args) {
+    return this.stack.findIndex(...args);
+  }
+
+  push(value) {
+    this.stack.push(value);
+  }
+
+  pop() {
+    return this.stack.pop();
+  }
+
+  includes(value) {
+    return this.stack.includes(value);
   }
 
   popTo(type) {
-    while (this.length && this.last !== type) this.pop();
-    if (this.length === 0) {
+    while (this.stack.length && this.last !== type) this.pop();
+    if (this.stack.length === 0) {
       return false;
     }
     const last = this.pop();
@@ -110,6 +125,7 @@ class BasicScope extends Array {
   resetExpression() {
     this.inFloatExpression = false;
     this.inIntExpression = false;
+    this.expressionKeyword = null;
   }
 
   get hasTokens() {
@@ -117,7 +133,7 @@ class BasicScope extends Array {
   }
 
   get last() {
-    return this[this.length - 1];
+    return this.stack[this.stack.length - 1];
   }
 }
 
@@ -144,6 +160,10 @@ export function validateStatement(tokens, debug = {}) {
     try {
       if (name === KEYWORD) {
         scope.push(OPERATION);
+
+        if (!scope.expressionKeyword) {
+          scope.expressionKeyword = token;
+        }
       }
 
       // check expectations
@@ -225,7 +245,11 @@ export function validateStatement(tokens, debug = {}) {
 
           // int functions are only available to assignment operators
 
-          if (intFunctions[token.text] && scope.previousToken.value === '%') {
+          if (
+            (intFunctions[token.text] &&
+              token.pos == scope.expressionKeyword.pos) ||
+            (intFunctions[token.text] && scope.previousToken.value === '%')
+          ) {
             break keywordIntCheckBreak;
           }
 
@@ -263,7 +287,6 @@ export function validateStatement(tokens, debug = {}) {
       }
 
       if (name === SYMBOL && tests._isIntExpression(value)) {
-        // scope; //?
         if (scope.inIntExpression) {
           throw new Error(
             'Cannot redeclare integer expression whilst already inside one'
@@ -379,13 +402,13 @@ export function validateEndOfStatement(scope) {
   const open = scope.findIndex((_) => _.startsWith('OPEN_'));
   if (open > -1) {
     let what = '';
-    if (scope[open] === OPEN_BRACES) {
+    if (scope.stack[open] === OPEN_BRACES) {
       what = '`}` brace';
     }
-    if (scope[open] === OPEN_BRACKETS) {
+    if (scope.stack[open] === OPEN_BRACKETS) {
       what = '`]` bracket';
     }
-    if (scope[open] === OPEN_PARENS) {
+    if (scope.stack[open] === OPEN_PARENS) {
       what = '`)` parenthesis';
     }
     throw new Error('Expected to see closing ' + what);
@@ -453,7 +476,7 @@ export function validateOpeningStatement(token, scope, expect) {
 
         */
 
-  if (scope.length > 0) {
+  if (scope.stack.length > 0) {
     return;
   }
 
