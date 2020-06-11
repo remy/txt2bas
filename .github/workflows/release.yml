@@ -18,6 +18,8 @@ jobs:
         run: npm ci
       - name: Test
         run: npm run test
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@v1.1.1
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
