@@ -50,6 +50,9 @@
     "txt2bas",
     "basic"
   ],
+  "engines": {
+    "node": "12"
+  },
   "author": "Remy Sharp",
   "license": "MIT",
   "dependencies": {
