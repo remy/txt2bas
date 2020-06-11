@@ -19,7 +19,6 @@ import {
   OPEN_PARENS,
   OPEN_BRACKETS,
   OPEN_BRACES,
-  // FLOAT_EXPRESSION,
   INT_PARENS,
   OUTER_IF,
   STATEMENT_SEP,
@@ -66,18 +65,24 @@ class BasicScope {
   }
 
   next() {
-    this.previousToken = this.currentToken;
+    let token = this.currentToken;
 
-    if (this.previousToken && this.previousToken.name) {
-      if (this.previousToken.name === KEYWORD) {
-        this.lastKeyword = this.previousToken;
+    if (token && token.name) {
+      if (token.name === KEYWORD) {
+        this.lastKeyword = token;
       }
-      if (this.previousToken.name !== WHITE_SPACE) {
-        this.statementStack.push(this.previousToken);
+
+      if (this.statementStack.length === 0) {
+        this.statementKeyword = token;
+      }
+
+      if (token.name !== WHITE_SPACE) {
+        this.statementStack.push(token);
       }
     }
+    this.previousToken = token;
 
-    const token = this.tokens.shift();
+    token = this.tokens.shift();
     this.currentToken = token;
     this.position++;
     if (token.name === STATEMENT_SEP) {
@@ -91,6 +96,7 @@ class BasicScope {
   reset() {
     this.resetExpression();
     this.statementStack = [];
+    this.statementKeyword = null;
     this.lastKeyword = null;
     this.allowHanging = false;
     this.position = -1;
@@ -125,7 +131,7 @@ class BasicScope {
   resetExpression() {
     this.inFloatExpression = false;
     this.inIntExpression = false;
-    this.expressionKeyword = null;
+    this.expressionKeyword = null; // FIXME not sure we need this
   }
 
   get hasTokens() {
@@ -257,7 +263,7 @@ export function validateStatement(tokens, debug = {}) {
           if (scope.lastKeyword) {
             const lastKeyword = intFunctions[scope.lastKeyword.text];
             if (Array.isArray(lastKeyword)) {
-              if (lastKeyword.includes(token.text)) {
+              if (lastKeyword.includes(token.text) || lastKeyword[0] === '*') {
                 break keywordIntCheckBreak;
               }
             }
@@ -266,6 +272,7 @@ export function validateStatement(tokens, debug = {}) {
           if (scope.includes(INT_PARENS)) {
             break keywordIntCheckBreak;
           }
+
           scope.inIntExpression = false;
         }
       }

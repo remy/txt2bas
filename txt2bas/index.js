@@ -342,9 +342,11 @@ export class Statement {
   }
 
   get startOfStatement() {
+    let i = this.tokens.findIndex((_) => _.name === STATEMENT_SEP);
     return (
       this.lastToken.name === STATEMENT_SEP ||
-      this.tokens.filter((_) => _.name !== WHITE_SPACE).length === 0
+      this.tokens.slice(i + 1).filter((_) => _.name !== WHITE_SPACE).length ===
+        0
     );
   }
 
@@ -547,8 +549,8 @@ export class Statement {
       this.inIntExpression = true;
     }
 
-    // this should rarely happen as directives are pre-parsed
     if (this.startOfStatement) {
+      // this should rarely happen as directives are pre-parsed
       if (tests._isDirective(c)) {
         return this.processDirective();
       }
@@ -594,6 +596,10 @@ export class Statement {
 
     if (tests._isString(c)) {
       return this.processQuote();
+    }
+
+    if (tests._isStartOfComment(c) && this.startOfStatement) {
+      return this.processSingleKeyword();
     }
 
     if (tests._isSymbol(c)) {
@@ -716,6 +722,7 @@ export class Statement {
     this.pos++;
     return token;
   }
+
   processBinary() {
     const tok = this.simpleSlurp(tests._isBinary, BINARY);
 

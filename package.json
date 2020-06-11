@@ -4,15 +4,15 @@
   "description": "Converts BASIC to Text and back again",
   "main": "dist/index.js",
   "module": "./index.js",
-  "ava": {
-    "require": [
-      "esm"
-    ]
-  },
   "esm": {
     "cjs": true
   },
   "nyc": {
+    "require": [
+      "esm"
+    ]
+  },
+  "ava": {
     "require": [
       "esm"
     ]
@@ -35,7 +35,7 @@
     "dev": "npm run build; rollup --config --watch",
     "prepare": "npm run build",
     "test:dev": "ava __tests__/*.test.js --no-coverage-report --watch",
-    "test": "nyc ava",
+    "test": "nyc --reporter=html --reporter=text ava",
     "semantic-release": "semantic-release"
   },
   "files": [
@@ -59,7 +59,7 @@
     "@rollup/plugin-json": "^4.0.3",
     "ava": "^3.8.2",
     "esm": "^3.2.25",
-    "nyc": "^15.0.1",
+    "nyc": "^15.1.0",
     "rollup": "^2.7.6",
     "semantic-release": "^17.0.7"
   },

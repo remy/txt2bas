@@ -168,6 +168,8 @@ notThrows('10 IF % SGN {f < 0} THEN %g=%a');
 notThrows('1340 REG 6,% REG 6&119');
 notThrows('950 INK % RND 2+1');
 notThrows('10 LET %A[i*j]=%48* RND 6');
+notThrows('335 anim=1:   ; Alien Animation Frame Status');
+notThrows('4304 IF % ABS PEEK 23672-q < 1 THEN ENDPROC');
 
 /********************************************/
 
@@ -199,6 +201,7 @@ throws(
   { message: 'Only semicolon should be used in PRINT context' }
 );
 
+// throws('10 PRINT % ATTR(0,0)');
 throws('10 let a(0 = 10', 'Expected to see closing');
 throws('10 let a[0 = 10', 'Expected to see closing');
 throws('10 let a{0 = 10', 'Expected to see closing');
