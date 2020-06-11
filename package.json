@@ -35,7 +35,7 @@
     "dev": "npm run build; rollup --config --watch",
     "prepare": "npm run build",
     "test:dev": "ava __tests__/*.test.js --no-coverage-report --watch",
-    "test": "nyc --reporter=html --reporter=text --cov --coverage-report=lcov ava",
+    "test": "nyc --reporter=lcov ava",
     "semantic-release": "semantic-release"
   },
   "files": [
