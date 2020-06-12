@@ -30,6 +30,11 @@ export function bas2txt(data) {
     C$checksum`
   );
 
+  // check if we're working with a bank
+  if (data[unpack.offset] === 0x42 && data[unpack.offset + 1] === 0x43) {
+    unpack.offset += 2;
+  }
+
   let txt = bas2txtLines(data.slice(unpack.offset));
 
   if (

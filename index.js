@@ -53,6 +53,7 @@ export const file2bas = (src, options = {}) => {
     binary = false, // used if source has UDGs
     includeHeader = true,
     validate = false,
+    bank = false,
   } = options;
 
   let { filename = 'untitled', autostart = 0x8000 } = options;
@@ -88,9 +89,20 @@ export const file2bas = (src, options = {}) => {
   }
 
   if (format === '3dos') {
-    const file = new Uint8Array(length + 128);
+    let fileLength = length + 128;
+    let offset = 128;
+    if (bank) {
+      fileLength = 0x4000 + 128;
+      offset = 130;
+    }
+    const file = new Uint8Array(fileLength);
+    file.fill(0x80);
     file.set(plus3DOSHeader(file, directives)); // set the header (128)
-    file.set(bytes, 128);
+    if (bank) {
+      file[128] = 'B'.charCodeAt(0);
+      file[129] = 'C'.charCodeAt(0);
+    }
+    file.set(bytes, offset);
 
     return file;
   } else if (format === 'tap') {

@@ -10,13 +10,22 @@ async function main(type) {
     o: 'output',
     f: 'format',
     t: 'test',
+    b: 'bank',
     d: 'debug',
     udg: 'udg',
     H: 'headerless',
     tokens: 'tokens',
     h: 'help',
   };
-  const bools = ['test', 'debug', 'tokens', 'udg', 'headerless', 'help'];
+  const bools = [
+    'bank',
+    'test',
+    'debug',
+    'tokens',
+    'udg',
+    'headerless',
+    'help',
+  ];
   const options = {};
   const args = process.argv.slice(2).map((_) => _.trim());
 
@@ -97,6 +106,7 @@ async function main(type) {
           includeHeader: !options.headerless,
           validate: false,
           binary: options.udg,
+          bank: options.bank,
         });
       }
     }
@@ -140,6 +150,7 @@ function help() {
     console.log('  -f 3dos|tap ... set the output format');
     console.log('  -t ............ parse and validate the NextBASIC');
     console.log('  -H ............ omit the file header');
+    console.log('  -bank.......... output LOAD "file" BANK format');
   }
   console.log('  -udg .......... UDGs are used so encode with binary not utf8');
   console.log('  -v ............ Show current version');

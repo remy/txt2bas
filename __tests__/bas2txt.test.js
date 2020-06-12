@@ -26,6 +26,15 @@ test('UDG char encoding', async (t) => {
   );
 });
 
+test('BANKed code', async (t) => {
+  const src = await readFile(__dirname + '/fixtures/bank.p20');
+  const lines = file2txt(src);
+
+  const expect = '10 PRINT "Hello, World!"\n20 GO TO 10\n';
+
+  t.is(lines, expect, 'BANK code extracted');
+});
+
 test('shapes mapped to utf8', async (t) => {
   t.plan(1);
 
