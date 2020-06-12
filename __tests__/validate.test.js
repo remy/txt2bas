@@ -170,6 +170,9 @@ notThrows('950 INK % RND 2+1');
 notThrows('10 LET %A[i*j]=%48* RND 6');
 notThrows('335 anim=1:   ; Alien Animation Frame Status');
 notThrows('4304 IF % ABS PEEK 23672-q < 1 THEN ENDPROC');
+notThrows(
+  '10 BANK b POKE "A null-terminated string",0,"A bit7-terminated string"~,1000~'
+);
 
 /********************************************/
 

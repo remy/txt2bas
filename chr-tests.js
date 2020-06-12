@@ -57,7 +57,7 @@ const tests = {
   },
 
   _isSymbol(c) {
-    return '=!,;-+/*()<>#%${}[]|&^'.includes(c);
+    return '=~!,;-+/*()<>#%${}[]|&^'.includes(c);
   },
 
   _isAlpha(c) {
