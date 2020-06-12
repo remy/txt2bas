@@ -94,6 +94,9 @@ export const file2bas = (src, options = {}) => {
     if (bank) {
       fileLength = 0x4000 + 128;
       offset = 130;
+      directives.hType = 3;
+      directives.hOffset = 0x8000;
+      directives.autostart = 0xc000; // unsure why, but autostart doesn't make sense in a BANK
     }
     const file = new Uint8Array(fileLength);
     file.fill(0x80);

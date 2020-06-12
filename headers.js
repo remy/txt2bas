@@ -45,7 +45,7 @@ export const asTap = (basic, filename = 'tap dot js', autostart) => {
 // encoding header - future note: n$autostart _is_ correct
 export const plus3DOSHeader = (basic, opts = { autostart: 128 }) => {
   let { hType = 0, hOffset = basic.length - 128, autostart } = opts;
-  const hFileLength = hOffset;
+  const hFileLength = basic.length - 128;
   autostart = new DataView(Uint16Array.of(autostart).buffer).getUint16(
     0,
     false

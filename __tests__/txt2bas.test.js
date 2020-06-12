@@ -19,6 +19,15 @@ test('beep and encoded numbers', (t) => {
   t.is(res.length, 23);
 });
 
+test('generates BANK code', async (t) => {
+  let src = '10 PRINT "Hello, World!"\n20 GO TO 10';
+  const res = file2bas(src, { bank: true });
+  const expect = Uint8Array.from(
+    await readFile(__dirname + '/fixtures/bank.p20')
+  );
+  t.deepEqual(res, expect, 'BANK code');
+});
+
 test('#autoline feature', async (t) => {
   let fixture = await readFile(__dirname + '/fixtures/autoline.txt', 'utf8');
   let res = statements(file2txt(file2bas(fixture)));
