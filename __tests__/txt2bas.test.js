@@ -317,4 +317,8 @@ test('in the wild', (t) => {
   res = parseBasic(src).tokens.pop();
 
   t.is(res.integer, false, 'IF %g > 20 THEN %g=20');
+
+  src = '10 ENDPROC';
+  res = parseLines(src).statements[0].tokens.pop();
+  t.is(res.name, 'KEYWORD', 'ENDPROC is a keyword');
 });

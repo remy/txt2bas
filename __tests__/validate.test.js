@@ -165,7 +165,7 @@ notThrows('90 DRAW OVER c;x2-x1,y2-y1');
 notThrows('10 IF %in 49150 & @1 = 0 THEN PRINT "OK"');
 notThrows('20 IF % SPRITE 20=1 THEN SPRITE 20,smx,smy,12,0');
 notThrows('10 IF % SGN {f < 0} THEN %g=%a');
-notThrows('1340 REG 6,% REG 6&119');
+notThrows('1340 REG 6,% REG 7&119');
 notThrows('950 INK % RND 2+1');
 notThrows('10 LET %A[i*j]=%48* RND 6');
 notThrows('335 anim=1:   ; Alien Animation Frame Status');
@@ -173,6 +173,9 @@ notThrows('4304 IF % ABS PEEK 23672-q < 1 THEN ENDPROC');
 notThrows(
   '10 BANK b POKE "A null-terminated string",0,"A bit7-terminated string"~,1000~'
 );
+notThrows('462 a=5: NEXT n:   ; Column Statuses');
+notThrows('10 %A=%1 << RND 4');
+notThrows('10 m$=BANK 12 PEEK$(%f,~10)');
 
 /********************************************/
 

@@ -1,6 +1,5 @@
 import { opTable } from './op-table';
-import tests from '../chr-tests.js';
-import { intFunctions, operators } from '../codes';
+import { intFunctions } from '../codes';
 
 import {
   COMMENT,
@@ -16,6 +15,7 @@ import {
   WHITE_SPACE,
   DEFFN_SIG,
   IF,
+  FOR,
   OPEN_PARENS,
   OPEN_BRACKETS,
   OPEN_BRACES,
@@ -70,10 +70,10 @@ class BasicScope {
     if (token && token.name) {
       if (token.name === KEYWORD) {
         this.lastKeyword = token;
-      }
 
-      if (this.statementStack.length === 0) {
-        this.statementKeyword = token;
+        if (this.statementKeyword === null) {
+          this.statementKeyword = token;
+        }
       }
 
       if (token.name !== WHITE_SPACE) {
@@ -98,6 +98,7 @@ class BasicScope {
     this.statementStack = [];
     this.statementKeyword = null;
     this.lastKeyword = null;
+    this.expressionKeyword = null; // FIXME not sure we need this
     this.allowHanging = false;
     this.position = -1;
     this.stack = [];
@@ -129,9 +130,17 @@ class BasicScope {
   }
 
   resetExpression() {
-    this.inFloatExpression = false;
-    this.inIntExpression = false;
-    this.expressionKeyword = null; // FIXME not sure we need this
+    // this.inIntExpression = false;
+    this.intNext = false;
+    this.intExpression = false;
+    this.expression = [];
+  }
+
+  get isFullIntExpression() {
+    if (!this.intExpression) return false;
+    if (this.expression.length === 0) return false;
+    if (this.expression[0].value !== '%') return false;
+    return true;
   }
 
   get hasTokens() {
@@ -163,6 +172,7 @@ export function validateStatement(tokens, debug = {}) {
   while (scope.hasTokens) {
     const token = scope.next();
     const { name, value } = token;
+    scope.expression.push(token);
     try {
       if (name === KEYWORD) {
         scope.push(OPERATION);
@@ -185,7 +195,7 @@ export function validateStatement(tokens, debug = {}) {
 
       if (value === '(') {
         scope.push(OPEN_PARENS);
-        if (scope.inIntExpression) {
+        if (scope.intExpression) {
           scope.push(INT_PARENS);
         }
       }
@@ -222,6 +232,10 @@ export function validateStatement(tokens, debug = {}) {
         scope.push(IF);
       }
 
+      if (value === opTable.FOR) {
+        scope.push(FOR);
+      }
+
       if (scope.includes(IF) && value === opTable.THEN) {
         scope.popTo(IF);
       }
@@ -242,41 +256,6 @@ export function validateStatement(tokens, debug = {}) {
         scope.push(SEMI_COLON_ALLOWED);
       }
 
-      // reset int expression on keywords
-      if (name === KEYWORD && scope.inIntExpression) {
-        keywordIntCheckBreak: {
-          if (operators.includes(token.text)) {
-            break keywordIntCheckBreak;
-          }
-
-          // int functions are only available to assignment operators
-
-          if (
-            (intFunctions[token.text] &&
-              token.pos == scope.expressionKeyword.pos) ||
-            (intFunctions[token.text] && scope.previousToken.value === '%')
-          ) {
-            break keywordIntCheckBreak;
-          }
-
-          // now check the last keyword isn't a multi keyword function
-          if (scope.lastKeyword) {
-            const lastKeyword = intFunctions[scope.lastKeyword.text];
-            if (Array.isArray(lastKeyword)) {
-              if (lastKeyword.includes(token.text) || lastKeyword[0] === '*') {
-                break keywordIntCheckBreak;
-              }
-            }
-          }
-
-          if (scope.includes(INT_PARENS)) {
-            break keywordIntCheckBreak;
-          }
-
-          scope.inIntExpression = false;
-        }
-      }
-
       if (
         scope.last === DEFFN_SIG &&
         scope.previousToken.value === opTable['DEF FN']
@@ -291,22 +270,6 @@ export function validateStatement(tokens, debug = {}) {
             'DEF FN must be followed by a single letter identifier'
           );
         }
-      }
-
-      if (name === SYMBOL && tests._isIntExpression(value)) {
-        if (scope.inIntExpression) {
-          throw new Error(
-            'Cannot redeclare integer expression whilst already inside one'
-          );
-        }
-
-        if (scope.inFloatExpression) {
-          throw new Error(
-            'Cannot use integer expression inside floating point logical expression'
-          );
-        }
-
-        scope.inIntExpression = true;
       }
 
       if (name === BINARY && value.startsWith('@') && !token.integer) {
@@ -342,7 +305,9 @@ export function validateStatement(tokens, debug = {}) {
         if (value === ',') {
           if (scope.last !== PARAM_SEP) scope.push(PARAM_SEP);
           if (!scope.includes(INT_PARENS)) {
-            scope.resetExpression();
+            if (!scope.isFullIntExpression) {
+              scope.intExpression = false;
+            }
           }
         }
 
@@ -350,6 +315,11 @@ export function validateStatement(tokens, debug = {}) {
           scope.push(OPERATOR);
           if (scope.includes(IF)) {
             scope.push(COMPARATOR);
+          } else if (
+            scope.includes(FOR) ||
+            scope.previousToken.text === 'ENDPROC'
+          ) {
+            scope.push(ASSIGNMENT);
           } else {
             scope.push(ASSIGNMENT);
             scope.resetExpression();
@@ -367,6 +337,7 @@ export function validateStatement(tokens, debug = {}) {
       validateCharRange(token, scope, expect);
       validateSymbolRange(token, scope, expect);
       validateNumberTypes(token, scope, expect);
+      validateExpressionState(token, scope, expect);
 
       // setting expectations
       if (value === opTable['DEF FN']) {
@@ -384,7 +355,6 @@ export function validateStatement(tokens, debug = {}) {
       message += `, "${token.text || value}" at: ${token.pos + 1}:${
         (token.text || value).length + token.pos + 1
       }`;
-
       throw new Error(message);
     }
   }
@@ -393,10 +363,44 @@ export function validateStatement(tokens, debug = {}) {
   validateEndOfStatement(scope);
 }
 
+export function validateExpressionState(token, scope) {
+  if (token.name === SYMBOL && token.value === '%') {
+    if (scope.expression.length === 1) {
+      scope.intExpression = true;
+    } else {
+      if (scope.intExpression) {
+        throw new Error(
+          'Cannot redeclare integer expression whilst already inside one'
+        );
+      }
+      scope.intNext = true;
+    }
+    return;
+  }
+
+  if (token.name === KEYWORD && intFunctions[token.text]) {
+    if (scope.previousToken.value === '%') {
+      scope.intExpression = true;
+      return;
+    }
+  }
+
+  if (scope.intNext) {
+    // scope.intNext = false;
+    return;
+  }
+
+  if (token.name === KEYWORD) {
+    if ([opTable.IF, opTable.THEN].includes(token.value)) {
+      scope.resetExpression();
+    }
+  }
+}
+
 export function validateNumberTypes(token, scope) {
   if (token.name !== LITERAL_NUMBER) return;
 
-  if (!scope.inIntExpression) {
+  if (!scope.intExpression && !scope.intNext) {
     throw new Error('Parsing error, did not expect an integer number');
   }
 }
@@ -442,7 +446,7 @@ export function validateIdentifier({ value, name }, scope = { last: null }) {
     const dollar = value.endsWith('$');
     const isString = dollar && value.length === 2;
 
-    if (scope.inIntExpression && scope.lastKeyword.text !== 'INT') {
+    if (scope.intExpression && scope.lastKeyword.text !== 'INT') {
       throw new Error(
         'Only integer variables (single character vars) are allowed in integer expressions'
       );
