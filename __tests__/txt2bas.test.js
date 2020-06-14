@@ -1,5 +1,10 @@
 import test from 'ava';
-import { parseLine, parseLines, parseBasic } from '../txt2bas';
+import {
+  parseLineWithData,
+  parseLine,
+  parseLines,
+  parseBasic,
+} from '../txt2bas';
 import { line2txt, formatText, file2bas, file2txt, statements } from '../index';
 import { promises as fsPromises } from 'fs';
 const { readFile } = fsPromises;
@@ -26,6 +31,14 @@ test('generates BANK code', async (t) => {
     await readFile(__dirname + '/fixtures/bank.p20')
   );
   t.deepEqual(res, expect, 'BANK code');
+});
+
+test('PEEK$', (t) => {
+  let src = '10 m$=PEEK$(%f, ~10)';
+  const res = parseLineWithData(src).tokens;
+
+  t.is(res[2].text, 'PEEK$', 'PEEK$ is a distinct token');
+  t.is(res[2].value, 0x87, 'PEEK$ is a distinct token');
 });
 
 test('#autoline feature', async (t) => {

@@ -342,7 +342,12 @@ export class Statement {
   }
 
   get startOfStatement() {
-    let i = this.tokens.findIndex((_) => _.name === STATEMENT_SEP);
+    // aka: findLastIndex
+    let i = Array.from(this.tokens)
+      .reverse()
+      .findIndex((_) => _.name === STATEMENT_SEP);
+    if (i > -1) i = this.tokens.length - i - 1;
+
     return (
       this.lastToken.name === STATEMENT_SEP ||
       this.tokens.slice(i + 1).filter((_) => _.name !== WHITE_SPACE).length ===
@@ -632,6 +637,10 @@ export class Statement {
     let curr = this.line.substring(this.pos, endPos).toUpperCase();
 
     if (moreToken) {
+      return false;
+    }
+
+    if (peek && opTable[curr + peek]) {
       return false;
     }
 

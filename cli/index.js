@@ -95,7 +95,13 @@ async function main(type) {
       if (options.debug) {
         res = JSON.stringify({ scope: debug.scope, errors: res });
       } else {
-        res = res.join('\n');
+        res =
+          res
+            .map((res) => {
+              const pos = parseInt(res.split('at: ').pop().split(':')[0], 10);
+              return res + `\n${' '.repeat(pos + 1)}^`;
+            })
+            .join('\n\n') + '\n';
       }
     } else {
       if (options.tokens) {
