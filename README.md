@@ -45,6 +45,8 @@ Note that `#autostart` directive is also supported.
 * `-i FILENAME` - input filename
 * `-o FILENAME` - output filename
 * `-t` - (txt2bas only) test and validate the NextBASIC source
+* `-C` - (txt2bas only) strip comments (to reduce final size)
+* `-bank` - (txt2bas only) generate a BANK loadable result
 * `-f 3dos|tap` - set the output format
 * `-H`- omit the file header (either in output or in parsing input)
 * `-udg` - UDGs are used so encode with binary not utf8

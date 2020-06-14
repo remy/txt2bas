@@ -54,6 +54,7 @@ export const file2bas = (src, options = {}) => {
     includeHeader = true,
     validate = false,
     bank = false,
+    stripComments = false,
   } = options;
 
   let { filename = 'untitled', autostart = 0x8000 } = options;
@@ -73,6 +74,7 @@ export const file2bas = (src, options = {}) => {
 
   const { bytes, length, ...rest } = parseLines(src, {
     validate,
+    stripComments,
   });
 
   if (rest.autostart) {

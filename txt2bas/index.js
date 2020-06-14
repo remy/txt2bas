@@ -69,13 +69,21 @@ export class Autoline {
     this.number = parseInt(number, 10);
     this.step = parseInt(step, 10);
     this.active = false;
+    this.last = null;
   }
 
   next() {
     if (!this.active) return null;
+    this.last = this.number;
     const res = this.number;
     this.number += this.step;
     return res;
+  }
+
+  prev() {
+    if (this.last === null) return;
+    this.number = this.last;
+    this.last = null;
   }
 
   parse(line) {
@@ -172,7 +180,7 @@ export function parseLineWithData(line, autoline = null) {
 
 export function parseLines(
   text,
-  { validate = true, keepDirectives = false } = {}
+  { validate = true, keepDirectives = false, stripComments = false } = {}
 ) {
   const lines = text.split(text.includes('\r') ? '\r' : '\n');
   const res = [];
@@ -224,6 +232,13 @@ export function parseLines(
 
         try {
           statement = parseBasic(line, autoline.next());
+          if (stripComments) {
+            stripCommentsFromStatement(statement);
+            if (statement.tokens.length === 0) {
+              autoline.prev();
+              continue; // skip this line
+            }
+          }
           if (validate) {
             validateStatement(statement.tokens);
           }
@@ -265,6 +280,17 @@ export function parseLines(
     autostart,
     filename,
   };
+}
+
+export function stripCommentsFromStatement(statement) {
+  // comments exist at the end of a line
+  if (statement.tokens[statement.tokens.length - 1].name === COMMENT) {
+    statement.tokens.pop();
+    const token = statement.tokens.pop(); // remove the command too
+    if (token.name === WHITE_SPACE) {
+      statement.tokens.pop();
+    }
+  }
 }
 
 export function statementsToBytes(statements) {

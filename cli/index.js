@@ -16,6 +16,7 @@ async function main(type) {
     H: 'headerless',
     tokens: 'tokens',
     h: 'help',
+    C: 'comments-off',
   };
   const bools = [
     'bank',
@@ -25,6 +26,7 @@ async function main(type) {
     'udg',
     'headerless',
     'help',
+    'comments-off',
   ];
   const options = {};
   const args = process.argv.slice(2).map((_) => _.trim());
@@ -113,6 +115,7 @@ async function main(type) {
           validate: false,
           binary: options.udg,
           bank: options.bank,
+          stripComments: options['comments-off'],
         });
       }
     }
@@ -156,7 +159,8 @@ function help() {
     console.log('  -f 3dos|tap ... set the output format');
     console.log('  -t ............ parse and validate the NextBASIC');
     console.log('  -H ............ omit the file header');
-    console.log('  -bank.......... output LOAD "file" BANK format');
+    console.log('  -bank ......... output LOAD "file" BANK format');
+    console.log('  -C ............ strip comments from output');
   }
   console.log('  -udg .......... UDGs are used so encode with binary not utf8');
   console.log('  -v ............ Show current version');
