@@ -375,6 +375,7 @@ export class Statement {
     if (i > -1) i = this.tokens.length - i - 1;
 
     return (
+      (this.lastToken.name === KEYWORD && this.lastToken.text === 'ERROR') ||
       this.lastToken.name === STATEMENT_SEP ||
       this.tokens.slice(i + 1).filter((_) => _.name !== WHITE_SPACE).length ===
         0
@@ -416,8 +417,17 @@ export class Statement {
 
   pINT() {
     if (this.peek(this.pos) === '{') {
+      const currentIntState = this.inIntExpression;
       // turn of any int expression state
       this.inIntExpression = false;
+
+      while (this.nextToken()) {
+        if (this.lastToken.value === '}') {
+          this.inIntExpression = currentIntState;
+          break;
+        }
+      }
+
       return;
     }
   }

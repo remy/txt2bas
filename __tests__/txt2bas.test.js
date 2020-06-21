@@ -178,6 +178,10 @@ test('dot commands', (t) => {
   src = '1050 .bas2txt "this.bas" "this.txt"';
   res = parseLine(src);
   t.is(line2txt(res), src);
+
+  src = '10 ON ERROR .uninstall ndrplayer.drv: STOP';
+  res = parseLine(src);
+  t.is(line2txt(res), src);
 });
 
 test('handles DOS CR', async (t) => {
@@ -269,6 +273,12 @@ test('int expression encoding', (t) => {
   token = res.shift(); // 0b11
   t.is(token.integer, true);
   t.is(token.numeric, 3);
+
+  src = '10 LET %j=% INT { CODE INKEY$ }-$30';
+  res = statements(src, { validate: false })[0].tokens;
+  token = res.pop();
+  t.is(token.integer, true);
+  t.is(token.numeric, 48);
 });
 
 test('INT function', (t) => {
