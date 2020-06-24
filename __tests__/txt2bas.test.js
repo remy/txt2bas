@@ -296,7 +296,6 @@ test('in the wild', (t) => {
   src = '10 IF %(12/8) MOD 2 THEN BANK 14 POKE 0,%188';
   res = statements(src);
 
-  // console.log(res[0].tokens);
   const index = res[0].tokens.findIndex((_) => _.text === 'BANK');
   t.is(res[0].tokens[index + 1].integer, false, 'bank 14 is a float type');
 
@@ -305,6 +304,10 @@ test('in the wild', (t) => {
 
   t.is(res.tokens[0].name, 'KEYWORD', 'leading keywords');
   t.is(res.tokens[1].value, '4', 'then channel number');
+
+  src = '10 .install "t:/nextdaw.drv"';
+  res = parseLines(src).statements[0].tokens.pop();
+  t.is(res.name, 'DOT_COMMAND');
 
   src = '370 SPRITE -2,16,0,1,1, BIN 110';
   res = parseLines(src).statements[0].tokens.pop();

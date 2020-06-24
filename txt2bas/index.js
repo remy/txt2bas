@@ -601,7 +601,7 @@ export class Statement {
       }
 
       if (tests._isDotCommand(c)) {
-        return { ...this.processToEndOfStatement(), name: DOT_COMMAND };
+        return this.processDotCommand();
       }
     }
 
@@ -884,6 +884,26 @@ export class Statement {
       value: this.line.substring(start, this.pos),
       pos: start,
       skip: true,
+    };
+  }
+
+  processDotCommand() {
+    const pos = this.pos;
+    while (this.pos < this.line.length) {
+      const c = this.line.charAt(this.pos);
+      if (c === '"') {
+        this.processQuote();
+      } else if (c == ':' || c == '\n' || c === '') {
+        break;
+      } else {
+        this.pos++;
+      }
+    }
+    const value = this.line.substring(pos, this.pos);
+    return {
+      value,
+      pos,
+      name: DOT_COMMAND,
     };
   }
 
