@@ -54,7 +54,7 @@ export function bas2txtLines(data) {
 
   const lines = [];
 
-  while ((next = unpack.parse('<n$line s$length'))) {
+  while ((next = unpack.parse('<n$line S$length'))) {
     const { length, line: lineNumber } = next;
     if (lineNumber > 9999) {
       break;
