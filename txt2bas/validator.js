@@ -29,6 +29,7 @@ import {
   COMPARATOR,
   OPERATOR,
   OPERATION,
+  UNTIL,
 } from './types';
 
 export function validateLineNumber(current, prev) {
@@ -232,6 +233,10 @@ export function validateStatement(tokens, debug = {}) {
         scope.push(IF);
       }
 
+      if (value === opTable.UNTIL) {
+        scope.push(UNTIL);
+      }
+
       if (value === opTable.FOR) {
         scope.push(FOR);
       }
@@ -313,7 +318,7 @@ export function validateStatement(tokens, debug = {}) {
 
         if (value === '=') {
           scope.push(OPERATOR);
-          if (scope.includes(IF)) {
+          if (scope.includes(IF) || scope.includes(UNTIL)) {
             scope.push(COMPARATOR);
           } else if (
             scope.includes(FOR) ||

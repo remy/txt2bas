@@ -13,6 +13,7 @@ import {
   INT_EXPRESSION,
   BINARY,
   NUMBER,
+  UNTIL,
   HEX,
   STRING,
   UNKNOWN,
@@ -511,6 +512,10 @@ export class Statement {
           this.in.push(IF);
         }
 
+        if (token.value === opTable.UNTIL) {
+          this.in.push(UNTIL);
+        }
+
         if (token.value === opTable.THEN) {
           this.popTo(IF);
           this.inIntExpression = false;
@@ -532,7 +537,8 @@ export class Statement {
       }
 
       if (token.value === '=') {
-        if (!this.isIn(IF)) {
+        [token, this]; // ?
+        if (!this.isIn(IF) && !this.isIn(UNTIL)) {
           this.inIntExpression = false;
         }
       }
@@ -555,7 +561,7 @@ export class Statement {
       return null;
     }
 
-    if (tests._isLiteralReset(c) && !this.isIn(IF)) {
+    if (tests._isLiteralReset(c) && !this.isIn(IF) && !this.isIn(UNTIL)) {
       this.inIntExpression = false;
     }
 
@@ -1045,7 +1051,6 @@ export function basicToBytes(lineNumber, basic) {
     } else if (!token.skip) {
       length += value.length;
       tokens.push(token);
-      [length, value.length]; //?
     }
   }
 

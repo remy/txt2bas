@@ -309,6 +309,10 @@ test('in the wild', (t) => {
   res = parseLines(src).statements[0].tokens.pop();
   t.is(res.name, 'DOT_COMMAND');
 
+  src = '10 REPEAT UNTIL %n=200';
+  res = parseLines(src).statements[0].tokens.pop();
+  t.is(res.integer, true, src);
+
   src = '370 SPRITE -2,16,0,1,1, BIN 110';
   res = parseLines(src).statements[0].tokens.pop();
   t.is(res.numeric, 6, 'binary interpreted as 6 and not 110');

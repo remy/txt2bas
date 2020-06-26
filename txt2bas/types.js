@@ -18,6 +18,7 @@ export const NUMBER_DATA = 'NUMBER_DATA';
 export const DOT_COMMAND = 'DOT_COMMAND';
 export const DEF_FN_ARG = 'DEF_FN_ARG';
 export const NUMBER = 'NUMBER';
+export const UNTIL = 'UNTIL';
 export const LITERAL_NUMBER = 'LITERAL_NUMBER';
 export const STRING = 'STRING';
 export const DIRECTIVE = 'DIRECTIVE';

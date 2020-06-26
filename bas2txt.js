@@ -30,11 +30,6 @@ export function bas2txt(data) {
     C$checksum`
   );
 
-  // check if we're working with a bank
-  if (data[unpack.offset] === 0x42 && data[unpack.offset + 1] === 0x43) {
-    unpack.offset += 2;
-  }
-
   let txt = bas2txtLines(data.slice(unpack.offset));
 
   if (
@@ -54,13 +49,28 @@ export function bas2txtLines(data) {
 
   const lines = [];
 
+  // check if we're working with a bank
+
+  let banked = false;
+  if (data[unpack.offset] === 0x42 && data[unpack.offset + 1] === 0x43) {
+    unpack.offset += 2;
+    banked = true;
+  }
+
   while ((next = unpack.parse('<n$line S$length'))) {
     const { length, line: lineNumber } = next;
+
     if (lineNumber > 9999) {
+      if (length === 0x8080 && lineNumber === 0x8080 && banked) {
+        break;
+      }
+      throw new Error(`${lineNumber} is beyond 9999 range.`);
+    }
+
+    const content = unpack.parse(`<C${length}$data`);
+    if (!content || !content.data) {
       break;
     }
-    const content = unpack.parse(`<C${length}$data`);
-    if (!content || !content.data) break;
 
     let string = lineNumber + ' ';
 
