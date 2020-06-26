@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'fs';
+import { dirname, resolve } from 'path';
 import * as cli from '../index';
 import { version } from '../package.json';
 
@@ -16,12 +17,14 @@ async function main(type) {
     H: 'headerless',
     tokens: 'tokens',
     h: 'help',
+    L: 'inline-load',
     C: 'comments-off',
   };
   const bools = [
     'bank',
     'test',
     'debug',
+    'inline-load',
     'tokens',
     'udg',
     'headerless',
@@ -89,6 +92,12 @@ async function main(type) {
   let res;
   let signal = 0;
 
+  const cwd = process.cwd();
+
+  if (options.input) {
+    process.chdir(resolve(cwd, dirname(options.input)));
+  }
+
   try {
     if (options.test) {
       const debug = {};
@@ -107,7 +116,16 @@ async function main(type) {
       }
     } else {
       if (options.tokens) {
-        res = JSON.stringify(cli.tokens(src, { validate: false }));
+        res =
+          JSON.stringify(
+            cli
+              .tokens(src, {
+                validate: false,
+                inlineLoad: options['inline-load'],
+                stripComments: options['comments-off'],
+              })
+              .statements.map(({ tokens }) => ({ tokens }))
+          ) + '\n';
       } else {
         res = cli['file2' + type](src, {
           ...options,
@@ -115,6 +133,7 @@ async function main(type) {
           validate: false,
           binary: options.udg,
           bank: options.bank,
+          inlineLoad: options['inline-load'],
           stripComments: options['comments-off'],
         });
       }
@@ -134,6 +153,9 @@ async function main(type) {
   }
 
   if (options.output) {
+    if (options.input) {
+      process.chdir(cwd);
+    }
     writeFileSync(options.output, res, outputType);
   } else {
     if (typeof res === 'string' && options.udg) {

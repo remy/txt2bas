@@ -1,5 +1,11 @@
 import { asTap, plus3DOSHeader } from './headers';
-import { parseLines, validate, parseLineWithData } from './txt2bas/index';
+import {
+  parseLines,
+  validate,
+  parseLineWithData,
+  statementsToBytes,
+} from './txt2bas/index';
+import * as transform from './txt2bas/transform';
 import { tap2txt, bas2txt, bas2txtLines } from './bas2txt';
 export { plus3DOSHeader, tapHeader } from './headers';
 export { default as codes } from './codes';
@@ -34,13 +40,22 @@ export const statements = (source, options) => {
   return parseLines(source, options).statements;
 };
 
-export const tokens = (src, options) => {
+export const tokens = (src, { stripComments, inlineLoad, ...options }) => {
   if (typeof src !== 'string') {
     src = src.toString('binary');
   }
 
-  const res = parseLines(src, options);
-  return res.tokens;
+  let { statements, ...rest } = parseLines(src, options);
+
+  if (stripComments) {
+    statements = transform.stripComments(statements);
+  }
+
+  if (inlineLoad) {
+    statements = transform.inlineLoad(statements);
+  }
+
+  return { statements, ...rest };
 };
 
 export const file2bas = (src, options = {}) => {
@@ -52,9 +67,8 @@ export const file2bas = (src, options = {}) => {
     format = '3dos',
     binary = false, // used if source has UDGs
     includeHeader = true,
-    validate = false,
     bank = false,
-    stripComments = false,
+    ...parseOptions
   } = options;
 
   let { filename = 'untitled', autostart = 0x8000 } = options;
@@ -72,10 +86,10 @@ export const file2bas = (src, options = {}) => {
     autostart,
   };
 
-  const { bytes, length, ...rest } = parseLines(src, {
-    validate,
-    stripComments,
-  });
+  let { statements, ...rest } = tokens(src, parseOptions);
+
+  const bytes = statementsToBytes(statements);
+  const length = bytes.length;
 
   if (rest.autostart) {
     directives.autostart = rest.autostart;

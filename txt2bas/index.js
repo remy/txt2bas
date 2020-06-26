@@ -180,14 +180,13 @@ export function parseLineWithData(line, autoline = null) {
 
 export function parseLines(
   text,
-  { validate = true, keepDirectives = false, stripComments = false } = {}
+  { validate = true, keepDirectives = false } = {}
 ) {
   const lines = text.split(text.includes('\r') ? '\r' : '\n');
-  const res = [];
+  const statements = [];
   let autostart = 0x8000;
   let lastLine = -1;
   let filename = null;
-  let length = 0;
 
   const autoline = new Autoline();
 
@@ -232,13 +231,6 @@ export function parseLines(
 
         try {
           statement = parseBasic(line, autoline.next());
-          if (stripComments) {
-            stripCommentsFromStatement(statement);
-            if (statement.tokens.length === 0) {
-              autoline.prev();
-              continue; // skip this line
-            }
-          }
           if (validate) {
             validateStatement(statement.tokens);
           }
@@ -254,43 +246,24 @@ export function parseLines(
           }
           lastLine = statement.lineNumber;
 
-          const bytes = basicToBytes(statement.lineNumber, statement.tokens);
-          length += bytes.length;
-          res.push({ statement, bytes });
+          statements.push(statement);
         } else {
-          res.push({ statement, bytes: [] });
+          statements.push(statement);
         }
       }
     }
   }
 
-  const data = new Uint8Array(length);
-
-  let offset = 0;
-  res.forEach(({ bytes }) => {
-    data.set(bytes, offset);
-    offset += bytes.length;
-  });
+  const bytes = statementsToBytes(statements);
 
   return {
-    bytes: data,
-    length,
-    tokens: res.map((_) => _.statement.tokens),
-    statements: res.map((_) => _.statement),
+    bytes,
+    length: bytes.length,
+    tokens: statements.map((_) => _.tokens),
+    statements,
     autostart,
     filename,
   };
-}
-
-export function stripCommentsFromStatement(statement) {
-  // comments exist at the end of a line
-  if (statement.tokens[statement.tokens.length - 1].name === COMMENT) {
-    statement.tokens.pop();
-    const token = statement.tokens.pop(); // remove the command too
-    if (token.name === WHITE_SPACE) {
-      statement.tokens.pop();
-    }
-  }
 }
 
 export function statementsToBytes(statements) {
