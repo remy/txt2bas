@@ -42,18 +42,18 @@ Note that `#autostart` directive is also supported.
 
 ### Command line options
 
-* `-i FILENAME` - input filename
-* `-o FILENAME` - output filename
-* `-t` - (txt2bas only) test and validate the NextBASIC source
-* `-C` - (txt2bas only) strip comments (to reduce final size)
-* `-bank` - (txt2bas only) generate a BANK loadable result
-* `-f 3dos|tap` - set the output format
-* `-H`- omit the file header (either in output or in parsing input)
-* `-udg` - UDGs are used so encode with binary not utf8
-* `-tokens` - (txt2bas only) show parser tokens (for debugging)
-* `-h` - Show help options
-* `-v` - Show current version
-
+- `-i FILENAME` - input filename
+- `-o FILENAME` - output filename
+- `-t` - (txt2bas only) test and validate the NextBASIC source
+- `-C` - (txt2bas only) strip comments (to reduce final size)
+- `-bank` - (txt2bas only) generate a BANK loadable result
+- `-A #n` - (txt2bas only) set autostart line to `#n`
+- `-f 3dos|tap` - set the output format
+- `-H`- omit the file header (either in output or in parsing input)
+- `-udg` - UDGs are used so encode with binary not utf8
+- `-tokens` - (txt2bas only) show parser tokens (for debugging)
+- `-h` - Show help options
+- `-v` - Show current version
 
 ## Library API
 

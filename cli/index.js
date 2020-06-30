@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'fs';
-import { dirname, resolve } from 'path';
+import { dirname, resolve, basename, extname } from 'path';
 import * as cli from '../index';
 import { version } from '../package.json';
 
@@ -98,7 +98,7 @@ async function main(type) {
   }
 
   try {
-    if (options.test) {
+    if (options.test && !options.output) {
       const debug = {};
       res = cli.validateTxt(src.toString(), debug);
       signal = res.length > 0 ? 1 : 0;
@@ -130,10 +130,13 @@ async function main(type) {
         res = cli[method](src, {
           ...options,
           includeHeader: !options.headerless,
-          validate: false,
+          validate: options.test || false,
           binary: options.udg,
           bank: options.bank,
           autostart: options.autostart,
+          filename: options.output
+            ? basename(options.output, extname(options.output))
+            : undefined,
           inlineLoad: options['inline-load'],
           stripComments: options['comments-off'],
         });
@@ -185,7 +188,7 @@ function help(type) {
     console.log('  -H ............ omit the file header');
     console.log('  -bank ......... output LOAD "file" BANK format');
     console.log('  -C ............ strip comments from output');
-    console.log('  -A #n ......... add autostart header value');
+    console.log('  -A #n ......... set autostart line');
   }
   console.log('  -udg .......... UDGs are used so encode with binary not utf8');
   console.log('  -v ............ Show current version');
