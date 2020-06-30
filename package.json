@@ -27,11 +27,11 @@
     ]
   },
   "bin": {
-    "txt2bas": "dist/cli/index.js",
-    "bas2txt": "dist/cli/index.js"
+    "txt2bas": "dist/cli/txt2bas.js",
+    "bas2txt": "dist/cli/bas2txt.js"
   },
   "scripts": {
-    "build": "rm -rf dist; rollup --config && chmod 744 dist/cli/index.js",
+    "build": "rm -rf dist; rollup --config && chmod 744 dist/cli/*.js",
     "dev": "npm run build; rollup --config --watch",
     "prepare": "npm run build",
     "test:dev": "ava __tests__/*.test.js --no-coverage-report --watch",

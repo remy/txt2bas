@@ -10,12 +10,22 @@ export default [
   },
   {
     plugins: [json()],
-    input: 'cli/index.js',
+    input: 'cli/txt2bas.js',
     output: {
-      file: 'dist/cli/index.js',
+      file: 'dist/cli/txt2bas.js',
       format: 'cjs',
       banner: '#!/usr/bin/env node',
     },
-    external: ['@remy/unpack'], // <-- suppresses the warning
+    external: ['@remy/unpack'],
+  },
+  {
+    plugins: [json()],
+    input: 'cli/bas2txt.js',
+    output: {
+      file: 'dist/cli/bas2txt.js',
+      format: 'cjs',
+      banner: '#!/usr/bin/env node',
+    },
+    external: ['@remy/unpack'],
   },
 ];

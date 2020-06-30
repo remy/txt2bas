@@ -3,8 +3,6 @@ import { dirname, resolve } from 'path';
 import * as cli from '../index';
 import { version } from '../package.json';
 
-const cmd = process.argv[1].split('/').pop();
-
 async function main(type) {
   const mapping = {
     i: 'input',
@@ -47,7 +45,7 @@ async function main(type) {
   }
 
   if (options.help) {
-    return help();
+    return help(type);
   }
 
   if (type === 'bas') {
@@ -172,12 +170,13 @@ async function main(type) {
   process.exit(signal);
 }
 
-function help() {
+function help(type) {
+  const cmd = type === 'txt' ? 'txt2bas' : 'bas2txt';
   console.log(`  Usage: ${cmd} [-i input-file] [-o output-file]`);
   console.log('');
   console.log(`  Options:`);
   console.log('');
-  if (cmd.endsWith('txt2bas')) {
+  if (type === 'txt') {
     console.log('  -f 3dos|tap ... set the output format');
     console.log('  -t ............ parse and validate the NextBASIC');
     console.log('  -H ............ omit the file header');
@@ -199,16 +198,18 @@ function help() {
   console.log('');
 }
 
-if (!process.argv[2] && process.stdin.isTTY) {
-  help();
-  process.exit(1);
-}
+export default (type) => {
+  if (!process.argv[2] && process.stdin.isTTY) {
+    help(type);
+    process.exit(1);
+  }
 
-if (process.argv[2] === '-v') {
-  console.log(version);
-  process.exit(0);
-}
+  if (process.argv[2] === '-v') {
+    console.log(version);
+    process.exit(0);
+  }
 
-main(cmd.endsWith('bas2txt') ? 'txt' : 'bas').catch((e) => {
-  console.log(e);
-});
+  main(type).catch((e) => {
+    console.log(e);
+  });
+};
