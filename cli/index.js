@@ -16,6 +16,7 @@ async function main(type) {
     tokens: 'tokens',
     h: 'help',
     L: 'inline-load',
+    A: 'autostart',
     C: 'comments-off',
   };
   const bools = [
@@ -125,12 +126,14 @@ async function main(type) {
               .statements.map(({ tokens }) => ({ tokens }))
           ) + '\n';
       } else {
-        res = cli['file2' + type](src, {
+        const method = type === 'txt' ? 'file2bas' : 'file2txt';
+        res = cli[method](src, {
           ...options,
           includeHeader: !options.headerless,
           validate: false,
           binary: options.udg,
           bank: options.bank,
+          autostart: options.autostart,
           inlineLoad: options['inline-load'],
           stripComments: options['comments-off'],
         });
@@ -182,6 +185,7 @@ function help(type) {
     console.log('  -H ............ omit the file header');
     console.log('  -bank ......... output LOAD "file" BANK format');
     console.log('  -C ............ strip comments from output');
+    console.log('  -A #n ......... add autostart header value');
   }
   console.log('  -udg .......... UDGs are used so encode with binary not utf8');
   console.log('  -v ............ Show current version');

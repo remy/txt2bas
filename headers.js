@@ -4,15 +4,13 @@ export const calculateXORChecksum = (array) =>
   Uint8Array.of(array.reduce((checksum, item) => checksum ^ item, 0))[0];
 
 export const tapHeader = (basic, filename = 'BASIC', autostart = 0) => {
-  // FIXME is this autostart actually correct?
-  autostart = new DataView(basic.buffer).getUint16(autostart, false);
   const res = pack(
     '<S$headerLength C$flagByte C$type A10$filename S$length S$p1 S$p2 C$checksum',
     {
       headerLength: 19,
       flagByte: 0x0, // header
       type: 0x00, // program
-      filename: filename.slice(0, 10), // 10 chrs max
+      filename: filename.slice(0, 10).padEnd(10, ' '),
       length: basic.length,
       p1: autostart,
       p2: basic.length,
