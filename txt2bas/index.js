@@ -197,8 +197,8 @@ export function parseLineWithData(line, autoline = null) {
 
 /**
  * @typedef ParseOptions
- * @property {boolean} [options.validate=true] Whether to throw on validation failures
- * @property {boolean} [options.keepDirectives=false] Whether to keep lines starting with "#"
+ * @property {boolean} [validate=true] Whether to throw on validation failures
+ * @property {boolean} [keepDirectives=false] Whether to keep lines starting with "#"
  */
 
 /**
