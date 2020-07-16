@@ -61,6 +61,8 @@
   "devDependencies": {
     "@rollup/plugin-json": "^4.0.3",
     "ava": "^3.8.2",
+    "eslint": "^7.4.0",
+    "eslint-plugin-jsdoc": "^29.2.0",
     "esm": "^3.2.25",
     "nyc": "^15.1.0",
     "rollup": "^2.7.6",

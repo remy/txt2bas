@@ -2,6 +2,12 @@ import BASIC from './codes.js';
 import { BASIC as BASIC_CHRS } from './unicode.js';
 import { Unpack } from '@remy/unpack';
 
+/**
+ * Converts TAP file data to NextBASIC
+ *
+ * @param {Uint8Array} data .tap bytes including the TAP header
+ * @returns {string} Plain text NextBASIC
+ */
 export function tap2txt(data) {
   const unpack = new Unpack(data);
 
@@ -12,6 +18,12 @@ export function tap2txt(data) {
   return bas2txtLines(data.slice(24, data.length - 24));
 }
 
+/**
+ * Converts +3DOS file data to NextBASIC
+ *
+ * @param {Uint8Array} data .bas bytes including the +3dos header
+ * @returns {string} Plain text NextBASIC
+ */
 export function bas2txt(data) {
   const unpack = new Unpack(data);
 
@@ -43,6 +55,12 @@ export function bas2txt(data) {
   return txt;
 }
 
+/**
+ * Converts headerless byte data to NextBASIC
+ *
+ * @param {Uint8Array} data headerless byte data for NextBASIC
+ * @returns {string}
+ */
 export function bas2txtLines(data) {
   const unpack = new Unpack(data);
   let next;

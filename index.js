@@ -13,6 +13,13 @@ export { renumber, shift } from './renumber';
 export const line2bas = parseLineWithData;
 export const line2txt = bas2txtLines;
 
+/**
+ * Reformats string into visually valid NextBASIC
+ *
+ * @param {string} line
+ * @param {number|null} [autoline=null] Whether to use autoline, must be > 0 if a number is passed
+ * @returns {string}
+ */
 export const formatText = (line, autoline = null) => {
   if (line.startsWith('#')) {
     // this is a directive or blank line - give it back
@@ -28,18 +35,44 @@ export const formatText = (line, autoline = null) => {
   return text;
 };
 
-export const validateTxt = (src, debug) => {
-  if (typeof src !== 'string') {
-    src = src.toString('binary');
+/**
+ * Validates multiple lines of NextBASIC
+ *
+ * @param {string|Buffer} text multiline NextBASIC
+ * @param {object} [debug]
+ * @returns {string[]} Any errors found
+ */
+export const validateTxt = (text, debug) => {
+  if (typeof text !== 'string') {
+    text = text.toString('binary');
   }
 
-  return validate(src, debug);
+  return validate(text, debug);
 };
 
+/** @typedef { import("./txt2bas/").ParseOptions } ParseOptions */
+/** @typedef { import("./txt2bas/").Statement } Statement */
+/** @typedef { import("./txt2bas/").ParseLineResult } ParseLineResult */
+
+/**
+ * Get the statement objects for source code
+ *
+ * @param {string} source NextBASIC text
+ * @param {ParseOptions} options
+ * @returns {Statement[]}
+ */
 export const statements = (source, options) => {
   return parseLines(source, options).statements;
 };
 
+/**
+ * Tokenises source text into statements
+ *
+ * @param {string} src
+ * @param {ParseOptions} options
+ * @param {boolean} options.stripComments removes all comments from the result
+ * @returns {ParseLineResult}
+ */
 export const tokens = (src, { stripComments, inlineLoad, ...options }) => {
   if (typeof src !== 'string') {
     src = src.toString('binary');
@@ -60,6 +93,7 @@ export const tokens = (src, { stripComments, inlineLoad, ...options }) => {
 
 /**
  * Converts plain text to NextBASIC binary
+ *
  * @param {string} src plain text source of NextBASIC
  * @param {object} [options]
  * @param {string} [options.format=3dos]
@@ -69,6 +103,7 @@ export const tokens = (src, { stripComments, inlineLoad, ...options }) => {
  * @param {number} [options.autostart=0x8000]
  * @param {boolean} [options.stripComments=false]
  * @param {boolean} [options.validate=false]
+ * @returns {Uint8Array}
  */
 export const file2bas = (src, options = {}) => {
   if (!src.toString) {
@@ -141,6 +176,15 @@ export const file2bas = (src, options = {}) => {
   }
 };
 
+/**
+ * Converts byte data to plain text
+ *
+ * @param {Uint8Array} src byte data buffer
+ * @param {object} [options]
+ * @param {string} [options.format=3dos] format type: "3dos", "tap"
+ * @param {boolean} [options.includeHeader=true]
+ * @returns {Uint8Array}
+ */
 export const file2txt = (src, options = {}) => {
   const { format = '3dos' } = options;
   if (!src || !src.length) {

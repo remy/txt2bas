@@ -3,6 +3,12 @@ import { dirname, resolve, basename, extname } from 'path';
 import * as cli from '../index';
 import { version } from '../package.json';
 
+/**
+ * CLI entry point for txt2bas and bas2txt. Arguments are parsed from process.argv
+ *
+ * @param {string} type Either "txt" or "bas"
+ * @returns {undefined}
+ */
 async function main(type) {
   const mapping = {
     i: 'input',
@@ -186,6 +192,11 @@ async function main(type) {
   process.exit(signal);
 }
 
+/**
+ * Shows CLI help text
+ *
+ * @param {string} type "txt" or "bas"
+ */
 function help(type) {
   const cmd = type === 'txt' ? 'txt2bas' : 'bas2txt';
   console.log(`  Usage: ${cmd} [-i input-file] [-o output-file]`);

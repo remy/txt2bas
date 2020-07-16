@@ -1,18 +1,24 @@
 import { parseLines, statementsToBytes } from './txt2bas/index';
 import { bas2txtLines } from './bas2txt';
 
-function findOldLine(n, mapping) {
-  const key = Object.keys(mapping).find((key) => key >= n);
+/**
+ * Find original line number for a given new position
+ *
+ * @param {number} lineNumber Line number
+ * @param {object} mapping
+ * @returns {number} Original line in mapping
+ */
+function findOldLine(lineNumber, mapping) {
+  const key = Object.keys(mapping).find((key) => key >= lineNumber);
 
-  return mapping[key] || n;
+  return mapping[key] || lineNumber;
 }
 
-// export default renumber;
 /**
  * Renumbers a string of NextBASIC lines.
  *
  * @param {string} text NextBASIC source
- * @param {Object} [options] Renumber options
+ * @param {object} [options] Renumber options
  * @param {number} [options.start=first line] The line number to affect
  * @param {number} [options.step=10] Increment by step
  * @param {number} [options.end=last line] The line number to end renumbering
@@ -122,7 +128,7 @@ export function renumber(text, options = {}) {
  *
  * @param {string} text NextBASIC source
  * @param {number} lineNumber The line number to shift
- * @param {boolean} forward=true Direction, set to false to shift upwards
+ * @param {boolean} [forward=true] Direction, set to false to shift upwards
  * @returns {string} The updated NextBASIC source code
  */
 export function shift(text, lineNumber, forward = true) {

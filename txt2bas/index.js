@@ -34,8 +34,9 @@ import {
 
 /**
  * A complete object representation of NextBASIC code
+ *
  * @typedef ParsedBasic
- * @type {Object}
+ * @type {object}
  * @property {Uint8Array} data - NextBASIC encoded data
  * @property {number} length - byte length
  * @property {Token[]} tokens
@@ -46,10 +47,10 @@ import {
 
 /**
  * A single token used in the lexing process
+ *
  * @typedef Token
- * @type {Object}
  * @property {string} name The token type name
- * @property {string|number} value
+ * @property {string|number} value Token byte value
  * @property {string} text Source text content
  * @property {number} numeric Numerical value
  * @property {boolean} integer Flag (only used on number types)
@@ -57,14 +58,19 @@ import {
 
 /**
  * A statement from a single parsed NextBASIC line
+ *
  * @typedef Statement
- * @type {Object}
- * @property {string} line
  * @property {Token[]} tokens
- * @property {number} lineNumber
  * @property {Token} lastToken
+ * @property {string} line
+ * @property {number} lineNumber
  */
 
+/**
+ * Auto increment line
+ *
+ * @class
+ */
 export class Autoline {
   constructor(number = 10, step = 10) {
     this.number = parseInt(number, 10);
@@ -115,7 +121,8 @@ const encode = (a) => {
  * Validates a block of NextBASIC and returns any validation errors
  *
  * @param {string} text multiline NextBASIC
- * @return {string[]} Any errors found
+ * @param {object} [debug]
+ * @returns {string[]} Any errors found
  */
 export function validate(text, debug = {}) {
   const lines = text.split('\n');
@@ -156,7 +163,7 @@ export function validate(text, debug = {}) {
  * Converts a string to bytes
  *
  * @param {string} line Single NextBASIC line
- * @return {Uint8Array} bytes of encoded NextBASIC
+ * @returns {Uint8Array} bytes of encoded NextBASIC
  */
 export function parseLine(line) {
   if (line.startsWith('#')) {
@@ -167,10 +174,9 @@ export function parseLine(line) {
 }
 
 /**
- *
- * @param {text} line A single line of NextBASIC
+ * @param {string} line A single line of NextBASIC
  * @param {boolean} [autoline=false] Flag to ignore line numbers
- * @return {ParsedBasic} fully parsed object
+ * @returns {ParsedBasic} fully parsed object
  */
 export function parseLineWithData(line, autoline = null) {
   const { lineNumber, tokens } = parseBasic(line, autoline);
@@ -180,20 +186,26 @@ export function parseLineWithData(line, autoline = null) {
 }
 
 /**
- * @typedef {Object} ParseLineResult
+ * @typedef {object} ParseLineResult
  * @property {Uint8Array} bytes
  * @property {number} length
- * @property {Array<Token>} tokens
- * @property {Array<Statement>}
+ * @property {Token[]} tokens
+ * @property {Statement[]} statements
  * @property {number} autostart
  * @property {string} filename
  */
 
 /**
+ * @typedef ParseOptions
+ * @property {boolean} [options.validate=true] Whether to throw on validation failures
+ * @property {boolean} [options.keepDirectives=false] Whether to keep lines starting with "#"
+ */
+
+/**
  * Converts plain text to fully parsed NextBASIC with AST
+ *
  * @param {string} text plain text NextBASIC
- * @param {Object} [options]
- * @param {boolean} [options.validate=true] Whether to throw on validation failures
+ * @param {ParseOptions} [options]
  * @returns {ParseLineResult} result
  */
 export function parseLines(
@@ -284,6 +296,10 @@ export function parseLines(
   };
 }
 
+/**
+ * @param {Statement[]} statements
+ * @returns {Uint8Array}
+ */
 export function statementsToBytes(statements) {
   let length = 0;
   const res = statements.map((statement) => {
@@ -305,15 +321,21 @@ export function statementsToBytes(statements) {
 
 /**
  * A NextBASIC statement
+ *
  * @class
- * @param {...Statement}
  */
 export class Statement {
+  /**
+   * @param {string} line Source NextBASIC line
+   * @param {null|number} [lineNumber=null]
+   */
   constructor(line, lineNumber = null) {
+    /** @type {string} Original BASIC line */
     this.line = Statement.processChars(line);
     this.pos = 0;
     this.inIntExpression = false;
     this.next = null;
+    /** @type {Token} */
     this.lastToken = {};
     this.inIf = false;
     this.in = [];
@@ -423,6 +445,9 @@ export class Statement {
     }
   }
 
+  /**
+   * @returns {Token}
+   */
   nextToken() {
     const token = this.manageTokenState(this.token());
 
@@ -994,8 +1019,8 @@ export class Statement {
  * Parse NextBASIC text into a lexer a statement object
  *
  * @param {string} line Source NextBASIC line
- * @param {number} [lineNumber]
- * @return {Statement} A single statement object
+ * @param {number|null} [lineNumber=null]
+ * @returns {Statement} A single statement object
  */
 export function parseBasic(line, lineNumber = null) {
   if (typeof line !== 'string') {
@@ -1013,6 +1038,12 @@ export function parseBasic(line, lineNumber = null) {
   return statement;
 }
 
+/**
+ *
+ * @param {number} lineNumber
+ * @param {string} basic Plain text NextBASIC string
+ * @returns {Uint8Array} tokenised bytes
+ */
 export function basicToBytes(lineNumber, basic) {
   let length = 0;
   const tokens = [];

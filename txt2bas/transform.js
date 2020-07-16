@@ -1,7 +1,16 @@
 import { opTable } from './op-table';
 import * as types from './types';
 
-// LOAD fileSpec [BANK m[,o[,n]]|CODE m[,n]|DATA arraySpec|LAYER|SCREEN$]
+/**
+ * @typedef { import("./index").Statement } Statement
+ */
+
+/**
+ * Convert all LOAD statement to inline DATA lines and respective pokes
+ *
+ * @param {Statement[]} statements
+ * @returns {Statement[]}
+ */
 export function inlineLoad(statements) {
   const { readFileSync } = require('fs');
   const { join } = require('path');
@@ -174,6 +183,12 @@ export function inlineLoad(statements) {
   return statements;
 }
 
+/**
+ * Remove comments from statements
+ *
+ * @param {Statement[]} statements
+ * @returns {Statement[]}
+ */
 export function stripComments(statements) {
   for (let i = 0; i < statements.length; i++) {
     const st = statements[i];

@@ -35,19 +35,22 @@ import {
 } from './types';
 
 /**
- * @typedef {Object} Token
- * @property {String} name Token name, such as KEYWORD, SYMBOL, etc
- * @property {String|Number} value Byte value
- * @property {String} [text] Textual value for keywords
+ * @typedef { import("./index").Token } Token
  */
 
 /**
- * @typedef {Object} Expect
- * @property {String} name The token name value to expect, such as KEYWORD, etc
- * @property {String} error The error message throw if expectation isn't met
- * @property {String} [value] Narrows specification of expectation
+ * @typedef Expect
+ * @property {string} name The token name value to expect, such as KEYWORD, etc
+ * @property {string} error The error message throw if expectation isn't met
+ * @property {string} [value] Narrows specification of expectation
  */
 
+/**
+ * Validates that line numbers increase
+ *
+ * @param {number} current Current line number
+ * @param {number} prev Previous
+ */
 export function validateLineNumber(current, prev) {
   if (current === prev) {
     throw new Error(`Duplicate line number on ${current}`);
@@ -68,19 +71,33 @@ export function validateLineNumber(current, prev) {
 
 /**
  * Represents the scope state for a single statement
+ *
  * @class
  */
 class Scope {
+  /**
+   * @param {Token[]} tokens
+   */
   constructor(tokens) {
     this.reset();
+    /** @type {Token[]} - original list of tokens */
     this.source = Array.from(tokens);
-    this.tokens = Array.from(tokens); // ensure this is a copy
+    /** @type {Token[]} - remaining tokens to process */
+    this.tokens = Array.from(tokens);
     this.position = 0;
+
+    /** @type {string} */
     this.lastKeyword = null;
+
+    /** @type {Token} - the token currently being processed */
     this.currentToken = {};
+    /** @type {Token} - the previously processed token */
     this.previousToken = {};
   }
 
+  /**
+   * @returns {Token} Processes and validates the next token in the statement
+   */
   next() {
     let token = this.currentToken;
 
@@ -111,7 +128,7 @@ class Scope {
   }
 
   /**
-   * @return {Token}
+   * @returns {Token}
    */
   peekNext() {
     let next = this.tokens[0];
@@ -120,7 +137,7 @@ class Scope {
   }
 
   /**
-   * @return {Token}
+   * @returns {Token}
    */
   peekPrev() {
     return this.statementStack[this.statementStack.length - 1];
@@ -142,10 +159,14 @@ class Scope {
     return this.stack.findIndex(...args);
   }
 
+  /**
+   * @param {Token} value
+   */
   push(value) {
     this.stack.push(value);
   }
 
+  /** @type {Token} */
   pop() {
     return this.stack.pop();
   }
@@ -179,14 +200,22 @@ class Scope {
   }
 
   get hasTokens() {
-    return this.tokens.length;
+    return !!this.tokens.length;
   }
 
+  /** @type {Token} */
   get last() {
     return this.stack[this.stack.length - 1];
   }
 }
 
+/**
+ * Validate a collection of tokens from a statement
+ *
+ * @param {Token[]} tokens
+ * @param {object} debug Debug reference object which will contain scope if validation fails
+ * @param {Scope} debug.scope
+ */
 export function validateStatement(tokens, debug = {}) {
   if (!Array.isArray(tokens)) {
     throw new Error('validateStatement expects tokens to be an array');
@@ -442,7 +471,6 @@ export function validateIntKeyword(token, scope, expect) {
 /**
  * @param {Token} token
  * @param {Scope} scope
- * @param {Expect} expect
  */
 export function validateExpressionPosition(token, scope) {
   if (token.value !== '%') return;
@@ -535,7 +563,7 @@ export function validateStatementStarters(token, scope) {
 }
 
 /**
- * @param {Token} token
+ * @param {Scope} scope
  */
 export function validateEndOfStatement(scope) {
   if (scope.includes(IF)) {
@@ -660,8 +688,6 @@ export function validateOpeningStatement(token, scope, expect) {
 
 /**
  * @param {Token} token
- * @param {Scope} scope
- * @param {Expect} expect
  */
 export function validateSymbolRange(token) {
   const { name, value } = token;
