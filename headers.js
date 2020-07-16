@@ -1,8 +1,22 @@
 import { pack } from '@remy/unpack';
 
-export const calculateXORChecksum = (array) =>
-  Uint8Array.of(array.reduce((checksum, item) => checksum ^ item, 0))[0];
+/**
+ * Calculates XOR checksum
+ *
+ * @param {Array|Uint8Array} data
+ * @returns {number} checksum
+ */
+export const calculateXORChecksum = (data) =>
+  Uint8Array.of(data.reduce((checksum, item) => checksum ^ item, 0))[0];
 
+/**
+ * Generates TAP header for given bytes and metadata
+ *
+ * @param {Uint8Array} basic
+ * @param {string} filename
+ * @param {number} [autostart=0]
+ * @returns {Uint8Array} TAP header with checksum
+ */
 export const tapHeader = (basic, filename = 'BASIC', autostart = 0) => {
   const res = pack(
     '<S$headerLength C$flagByte C$type A10$filename S$length S$p1 S$p2 C$checksum',
@@ -25,6 +39,14 @@ export const tapHeader = (basic, filename = 'BASIC', autostart = 0) => {
   return res;
 };
 
+/**
+ * Generates TAP file containing given bytes
+ *
+ * @param {Uint8Array} basic
+ * @param {string} filename
+ * @param {number} autostart
+ * @returns {Uint8Array} bytes
+ */
 export const asTap = (basic, filename = 'tap dot js', autostart) => {
   const header = tapHeader(basic, filename, autostart);
   const dataType = 0xff;
@@ -40,9 +62,16 @@ export const asTap = (basic, filename = 'tap dot js', autostart) => {
   return tapData;
 };
 
-// encoding header - future note: n$autostart _is_ correct
-export const plus3DOSHeader = (basic, opts = { autostart: 128 }) => {
-  let { hType = 0, hOffset = basic.length - 128, autostart } = opts;
+/**
+ * Generates +3dos file containing given bytes
+ *
+ * @param {Uint8Array} basic
+ * @param {object} [options]
+ * @param {number} [options.autostart]
+ * @returns {Uint8Array} bytes
+ */
+export const plus3DOSHeader = (basic, options = { autostart: 128 }) => {
+  let { hType = 0, hOffset = basic.length - 128, autostart } = options;
   const hFileLength = basic.length - 128;
   autostart = new DataView(Uint16Array.of(autostart).buffer).getUint16(
     0,
