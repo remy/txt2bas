@@ -10,6 +10,12 @@ test('strings protected', (t) => {
   t.is(line.slice(-2, -1).charCodeAt(0), 144);
 });
 
+test('vars', async (t) => {
+  const src = await readFile(__dirname + '/fixtures/tyvarian.bas');
+  const line = file2txt(src);
+  t.is(line.includes('100 SAVE'), true);
+});
+
 test('UDG char encoding', async (t) => {
   t.plan(1);
 

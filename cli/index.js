@@ -149,7 +149,8 @@ async function main(type) {
           validate: options.test || false,
           binary: options.udg,
           bank: options.bank,
-          autostart: options.autostart,
+          autostart:
+            options.autostart != null ? parseInt(options.autostart, 10) : null,
           filename: options.output
             ? basename(options.output, extname(options.output))
             : undefined,

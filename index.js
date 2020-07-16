@@ -100,7 +100,7 @@ export const tokens = (src, { stripComments, inlineLoad, ...options }) => {
  * @param {boolean} [options.includeHeader=true]
  * @param {boolean} [options.bank=false]
  * @param {string} [options.filename='untitled']
- * @param {number} [options.autostart=0x8000]
+ * @param {number|null} [options.autostart=0x8000]
  * @param {boolean} [options.stripComments=false]
  * @param {boolean} [options.validate=false]
  * @returns {Uint8Array}
@@ -139,7 +139,7 @@ export const file2bas = (src, options = {}) => {
   const bytes = statementsToBytes(statements);
   const length = bytes.length;
 
-  if (rest.autostart) {
+  if (rest.autostart && rest.autostart !== 0x8000) {
     directives.autostart = rest.autostart;
   }
 
@@ -164,6 +164,8 @@ export const file2bas = (src, options = {}) => {
     }
     const file = new Uint8Array(fileLength);
     file.fill(0x80);
+    console.warn(directives || 'NO DIR');
+
     file.set(plus3DOSHeader(file, directives)); // set the header (128)
     if (bank) {
       file[128] = 'B'.charCodeAt(0);

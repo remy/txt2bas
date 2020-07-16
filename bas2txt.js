@@ -42,7 +42,7 @@ export function bas2txt(data) {
     C$checksum`
   );
 
-  let txt = bas2txtLines(data.slice(unpack.offset));
+  let txt = bas2txtLines(data.slice(unpack.offset, 128 + header.hOffset));
 
   if (
     header.autostart &&
