@@ -343,6 +343,7 @@ export function validateStatement(tokens, debug = {}) {
       validateSymbolRange(token, scope, expect);
       validateNumberTypes(token, scope, expect);
       validateExpressionState(token, scope, expect);
+      validateStatementStarters(token, scope, expect);
 
       // setting expectations
       if (value === opTable['DEF FN']) {
@@ -407,6 +408,21 @@ export function validateNumberTypes(token, scope) {
 
   if (!scope.intExpression && !scope.intNext) {
     throw new Error('Parsing error, did not expect an integer number');
+  }
+}
+
+export function validateStatementStarters(token, scope) {
+  if (token.name !== KEYWORD) return;
+
+  if (token.value === opTable.DEFPROC) {
+    const index = scope.source.indexOf(token);
+    if (index !== 0) {
+      if (scope.source[0].name === WHITE_SPACE && index === 1) {
+        return;
+      }
+
+      throw new Error('DEFPROC must be first token in a statement');
+    }
   }
 }
 

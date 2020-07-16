@@ -179,6 +179,7 @@ notThrows(
 notThrows('462 a=5: NEXT n:   ; Column Statuses');
 notThrows('10 %A=%1 << RND 4');
 notThrows('10 m$=BANK 12 PEEK$(%f,~10)');
+notThrows('10     DEFPROC main()');
 
 /********************************************/
 
@@ -217,14 +218,4 @@ throws('10 let a{0 = 10', 'Expected to see closing');
 throws('10 LET %A[i*j=% RND 192: ; 0 = x', 'Expected to see ');
 throws('10 LET a=% INT {% 1}');
 throws('10 .install t:/nextdaw.drv');
-// throws('10 RUN AT %(4-%z)');
-
-// throws('10 BANK 14 POKE 0,188+%P+k', null, {
-//   message: 'int expression must be at the start',
-// });
-
-// throws(
-//   '10 IF %i AND B(i+4) THEN %B(i+4)=0:%B(i+5)|@1000000: PROC takeLife()',
-//   null,
-//   { message: 'nonsense' }
-// );
+throws('10 PAUSE 0: DEFPROC main()');
