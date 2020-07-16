@@ -132,7 +132,7 @@ class Scope {
    */
   peekNext() {
     let next = this.tokens[0];
-    if (next.type === WHITE_SPACE) next = this.tokens[1];
+    if (next.name === WHITE_SPACE) next = this.tokens[1];
     return next;
   }
 
@@ -424,17 +424,12 @@ export function validateStatement(tokens, debug = {}) {
       validateStatementStarters(token, scope, expect);
       validateExpressionPosition(token, scope, expect);
       validateIntKeyword(token, scope, expect);
+      validateComment(token, scope);
 
       // setting expectations
       if (value === opTable['DEF FN']) {
         scope.push(DEFFN);
         scope.push(DEFFN_SIG);
-      }
-
-      if (value === opTable.REM) {
-        expect.name = COMMENT;
-        expect.error =
-          'Parser error, REM keyword should be followed by COMMENT';
       }
     } catch (e) {
       let message = e.message;
@@ -448,6 +443,21 @@ export function validateStatement(tokens, debug = {}) {
 
   // check if anything is hanging on the scope
   validateEndOfStatement(scope);
+}
+
+/**
+ * @param {Token} token
+ * @param {Scope} scope
+ */
+export function validateComment(token, scope) {
+  if (token.text !== 'REM') return;
+
+  const next = scope.peekNext();
+  if (next.name !== COMMENT) {
+    console.log({ next });
+
+    throw new Error('Parser error, REM keyword should be followed by COMMENT');
+  }
 }
 
 /**

@@ -185,6 +185,7 @@ notThrows('10     DEFPROC main()');
 notThrows('10 %a = INT 5');
 notThrows('10 %a = INT { 5 }');
 notThrows('10 %a = INT 5 + a');
+notThrows('10 REM     comment with space');
 
 /********************************************/
 
