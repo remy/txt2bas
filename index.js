@@ -114,9 +114,10 @@ export const file2bas = (src, options = {}) => {
     format = '3dos',
     binary = false, // used if source has UDGs
     includeHeader = true,
-    bank = false,
     ...parseOptions
   } = options;
+
+  const bank = parseOptions.bank;
 
   let { filename = 'untitled', autostart = 0x8000 } = options;
 

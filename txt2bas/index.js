@@ -199,6 +199,7 @@ export function parseLineWithData(line, autoline = null) {
  * @typedef ParseOptions
  * @property {boolean} [validate=true] Whether to throw on validation failures
  * @property {boolean} [keepDirectives=false] Whether to keep lines starting with "#"
+ * @property {boolean} [bank=false] Whether the target will be a bank
  */
 
 /**
@@ -210,7 +211,7 @@ export function parseLineWithData(line, autoline = null) {
  */
 export function parseLines(
   text,
-  { validate = true, keepDirectives = false } = {}
+  { validate = true, keepDirectives = false, bank = false } = {}
 ) {
   const lines = text.split(text.includes('\r') ? '\r' : '\n');
   const statements = [];
@@ -284,7 +285,7 @@ export function parseLines(
     }
   }
 
-  const bytes = statementsToBytes(statements);
+  const bytes = statementsToBytes(statements, { bank });
 
   return {
     bytes,
@@ -297,13 +298,27 @@ export function parseLines(
 }
 
 /**
+ * Convert statements to bytes
+ *
  * @param {Statement[]} statements
+ * @param {object} options
+ * @param {boolean} [options.bank=false] Run validation for banked lines
  * @returns {Uint8Array}
  */
-export function statementsToBytes(statements) {
+export function statementsToBytes(statements, { bank = false } = {}) {
   let length = 0;
   const res = statements.map((statement) => {
     const bytes = basicToBytes(statement.lineNumber, statement.tokens);
+
+    if (bank) {
+      // if the tokenised length is greater than 256, then it won't work in a bank
+      if (bytes.length > 256) {
+        throw new Error(
+          'Tokenised line length of 256 bytes exceeded for banked code on line #' +
+            statement.lineNumber
+        );
+      }
+    }
     length += bytes.length;
     return bytes;
   });

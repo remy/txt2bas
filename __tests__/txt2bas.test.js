@@ -254,6 +254,19 @@ test('directives and comments', async (t) => {
   t.is(res.length, 0, 'comments are stripped');
 });
 
+test('bank limits', (t) => {
+  const src = `20 PRINT "remyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremyremy yremyremyremyremyremyremyremy yremy 1234567"`;
+
+  t.notThrows(() => parseLines(src, { bank: true }), '256 bytes');
+  t.throws(
+    () => parseLines(src + '8', { bank: true }),
+    {
+      message: /exceed/i,
+    },
+    '257 bytes throws'
+  );
+});
+
 test('int expression encoding', (t) => {
   let src = '10 sprite pause %1 to 2';
   let res = statements(src, { validate: false });
