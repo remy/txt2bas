@@ -338,4 +338,10 @@ test('in the wild', (t) => {
   src = '10 ENDPROC';
   res = parseLines(src).statements[0].tokens.pop();
   t.is(res.name, 'KEYWORD', 'ENDPROC is a keyword');
+
+  src = '55 PRINT AT %0,%0;"0"(1)';
+  res = parseLines(src, { validate: false }).statements[0].tokens;
+  res.pop();
+  res = res.pop();
+  t.is(res.name, 'NUMBER', 'float number found');
 });

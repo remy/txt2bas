@@ -179,7 +179,12 @@ notThrows(
 notThrows('462 a=5: NEXT n:   ; Column Statuses');
 notThrows('10 %A=%1 << RND 4');
 notThrows('10 m$=BANK 12 PEEK$(%f,~10)');
+notThrows('10 %o=%o+ INT { LEN e$}');
+notThrows('55 PRINT AT %2,%13;"000000"(1 TO 6- LEN STR$ hscore)+ STR$ hscore');
 notThrows('10     DEFPROC main()');
+notThrows('10 %a = INT 5');
+notThrows('10 %a = INT { 5 }');
+notThrows('10 %a = INT 5 + a');
 
 /********************************************/
 
@@ -218,4 +223,8 @@ throws('10 let a{0 = 10', 'Expected to see closing');
 throws('10 LET %A[i*j=% RND 192: ; 0 = x', 'Expected to see ');
 throws('10 LET a=% INT {% 1}');
 throws('10 .install t:/nextdaw.drv');
+throws('10 PRINT AT 1,0;"x"%x;":";%x >> 3+i;"   ";');
+throws('10 TILE 4,1 AT 0,24+%o');
 throws('10 PAUSE 0: DEFPROC main()');
+throws('10 %a = %a + INT 5');
+throws('10 %a = INT 5 + %a');

@@ -30,6 +30,8 @@ import {
   OPERATOR,
   OPERATION,
   UNTIL,
+  STRING,
+  FLOAT_EXPRESSION,
 } from './types';
 
 /**
@@ -108,9 +110,26 @@ class Scope {
     return token;
   }
 
+  /**
+   * @return {Token}
+   */
+  peekNext() {
+    let next = this.tokens[0];
+    if (next.type === WHITE_SPACE) next = this.tokens[1];
+    return next;
+  }
+
+  /**
+   * @return {Token}
+   */
+  peekPrev() {
+    return this.statementStack[this.statementStack.length - 1];
+  }
+
   reset() {
     this.resetExpression();
     this.statementStack = [];
+    this.argumentExpression = [];
     this.statementKeyword = null;
     this.lastKeyword = null;
     this.expressionKeyword = null; // FIXME not sure we need this
@@ -149,6 +168,7 @@ class Scope {
     this.intNext = false;
     this.intExpression = false;
     this.expression = [];
+    this.argumentExpression = [];
   }
 
   get isFullIntExpression() {
@@ -192,9 +212,14 @@ export function validateStatement(tokens, debug = {}) {
       if (name === KEYWORD) {
         scope.push(OPERATION);
 
+        // start to read the arguments
+        scope.argumentExpression = [];
+
         if (!scope.expressionKeyword) {
           scope.expressionKeyword = token;
         }
+      } else {
+        scope.argumentExpression.push(token);
       }
 
       // check expectations
@@ -210,6 +235,7 @@ export function validateStatement(tokens, debug = {}) {
 
       if (value === '(') {
         scope.push(OPEN_PARENS);
+        scope.argumentExpression = [];
         if (scope.intExpression) {
           scope.push(INT_PARENS);
         }
@@ -217,15 +243,22 @@ export function validateStatement(tokens, debug = {}) {
 
       if (value === '{') {
         scope.push(OPEN_BRACES);
+        scope.argumentExpression = [];
       }
 
       if (value === '[') {
         scope.push(OPEN_BRACKETS);
+        scope.argumentExpression = [];
       }
 
       if (value === '}') {
         if (!scope.popTo(OPEN_BRACES)) {
           throw new Error('Missing opening `{` brace');
+        }
+
+        // we were inside an INT function
+        if (scope.last === FLOAT_EXPRESSION) {
+          scope.pop();
         }
       }
 
@@ -322,6 +355,7 @@ export function validateStatement(tokens, debug = {}) {
       // symbols that reset the integer expression state
       if (name == SYMBOL) {
         if (value === ',') {
+          scope.argumentExpression = [];
           if (scope.last !== PARAM_SEP) scope.push(PARAM_SEP);
           if (!scope.includes(INT_PARENS)) {
             if (!scope.isFullIntExpression) {
@@ -332,6 +366,7 @@ export function validateStatement(tokens, debug = {}) {
 
         if (value === '=') {
           scope.push(OPERATOR);
+          scope.argumentExpression = [];
           if (scope.includes(IF) || scope.includes(UNTIL)) {
             scope.push(COMPARATOR);
           } else if (
@@ -358,6 +393,8 @@ export function validateStatement(tokens, debug = {}) {
       validateNumberTypes(token, scope, expect);
       validateExpressionState(token, scope, expect);
       validateStatementStarters(token, scope, expect);
+      validateExpressionPosition(token, scope, expect);
+      validateIntKeyword(token, scope, expect);
 
       // setting expectations
       if (value === opTable['DEF FN']) {
@@ -375,6 +412,7 @@ export function validateStatement(tokens, debug = {}) {
       message += `, "${token.text || value}" at: ${token.pos + 1}:${
         (token.text || value).length + token.pos + 1
       }`;
+
       throw new Error(message);
     }
   }
@@ -383,11 +421,49 @@ export function validateStatement(tokens, debug = {}) {
   validateEndOfStatement(scope);
 }
 
+/**
+ * @param {Token} token
+ * @param {Scope} scope
+ * @param {Expect} expect
+ */
+export function validateIntKeyword(token, scope, expect) {
+  if (token.text !== 'INT') return;
+
+  if (!scope.intExpression) return;
+
+  scope.push(FLOAT_EXPRESSION);
+
+  expect.value = '{';
+  expect.name = SYMBOL;
+  expect.error =
+    'Using INT in an integer expression requires the expression to be wrapped {braces}';
+}
 
 /**
  * @param {Token} token
  * @param {Scope} scope
+ * @param {Expect} expect
  */
+export function validateExpressionPosition(token, scope) {
+  if (token.value !== '%') return;
+
+  const prev = scope.peekPrev();
+
+  // last part of a statement
+  if (!prev) return;
+
+  if (scope.argumentExpression.length) {
+    if (scope.argumentExpression.length > 1) {
+      throw new Error('Integer expression should be the start of an argument');
+    }
+  }
+
+  if (prev.name === STRING) {
+    throw new Error(
+      'Did not expect an integer expression to directly follow a string'
+    );
+  }
+}
 
 /**
  * @param {Token} token
@@ -506,7 +582,7 @@ export function validateIdentifier({ value, name }, scope = { last: null }) {
     const dollar = value.endsWith('$');
     const isString = dollar && value.length === 2;
 
-    if (scope.intExpression && scope.lastKeyword.text !== 'INT') {
+    if (scope.intExpression && !scope.includes(FLOAT_EXPRESSION)) {
       throw new Error(
         'Only integer variables (single character vars) are allowed in integer expressions'
       );

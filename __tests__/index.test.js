@@ -26,6 +26,12 @@ test('formatText', (t) => {
   });
 });
 
+test('format without let', (t) => {
+  const src = '9996 e$= STR$ err';
+  const res = formatText(src);
+  t.is(res, src);
+});
+
 test('white space formatting', (t) => {
   let src, res;
   src = '70 PRINT "Hello, world!"';

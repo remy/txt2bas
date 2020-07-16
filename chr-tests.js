@@ -53,7 +53,7 @@ const tests = {
   },
 
   _isLiteralReset(c) {
-    return c === '=' || c === ',' || c === ':';
+    return c === '=' || c === ',' || c === ';' || c === ':';
   },
 
   _isSymbol(c) {
