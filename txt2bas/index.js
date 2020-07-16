@@ -179,6 +179,23 @@ export function parseLineWithData(line, autoline = null) {
   return { basic, line, length, lineNumber, tokens };
 }
 
+/**
+ * @typedef {Object} ParseLineResult
+ * @property {Uint8Array} bytes
+ * @property {number} length
+ * @property {Array<Token>} tokens
+ * @property {Array<Statement>}
+ * @property {number} autostart
+ * @property {string} filename
+ */
+
+/**
+ * Converts plain text to fully parsed NextBASIC with AST
+ * @param {string} text plain text NextBASIC
+ * @param {Object} [options]
+ * @param {boolean} [options.validate=true] Whether to throw on validation failures
+ * @returns {ParseLineResult} result
+ */
 export function parseLines(
   text,
   { validate = true, keepDirectives = false } = {}

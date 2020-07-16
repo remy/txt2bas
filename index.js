@@ -58,6 +58,18 @@ export const tokens = (src, { stripComments, inlineLoad, ...options }) => {
   return { statements, ...rest };
 };
 
+/**
+ * Converts plain text to NextBASIC binary
+ * @param {string} src plain text source of NextBASIC
+ * @param {object} [options]
+ * @param {string} [options.format=3dos]
+ * @param {boolean} [options.includeHeader=true]
+ * @param {boolean} [options.bank=false]
+ * @param {string} [options.filename='untitled']
+ * @param {number} [options.autostart=0x8000]
+ * @param {boolean} [options.stripComments=false]
+ * @param {boolean} [options.validate=false]
+ */
 export const file2bas = (src, options = {}) => {
   if (!src.toString) {
     throw new Error('Source must be string or string-able');
