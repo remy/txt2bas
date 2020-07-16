@@ -32,6 +32,20 @@ import {
   UNTIL,
 } from './types';
 
+/**
+ * @typedef {Object} Token
+ * @property {String} name Token name, such as KEYWORD, SYMBOL, etc
+ * @property {String|Number} value Byte value
+ * @property {String} [text] Textual value for keywords
+ */
+
+/**
+ * @typedef {Object} Expect
+ * @property {String} name The token name value to expect, such as KEYWORD, etc
+ * @property {String} error The error message throw if expectation isn't met
+ * @property {String} [value] Narrows specification of expectation
+ */
+
 export function validateLineNumber(current, prev) {
   if (current === prev) {
     throw new Error(`Duplicate line number on ${current}`);
@@ -54,7 +68,7 @@ export function validateLineNumber(current, prev) {
  * Represents the scope state for a single statement
  * @class
  */
-class BasicScope {
+class Scope {
   constructor(tokens) {
     this.reset();
     this.source = Array.from(tokens);
@@ -166,7 +180,7 @@ export function validateStatement(tokens, debug = {}) {
     throw new Error('Empty line (or only white space)');
   }
 
-  const scope = new BasicScope(tokens);
+  const scope = new Scope(tokens);
   debug.scope = scope; // allows testing to pull up the scope state
   const expect = { name: null, error: null, value: null };
 
@@ -369,6 +383,16 @@ export function validateStatement(tokens, debug = {}) {
   validateEndOfStatement(scope);
 }
 
+
+/**
+ * @param {Token} token
+ * @param {Scope} scope
+ */
+
+/**
+ * @param {Token} token
+ * @param {Scope} scope
+ */
 export function validateExpressionState(token, scope) {
   if (token.name === SYMBOL && token.value === '%') {
     if (scope.expression.length === 1) {
@@ -403,6 +427,10 @@ export function validateExpressionState(token, scope) {
   }
 }
 
+/**
+ * @param {Token} token
+ * @param {Scope} scope
+ */
 export function validateNumberTypes(token, scope) {
   if (token.name !== LITERAL_NUMBER) return;
 
@@ -411,6 +439,10 @@ export function validateNumberTypes(token, scope) {
   }
 }
 
+/**
+ * @param {Token} token
+ * @param {Scope} scope
+ */
 export function validateStatementStarters(token, scope) {
   if (token.name !== KEYWORD) return;
 
@@ -426,6 +458,9 @@ export function validateStatementStarters(token, scope) {
   }
 }
 
+/**
+ * @param {Token} token
+ */
 export function validateEndOfStatement(scope) {
   if (scope.includes(IF)) {
     throw new Error('IF statement must have THEN');
@@ -451,6 +486,10 @@ export function validateEndOfStatement(scope) {
   }
 }
 
+/**
+ * @param {Token} token
+ * @param {Scope} scope
+ */
 export function validateIdentifier({ value, name }, scope = { last: null }) {
   if (name !== IDENTIFIER) {
     return;
@@ -485,6 +524,9 @@ export function validateIdentifier({ value, name }, scope = { last: null }) {
   }
 }
 
+/**
+ * @param {Token} token
+ */
 export function validateCharRange(token) {
   const { name, value } = token;
 
@@ -498,6 +540,11 @@ export function validateCharRange(token) {
   }
 }
 
+/**
+ * @param {Token} token
+ * @param {Scope} scope
+ * @param {Expect} expect
+ */
 export function validateOpeningStatement(token, scope, expect) {
   /*
         Allowed starting commands other than a keyword
@@ -535,6 +582,11 @@ export function validateOpeningStatement(token, scope, expect) {
   }
 }
 
+/**
+ * @param {Token} token
+ * @param {Scope} scope
+ * @param {Expect} expect
+ */
 export function validateSymbolRange(token) {
   const { name, value } = token;
 
@@ -550,7 +602,13 @@ export function validateSymbolRange(token) {
   }
 }
 
-export function validateIdentifierDeclaration({ name, text }, scope, expect) {
+/**
+ * @param {Token} token
+ * @param {Scope} scope
+ * @param {Expect} expect
+ */
+export function validateIdentifierDeclaration(token, scope, expect) {
+  const { name, text } = token;
   if (name !== KEYWORD) return;
   if (
     text !== 'PROC' &&
