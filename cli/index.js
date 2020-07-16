@@ -85,6 +85,16 @@ async function main(type) {
       stdin.on('end', () => resolve(Buffer.concat(result, length)));
     });
   } else {
+    if (!options.input) {
+      if (!options.debug) {
+        console.error(
+          `No input specified - see ${
+            type === 'txt' ? 'txt2bas' : 'bas2txt'
+          } --help for details`
+        );
+        process.exit(1);
+      }
+    }
     src = readFileSync(options.input);
   }
 
@@ -211,7 +221,7 @@ export default (type) => {
     process.exit(1);
   }
 
-  if (process.argv[2] === '-v') {
+  if (process.argv[2] === '-v' || process.argv[2] === '--version') {
     console.log(version);
     process.exit(0);
   }
