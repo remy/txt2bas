@@ -247,7 +247,7 @@ export function validateStatement(tokens, debug = {}) {
         if (!scope.expressionKeyword) {
           scope.expressionKeyword = token;
         }
-      } else {
+      } else if (name !== STATEMENT_SEP) {
         scope.argumentExpression.push(token);
       }
 
@@ -454,8 +454,6 @@ export function validateComment(token, scope) {
 
   const next = scope.peekNext();
   if (next.name !== COMMENT) {
-    console.log({ next });
-
     throw new Error('Parser error, REM keyword should be followed by COMMENT');
   }
 }
