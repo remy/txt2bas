@@ -190,6 +190,7 @@ export function inlineLoad(statements) {
  * @returns {Statement[]}
  */
 export function stripComments(statements) {
+  const res = [];
   for (let i = 0; i < statements.length; i++) {
     const st = statements[i];
     // comments exist at the end of a line
@@ -200,6 +201,10 @@ export function stripComments(statements) {
         st.tokens.pop();
       }
     }
+
+    if (st.tokens.length) {
+      res.push(st);
+    }
   }
-  return statements;
+  return res;
 }

@@ -1,7 +1,14 @@
 import test from 'ava';
 import { parseLine } from '../txt2bas';
 import { bas2txtLines } from '../bas2txt';
-import { line2bas, line2txt, formatText, validateTxt } from '../index';
+import {
+  line2bas,
+  line2txt,
+  formatText,
+  validateTxt,
+  file2bas,
+  file2txt,
+} from '../index';
 
 test('root module matches inner libs', (t) => {
   let src;
@@ -9,6 +16,16 @@ test('root module matches inner libs', (t) => {
   t.is(formatText(src), src);
   t.deepEqual(line2bas(src).basic, parseLine(src));
   t.is(line2txt(parseLine(src)), bas2txtLines(parseLine(src)));
+});
+
+
+test('strip comments', (t) => {
+  let src = '#autostart 10\n10 REM marker\n20 PAUSE 0\n';
+  const bytes = file2bas(src, { stripComments: true });
+
+  const txt = file2txt(bytes);
+
+  t.is(txt, '#autostart 10\n20 PAUSE 0\n', 'tap convert matches');
 });
 
 test('formatText', (t) => {
