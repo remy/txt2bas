@@ -18,6 +18,14 @@ test('root module matches inner libs', (t) => {
   t.is(line2txt(parseLine(src)), bas2txtLines(parseLine(src)));
 });
 
+test('tap', (t) => {
+  let src = '#autostart 10\n10 REM marker\n20 PAUSE 0\n';
+  const bytes = file2bas(src, { format: 'tap' });
+
+  const txt = file2txt(bytes, { format: 'tap' });
+
+  t.is(src, txt, 'tap convert matches');
+});
 
 test('strip comments', (t) => {
   let src = '#autostart 10\n10 REM marker\n20 PAUSE 0\n';

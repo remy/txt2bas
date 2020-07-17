@@ -11,11 +11,33 @@ import { Unpack } from '@remy/unpack';
 export function tap2txt(data) {
   const unpack = new Unpack(data);
 
-  unpack.parse(
-    `<S$headerLength C$flagByte C$type A10$filename S$length S$p1 S$p2 C$checksum x2`
+  const header = unpack.parse(
+    `<S$headerLength
+    C$flagByte
+    C$type
+    A10$filename
+    S$length
+    S$autostart
+    S$p2
+    C$checksum
+    S$blockLength`
   );
 
-  return bas2txtLines(data.slice(24, data.length - 24));
+  const { bytes } = unpack.parse(
+    `<C$flagByte C${header.length}$bytes C$checksum`
+  );
+
+  let txt = bas2txtLines(bytes);
+
+  if (
+    header.autostart &&
+    header.autostart != 0x8000 &&
+    header.autostart <= 9999
+  ) {
+    txt = `#autostart ${header.autostart}\n${txt}`;
+  }
+
+  return txt;
 }
 
 /**

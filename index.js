@@ -157,14 +157,13 @@ export const file2bas = (src, options = {}) => {
     let offset = 128;
     if (bank) {
       fileLength = 0x4000 + 128;
-      offset = 130;
       directives.hType = 3;
       directives.hOffset = 0x8000;
       directives.autostart = 0xc000; // unsure why, but autostart doesn't make sense in a BANK
+      offset = 130;
     }
     const file = new Uint8Array(fileLength);
     file.fill(0x80);
-    console.warn(directives || 'NO DIR');
 
     file.set(plus3DOSHeader(file, directives)); // set the header (128)
     if (bank) {
@@ -175,7 +174,7 @@ export const file2bas = (src, options = {}) => {
 
     return file;
   } else if (format === 'tap') {
-    return asTap(bytes, filename, autostart);
+    return asTap(bytes, directives);
   }
 };
 

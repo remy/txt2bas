@@ -43,11 +43,12 @@ export const tapHeader = (basic, filename = 'BASIC', autostart = 0) => {
  * Generates TAP file containing given bytes
  *
  * @param {Uint8Array} basic
- * @param {string} filename
- * @param {number} autostart
+ * @param {object} options
+ * @param {string} [options.filename="untitled"]
+ * @param {number} [options.autostart=0x8000]
  * @returns {Uint8Array} bytes
  */
-export const asTap = (basic, filename = 'tap dot js', autostart) => {
+export const asTap = (basic, { filename = 'untitled', autostart }) => {
   const header = tapHeader(basic, filename, autostart);
   const dataType = 0xff;
   const checksum = calculateXORChecksum(Array.from([dataType, ...basic]));
