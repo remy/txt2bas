@@ -29,7 +29,11 @@ import {
   KEYWORD,
   SYMBOL,
   WHITE_SPACE,
+  INT_PARENS,
   STATEMENT_SEP,
+  OPEN_PARENS,
+  OPEN_BRACES,
+  OPEN_BRACKETS,
 } from './types';
 
 /**
@@ -412,11 +416,15 @@ export class Statement {
 
   popTo(type) {
     const state = this.in;
-    while (state.length && state.last !== type) state.pop();
+    let last = null;
+    while (state.length && last !== type) {
+      last = state.pop();
+    }
+
     if (state.length === 0) {
       return false;
     }
-    const last = state.pop();
+
     return type === last;
   }
 
@@ -525,79 +533,86 @@ export class Statement {
       }
     }
 
+    if (token.value === '(') {
+      this.in.push(OPEN_PARENS);
+      if (this.in.includes(DEFFN_SIG)) {
+        this.in.push(DEFFN_ARGS);
+      }
+      if (this.isIn(INT_EXPRESSION)) {
+        this.in.push(INT_PARENS);
+      }
+    }
+    if (token.value === '{') {
+      this.in.push(OPEN_BRACES);
+    }
+    if (token.value === '[') {
+      this.in.push(OPEN_BRACKETS);
+    }
+
+    if (token.value === ')') {
+      this.popTo(OPEN_PARENS);
+    }
+    if (token.value === '}') {
+      this.popTo(OPEN_BRACES);
+    }
+    if (token.value === ']') {
+      this.popTo(OPEN_BRACKETS);
+    }
+
     if (this.in.length && token.name === STATEMENT_SEP) {
       this.in = [];
     }
 
-    if (this.nowIn === DEFFN_SIG) {
-      if (token.name === SYMBOL) {
-        if (token.value === '(') {
-          this.in.push(DEFFN_ARGS);
-        }
+    if (token.value === '=' && this.nowIn === DEFFN_SIG) {
+      this.popTo(DEFFN_SIG);
+    }
 
-        if (token.value === '=') {
-          this.in.pop();
-        }
+    if (token.name === KEYWORD) {
+      if (this.inIntExpression && intFunctions[token.text]) {
+        this.in.push(INT_EXPRESSION);
+      }
+
+      if (!this.isIn(IF) && !this.isIn(INT_EXPRESSION)) {
+        this.inIntExpression = false;
+      }
+
+      // needed to track DEF FN args and to pad them properly
+      if (token.value === opTable['DEF FN']) {
+        this.in.push(DEFFN);
+        this.in.push(DEFFN_SIG);
+      }
+
+      if (token.value === opTable.IF) {
+        this.in.push(IF);
+      }
+
+      if (token.value === opTable.UNTIL) {
+        this.in.push(UNTIL);
+      }
+
+      if (token.value === opTable.THEN) {
+        this.popTo(IF);
+        this.inIntExpression = false;
+      }
+
+      if (token.value === opTable.BIN) {
+        this.next = BINARY;
+      }
+
+      // special handling for keywords
+      if (token.value === opTable.REM) {
+        this.next = COMMENT;
+      }
+
+      if (usesLineNumbers.includes(token.text)) {
+        // this is just a hint
+        this.next = LINE_NUMBER;
       }
     }
 
-    if (
-      this.nowIn === DEFFN_ARGS &&
-      token.name === SYMBOL &&
-      token.value === ')'
-    ) {
-      this.in.pop();
-    }
-
-    if (token) {
-      if (token.name === KEYWORD) {
-        if (this.inIntExpression && intFunctions[token.text]) {
-          this.in.push(INT_EXPRESSION);
-        }
-
-        if (!this.isIn(IF) && !this.isIn(INT_EXPRESSION)) {
-          this.inIntExpression = false;
-        }
-
-        // needed to track DEF FN args and to pad them properly
-        if (token.value === opTable['DEF FN']) {
-          this.in.push(DEFFN);
-          this.in.push(DEFFN_SIG);
-        }
-
-        if (token.value === opTable.IF) {
-          this.in.push(IF);
-        }
-
-        if (token.value === opTable.UNTIL) {
-          this.in.push(UNTIL);
-        }
-
-        if (token.value === opTable.THEN) {
-          this.popTo(IF);
-          this.inIntExpression = false;
-        }
-
-        if (token.value === opTable.BIN) {
-          this.next = BINARY;
-        }
-
-        // special handling for keywords
-        if (token.value === opTable.REM) {
-          this.next = COMMENT;
-        }
-
-        if (usesLineNumbers.includes(token.text)) {
-          // this is just a hint
-          this.next = LINE_NUMBER;
-        }
-      }
-
-      if (token.value === '=') {
-        [token, this]; // ?
-        if (!this.isIn(IF) && !this.isIn(UNTIL)) {
-          this.inIntExpression = false;
-        }
+    if (token.value === '=') {
+      if (!this.isIn(IF) && !this.isIn(UNTIL)) {
+        this.inIntExpression = false;
       }
     }
 
@@ -618,7 +633,14 @@ export class Statement {
       return null;
     }
 
-    if (tests._isLiteralReset(c) && !this.isIn(IF) && !this.isIn(UNTIL)) {
+    [c, this.in]; // ?
+
+    if (
+      tests._isLiteralReset(c) &&
+      !this.isIn(INT_PARENS) &&
+      !this.isIn(IF) &&
+      !this.isIn(UNTIL)
+    ) {
       this.inIntExpression = false;
     }
 
@@ -773,7 +795,7 @@ export class Statement {
       pos: this.pos,
     };
 
-    if (this.nowIn === DEFFN_ARGS) {
+    if (this.in.includes(DEFFN_ARGS)) {
       tok.name = DEF_FN_ARG;
     }
 
@@ -1145,3 +1167,5 @@ export function basicToBytes(lineNumber, basic) {
 
   return new Uint8Array(buffer.buffer);
 }
+
+parseBasic('10 DEF FN r(x)=INT (x+0.5)'); // ?

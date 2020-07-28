@@ -357,4 +357,10 @@ test('in the wild', (t) => {
   res.pop();
   res = res.pop();
   t.is(res.name, 'NUMBER', 'float number found');
+
+  src = '10 %a=% SPRITE OVER (0,35,1,1)';
+  res = parseLines(src, { validate: false }).statements[0].tokens;
+  res.pop(); // ')'
+  res = res.pop();
+  t.is(res.name, 'LITERAL_NUMBER', 'int number found');
 });
