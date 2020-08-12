@@ -1,8 +1,11 @@
 import { opTable } from './op-table';
 import * as types from './types';
+import { renumberStatements } from '../renumber';
 
 /**
  * @typedef { import("./index").Statement } Statement
+ * @typedef { import("./index").Token } Token
+ * @typedef { import("./index").Autoline } Autoline
  */
 
 /**
@@ -184,21 +187,43 @@ export function inlineLoad(statements) {
 }
 
 /**
+ * Checks for trailing whitespace and removes it from the tokens.
+ * Mutates `tokens`
+ *
+ * @param {Token[]} tokens
+ */
+function removeTrailingWhiteSpace(tokens) {
+  if (
+    tokens[tokens.length - 1] &&
+    tokens[tokens.length - 1].name === types.WHITE_SPACE
+  ) {
+    tokens.pop();
+  }
+}
+
+/**
  * Remove comments from statements
  *
  * @param {Statement[]} statements
+ * @param {Autoline} autoline
  * @returns {Statement[]}
  */
-export function stripComments(statements) {
+export function stripComments(statements, autoline) {
   const res = [];
   for (let i = 0; i < statements.length; i++) {
     const st = statements[i];
     // comments exist at the end of a line
     if (st.tokens[st.tokens.length - 1].name === types.COMMENT) {
       st.tokens.pop();
-      const token = st.tokens.pop(); // remove the command too
-      if (token.name === types.WHITE_SPACE) {
+      removeTrailingWhiteSpace(st.tokens);
+      st.tokens.pop(); // remove the command too
+      removeTrailingWhiteSpace(st.tokens);
+      if (
+        st.tokens.length &&
+        st.tokens[st.tokens.length - 1].name === types.STATEMENT_SEP
+      ) {
         st.tokens.pop();
+        removeTrailingWhiteSpace(st.tokens);
       }
     }
 
@@ -206,5 +231,9 @@ export function stripComments(statements) {
       res.push(st);
     }
   }
-  return res;
+
+  return renumberStatements(res, {
+    start: autoline.start,
+    step: autoline.step,
+  });
 }

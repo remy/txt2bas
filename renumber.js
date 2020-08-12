@@ -2,6 +2,10 @@ import { parseLines, statementsToBytes } from './txt2bas/index';
 import { bas2txtLines } from './bas2txt';
 
 /**
+ * @typedef { import("./index").Statement } Statement
+ */
+
+/**
  * Find original line number for a given new position
  *
  * @param {number} lineNumber Line number
@@ -15,20 +19,12 @@ function findOldLine(lineNumber, mapping) {
 }
 
 /**
- * Renumbers a string of NextBASIC lines.
  *
- * @param {string} text NextBASIC source
- * @param {object} [options] Renumber options
- * @param {number} [options.start=first line] The line number to affect
- * @param {number} [options.step=10] Increment by step
- * @param {number} [options.end=last line] The line number to end renumbering
- * @param {boolean} [options.relocate=false] Moves lines to a new location
- * @param {number} [options.limit] Only used with relocate, the number of lines to work with if options.end is not specified
- * @param {number} [options.base=options.start] Used with relocate to specify where the lines should be moved _to_
- * @returns {string} The updated NextBASIC source code
+ * @param {Statement[]} statements
+ * @param {RenumberOptions} options
+ * @returns {Statement[]}
  */
-export function renumber(text, options = {}) {
-  // LINE start, step|m,n TO mm, nn;
+export function renumberStatements(statements, options = {}) {
   let {
     relocate = false,
     start = null,
@@ -39,16 +35,6 @@ export function renumber(text, options = {}) {
     limit = null,
     mapping = {},
   } = options;
-
-  if (relocate) {
-    throw new Error('Line number relocate is not supported yet');
-  }
-
-  if (relocate === false) {
-    limit = null;
-  }
-
-  let res = parseLines(text, { validate: false }).statements;
 
   const touched = [];
   let current = relocate ? start : base;
@@ -62,7 +48,7 @@ export function renumber(text, options = {}) {
     current -= step;
   }
 
-  res.forEach((st) => {
+  statements.forEach((st) => {
     mapping[st.lineNumber] = st.lineNumber;
     if (st.lineNumber < start) return;
     if (end !== null && st.lineNumber > end) return;
@@ -83,7 +69,7 @@ export function renumber(text, options = {}) {
   });
 
   if (!relocate) {
-    res
+    statements
       .sort((a, b) => {
         return a.lineNumber < b.lineNumber ? -1 : 1;
       })
@@ -97,12 +83,12 @@ export function renumber(text, options = {}) {
         });
       });
 
-    return bas2txtLines(statementsToBytes(res));
+    return statements;
   }
 
   // // shift from the base location up to where current is
   const newMap = {};
-  text = renumber(bas2txtLines(statementsToBytes(res)), {
+  statements = renumberStatements(statements, {
     start: base,
     base: base + step * count,
     inc,
@@ -110,9 +96,7 @@ export function renumber(text, options = {}) {
     mapping: newMap,
   });
 
-  res = parseLines(text, { validate: false }).statements;
-
-  text = renumber(bas2txtLines(statementsToBytes(res)), {
+  statements = renumberStatements(statements, {
     start: newMap[start],
     end: newMap[end],
     base,
@@ -120,7 +104,39 @@ export function renumber(text, options = {}) {
     limit,
   });
 
-  return text;
+  return statements;
+}
+
+/**
+ * @typedef {object} RenumberOptions
+ * @property {number} [start=first line] The line number to affect
+ * @property {number} [step=10] Increment by step
+ * @property {number} [end=last line] The line number to end renumbering
+ * @property {boolean} [relocate=false] Moves lines to a new location
+ * @property {number} [limit] Only used with relocate, the number of lines to work with if  end is not specified
+ * @property {number} [base=start] Used with relocate to specify where the lines should be moved _to_
+ */
+
+/**
+ * Renumbers a string of NextBASIC lines.
+ *
+ * @param {string} text NextBASIC source
+ * @param {RenumberOptions} options
+ * @returns {string} The updated NextBASIC source code
+ */
+export function renumber(text, options = {}) {
+  // LINE start, step|m,n TO mm, nn;
+  let { relocate = false } = options;
+
+  if (relocate) {
+    throw new Error('Line number relocate is not supported yet');
+  }
+
+  let statements = parseLines(text, { validate: false }).statements;
+
+  return bas2txtLines(
+    statementsToBytes(renumberStatements(statements, options))
+  );
 }
 
 /**

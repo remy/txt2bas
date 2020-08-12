@@ -81,7 +81,7 @@ export const tokens = (src, { stripComments, inlineLoad, ...options }) => {
   let { statements, ...rest } = parseLines(src, options);
 
   if (stripComments) {
-    statements = transform.stripComments(statements);
+    statements = transform.stripComments(statements, rest.autoline);
   }
 
   if (inlineLoad) {

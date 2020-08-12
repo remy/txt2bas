@@ -28,12 +28,21 @@ test('tap', (t) => {
 });
 
 test('strip comments', (t) => {
-  let src = '#autostart 10\n10 REM marker\n20 PAUSE 0\n';
+  let src = '#autostart 10\n10 PAUSE 0\n20 REM marker\n';
   const bytes = file2bas(src, { stripComments: true });
 
   const txt = file2txt(bytes);
 
-  t.is(txt, '#autostart 10\n20 PAUSE 0\n', 'tap convert matches');
+  t.is(txt, '#autostart 10\n10 PAUSE 0\n', 'matches');
+});
+
+test('strip comments and autoline works', (t) => {
+  let src = '#autostart\n#autoline 1,1\nREM marker\nPAUSE 0\n';
+  const bytes = file2bas(src, { stripComments: true });
+
+  const txt = file2txt(bytes);
+
+  t.is(txt, '#autostart 1\n1 PAUSE 0\n', 'matches');
 });
 
 test('formatText', (t) => {

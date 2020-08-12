@@ -81,6 +81,7 @@ export class Autoline {
     this.step = parseInt(step, 10);
     this.active = false;
     this.last = null;
+    this.start = this.number;
   }
 
   next() {
@@ -106,6 +107,7 @@ export class Autoline {
     if (args) {
       args.shift();
       this.number = parseInt(args.shift(), 10);
+      this.start = this.number;
       this.step = parseInt(args.shift() || '10', 10);
     }
   }
@@ -197,6 +199,7 @@ export function parseLineWithData(line, autoline = null) {
  * @property {Statement[]} statements
  * @property {number} autostart
  * @property {string} filename
+ * @property {Autoline} autoline
  */
 
 /**
@@ -298,6 +301,7 @@ export function parseLines(
     statements,
     autostart,
     filename,
+    autoline,
   };
 }
 
