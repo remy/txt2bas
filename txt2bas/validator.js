@@ -332,6 +332,7 @@ export function validateStatement(tokens, debug = {}) {
       if (
         value == opTable.PRINT ||
         value == opTable.INPUT ||
+        value == opTable.PLOT ||
         value === opTable.DRAW
       ) {
         scope.push(SEMI_COLON_ALLOWED);

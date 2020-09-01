@@ -188,6 +188,7 @@ notThrows('10 %a = INT 5 + a');
 notThrows('10 REM     comment with space');
 notThrows('30 PRINT "ok":%x=255');
 notThrows('30 PRINT AT %i,0;%i;" ",%W(i);" "');
+notThrows('55 PLOT INVERSE 1;%x-1,%y >> 8');
 
 /********************************************/
 
