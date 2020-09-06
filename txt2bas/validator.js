@@ -385,11 +385,15 @@ export function validateStatement(tokens, debug = {}) {
       // symbols that reset the integer expression state
       if (name == SYMBOL) {
         if (value === ',') {
-          scope.argumentExpression = [];
-          if (scope.last !== PARAM_SEP) scope.push(PARAM_SEP);
-          if (!scope.includes(INT_PARENS)) {
-            if (!scope.isFullIntExpression) {
-              scope.intExpression = false;
+          if (scope.includes(SEMI_COLON_ALLOWED)) {
+            scope.resetExpression();
+          } else {
+            scope.argumentExpression = [];
+            if (scope.last !== PARAM_SEP) scope.push(PARAM_SEP);
+            if (!scope.includes(INT_PARENS)) {
+              if (!scope.isFullIntExpression) {
+                scope.intExpression = false;
+              }
             }
           }
         }
