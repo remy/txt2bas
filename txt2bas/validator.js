@@ -624,6 +624,10 @@ export function validateIdentifier({ value, name }, scope = { last: null }) {
     const isString = dollar && value.length === 2;
 
     if (scope.intExpression && !scope.includes(FLOAT_EXPRESSION)) {
+      // check if this is a define value - a custom tweak for txt2bas
+      if (scope.statementStack.slice(-1)[0].value === '#') {
+        return;
+      }
       throw new Error(
         'Only integer variables (single character vars) are allowed in integer expressions'
       );
@@ -737,3 +741,66 @@ export function validateIdentifierDeclaration(token, scope, expect) {
   expect.error =
     'Function names can only contain letters and numbers and must start with a letter';
 }
+
+validateStatement([
+  {
+    name: 'SYMBOL',
+    value: '%',
+    pos: 3,
+  },
+  {
+    name: 'IDENTIFIER',
+    value: 'b',
+    pos: 4,
+  },
+  {
+    name: 'SYMBOL',
+    value: '=',
+    pos: 5,
+  },
+  {
+    name: 'SYMBOL',
+    value: '%',
+    pos: 6,
+  },
+  {
+    name: 'IDENTIFIER',
+    value: 'p',
+    pos: 7,
+  },
+  {
+    name: 'SYMBOL',
+    value: '(',
+    pos: 8,
+  },
+  {
+    name: 'SYMBOL',
+    value: '#',
+    pos: 9,
+  },
+  {
+    name: 'IDENTIFIER',
+    value: 'Y',
+    pos: 10,
+  },
+  {
+    name: 'SYMBOL',
+    value: ')',
+    pos: 11,
+  },
+  {
+    name: 'SYMBOL',
+    value: '+',
+    pos: 12,
+  },
+  {
+    name: 'SYMBOL',
+    value: '#',
+    pos: 13,
+  },
+  {
+    name: 'IDENTIFIER',
+    value: 'TILEWIDTH',
+    pos: 14,
+  },
+]);

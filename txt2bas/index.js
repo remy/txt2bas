@@ -403,6 +403,11 @@ export class Statement {
     return line;
   }
 
+  /**
+   *
+   * @param {string} line line with line number at lead
+   * @returns {[lineNumber {number}, line {string}]}
+   */
   static parseLineNumber(line) {
     if (line.startsWith('#')) return [null, line];
     const match = line.match(/^\s*(\d{1,4})\s?(.*)$/);
@@ -654,8 +659,6 @@ export class Statement {
       // EOL
       return null;
     }
-
-    [c, this.in]; // ?
 
     if (
       tests._isLiteralReset(c) &&
@@ -935,7 +938,8 @@ export class Statement {
   processDirective() {
     const start = this.pos;
 
-    const [directive, arg] = this.line.substring(this.pos + 1).split(' ', 2);
+    let [directive, ...arg] = this.line.substring(this.pos + 1).split(' ', 2);
+    arg = arg.join(' ');
 
     this.pos = this.line.length; // always slurp to the end
 
@@ -952,8 +956,7 @@ export class Statement {
     if (directive === 'program') {
       return {
         name: DIRECTIVE,
-        autostart: arg,
-        value: 'program',
+        value: this.line.substring(start, this.pos),
         pos: start,
         skip: true,
       };
@@ -1189,5 +1192,3 @@ export function basicToBytes(lineNumber, basic) {
 
   return new Uint8Array(buffer.buffer);
 }
-
-parseBasic('10 DEF FN r(x)=INT (x+0.5)'); // ?

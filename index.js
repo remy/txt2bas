@@ -21,7 +21,13 @@ export const line2txt = bas2txtLines;
  * @returns {string}
  */
 export const formatText = (line, autoline = null) => {
-  if (line.startsWith('#')) {
+  if (line.includes('\n')) {
+    return line
+      .split('\n')
+      .map((line) => formatText(line, autoline))
+      .join('\n');
+  }
+  if (line.startsWith('#') || line.trim() === '') {
     // this is a directive or blank line - give it back
     return line;
   }

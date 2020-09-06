@@ -1,6 +1,6 @@
 import test from 'ava';
 import { parseLines } from '../txt2bas';
-import { file2bas, file2txt } from '../index';
+import { file2bas, file2txt, formatText } from '../index';
 import { replaceDefines } from '../txt2bas/transform';
 
 const getSource = () => `#autoline 10
@@ -23,4 +23,15 @@ test('basic define with transform', (t) => {
 
   const txt = file2txt(res);
   t.is(txt.includes('%129'), true);
+});
+
+test('keep directives', (t) => {
+  const src = `#define X=0
+#program foo
+
+10 run AT 3
+20 PROC loadAssets()`;
+
+  const res = formatText(src);
+  t.is(src.replace(/run/, 'RUN'), res);
 });
