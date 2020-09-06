@@ -31,6 +31,7 @@ async function main(type) {
     'debug',
     'inline-load',
     'tokens',
+    'define',
     'udg',
     'headerless',
     'help',
@@ -137,6 +138,7 @@ async function main(type) {
               .tokens(src, {
                 validate: false,
                 inlineLoad: options['inline-load'],
+                defines: options.define,
                 stripComments: options['comments-off'],
               })
               .statements.map(({ tokens }) => ({ tokens }))
@@ -148,6 +150,7 @@ async function main(type) {
           includeHeader: !options.headerless,
           validate: options.test || false,
           binary: options.udg,
+          defines: options.define,
           bank: options.bank,
           autostart:
             options.autostart != null ? parseInt(options.autostart, 10) : null,
@@ -210,6 +213,7 @@ function help(type) {
     console.log('  -H ............ omit the file header');
     console.log('  -bank ......... output LOAD "file" BANK format');
     console.log('  -C ............ strip comments from output');
+    console.log('  -define........ support #define constant transforms');
     console.log('  -A #n ......... set autostart line');
   }
   console.log('  -udg .......... UDGs are used so encode with binary not utf8');

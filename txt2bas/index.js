@@ -71,6 +71,14 @@ import {
  */
 
 /**
+ * A simple definition pragma set as: #define KEY=VALUE
+ *
+ * @typedef Define
+ * @property {string} key
+ * @property {Statement} value
+ */
+
+/**
  * Auto increment line
  *
  * @class
@@ -200,6 +208,7 @@ export function parseLineWithData(line, autoline = null) {
  * @property {number} autostart
  * @property {string} filename
  * @property {Autoline} autoline
+ * @property {Define[]} defines
  */
 
 /**
@@ -225,6 +234,7 @@ export function parseLines(
   let autostart = 0x8000;
   let lastLine = -1;
   let filename = null;
+  const defines = [];
 
   const autoline = new Autoline();
 
@@ -251,6 +261,12 @@ export function parseLines(
           } else {
             autostart = n;
           }
+        }
+
+        if (line.toLowerCase().startsWith('#define ')) {
+          let [key, ...value] = line.replace(/^#define /, '').split('=');
+          value = value.join('=').trim();
+          defines[key] = parseBasic(value, 0);
         }
       }
 
@@ -302,6 +318,7 @@ export function parseLines(
     autostart,
     filename,
     autoline,
+    defines,
   };
 }
 
@@ -362,6 +379,7 @@ export class Statement {
     this.lastToken = {};
     this.inIf = false;
     this.in = [];
+    /** @type {Token[]} */
     this.tokens = [];
 
     let lineText;

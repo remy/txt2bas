@@ -71,14 +71,22 @@ export const statements = (source, options) => {
  * @param {string} src
  * @param {ParseOptions} options
  * @param {boolean} options.stripComments removes all comments from the result
+ * @param {boolean} options.defines convert #define to inline
  * @returns {ParseLineResult}
  */
-export const tokens = (src, { stripComments, inlineLoad, ...options }) => {
+export const tokens = (
+  src,
+  { stripComments, defines, inlineLoad, ...options }
+) => {
   if (typeof src !== 'string') {
     src = src.toString('binary');
   }
 
   let { statements, ...rest } = parseLines(src, options);
+
+  if (defines) {
+    statements = transform.replaceDefines(statements, rest.defines);
+  }
 
   if (stripComments) {
     statements = transform.stripComments(statements, rest.autoline);
@@ -103,6 +111,7 @@ export const tokens = (src, { stripComments, inlineLoad, ...options }) => {
  * @param {number|null} [options.autostart=0x8000]
  * @param {boolean} [options.stripComments=false]
  * @param {boolean} [options.validate=false]
+ * @param {boolean} [options.defines=false]
  * @returns {Uint8Array}
  */
 export const file2bas = (src, options = {}) => {

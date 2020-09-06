@@ -6,6 +6,7 @@ import { renumberStatements } from '../renumber';
  * @typedef { import("./index").Statement } Statement
  * @typedef { import("./index").Token } Token
  * @typedef { import("./index").Autoline } Autoline
+ * @typedef { import("./index").Define } Define
  */
 
 /**
@@ -184,6 +185,44 @@ export function inlineLoad(statements) {
   }
 
   return statements;
+}
+
+/**
+ * Converts defined identifiers with their definitions
+ * Mutates `statements`
+ *
+ * @param {Statement[]} statements
+ * @param {Define[]} defines
+ * @returns {Statement[]}
+ */
+export function replaceDefines(statements, defines) {
+  const res = [];
+  for (let i = 0; i < statements.length; i++) {
+    const st = statements[i];
+    const tokens = st.tokens;
+    const updated = [];
+    for (let j = 0; j < tokens.length; j++) {
+      const token = tokens[j];
+      if (token.name === types.SYMBOL && tokens[j + 1]) {
+        const next = tokens[j + 1];
+        if (
+          next.name === types.IDENTIFIER &&
+          defines[next.value] !== undefined
+        ) {
+          // check the previous token is # and then replace them both
+          updated.push(...defines[next.value].tokens);
+          j = j + 1; // skip over the next token
+          continue;
+        }
+      }
+      updated.push(token);
+    }
+
+    st.tokens = updated;
+    res.push(st);
+  }
+
+  return res;
 }
 
 /**
