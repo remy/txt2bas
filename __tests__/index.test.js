@@ -60,6 +60,15 @@ test('formatText', (t) => {
   });
 });
 
+test('format dot command', (t) => {
+  const src = `10 .install file`;
+  const expect = '10 .install file';
+  let res = formatText(src, true);
+  t.is(res, expect);
+  res = formatText(res);
+  t.is(res, expect);
+});
+
 test('format without let', (t) => {
   const src = '9996 e$= STR$ err';
   const res = formatText(src);

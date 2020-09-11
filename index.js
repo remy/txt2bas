@@ -21,6 +21,17 @@ export const line2txt = bas2txtLines;
  * @returns {string}
  */
 export const formatText = (line, autoline = null) => {
+  let lineNumber = '';
+  if (autoline === true) {
+    // test if the line actually has a line number in it
+    const match = line.match(/^(\d+)\s+(.*)$/); //?
+    if (match && match.length === 3) {
+      autoline = match[1];
+      lineNumber = autoline;
+      line = match[2];
+    }
+  }
+
   if (line.includes('\n')) {
     return line
       .split('\n')
@@ -34,8 +45,20 @@ export const formatText = (line, autoline = null) => {
   const res = parseLineWithData(line, autoline);
   let text = bas2txtLines(res.basic);
   if (autoline) {
-    // manually remove the line
-    text = text.split(' ').slice(1).join(' ');
+    // manually remove the line number
+    text = text
+      .split(' ')
+      .filter((_, i) => {
+        if (i === 0) {
+          return false;
+        }
+        return true;
+      })
+      .join(' ');
+
+    if (lineNumber !== '') {
+      text = lineNumber + ' ' + text;
+    }
   }
 
   return text;
