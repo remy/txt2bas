@@ -191,6 +191,7 @@ notThrows('30 PRINT AT %i,0;%i;" ",%W(i);" "');
 notThrows('55 PRINT AT 0,0;%x-1,%y >> 8');
 notThrows('55 PLOT INVERSE 1;%x-1,%y >> 8');
 notThrows('55 PLOT INVERSE 1;%p(#COORD)-1,%y >> 8');
+notThrows(' 50 PLOT OVER 1;x0,0: PLOT x,0');
 
 /********************************************/
 

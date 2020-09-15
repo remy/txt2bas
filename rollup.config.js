@@ -6,6 +6,7 @@ export default [
       file: 'dist/index.js',
       format: 'cjs',
     },
+    plugins: [json()],
     external: ['@remy/unpack'], // <-- suppresses the warning
   },
   {

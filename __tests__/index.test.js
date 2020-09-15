@@ -1,4 +1,5 @@
 import test from 'ava';
+import { version } from '../index';
 import { parseLine } from '../txt2bas';
 import { bas2txtLines } from '../bas2txt';
 import {
@@ -9,6 +10,10 @@ import {
   file2bas,
   file2txt,
 } from '../index';
+
+test('version is exposed', (t) => {
+  t.is(version, '0.0.0-development');
+});
 
 test('root module matches inner libs', (t) => {
   let src;
