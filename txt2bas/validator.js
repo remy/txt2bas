@@ -517,6 +517,10 @@ export function validatePrintStatement(token, scope) {
     return;
   }
 
+  if (scope.stateIsAfter(INT_EXPRESSION, PRINT)) {
+    return;
+  }
+
   scope; // ?
 
   throw new Error(
