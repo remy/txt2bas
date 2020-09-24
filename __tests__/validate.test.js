@@ -177,6 +177,7 @@ notThrows('10 PRINT AT 0,0;% SPRITE AT (1,0)');
 notThrows('10 SPRITE PRINT 1');
 notThrows('10 PRINT % BANK 15 USR 0');
 notThrows('10 PRINT AT 0,0; % BANK 15 USR 0');
+notThrows('10 INPUT LINE z$');
 
 /********************************************/
 

@@ -302,6 +302,7 @@ export const printModifiers = [
   'BRIGHT',
   'POINT',
   'AT',
+  'LINE',
   'TO',
   'BIN',
 ].reduce((acc, curr) => {
