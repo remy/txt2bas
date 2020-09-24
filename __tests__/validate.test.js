@@ -178,6 +178,10 @@ notThrows('10 SPRITE PRINT 1');
 notThrows('10 PRINT % BANK 15 USR 0');
 notThrows('10 PRINT AT 0,0; % BANK 15 USR 0');
 notThrows('10 INPUT LINE z$');
+notThrows('80 PRINT "Char";TAB (6);"Count"');
+notThrows(
+  '943 IF a$="HTTP/1.1 200 OK" THEN FOR k=1 TO 10: INPUT #7, LINE a$: NEXT k'
+);
 
 /********************************************/
 

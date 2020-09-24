@@ -305,6 +305,7 @@ export const printModifiers = [
   'LINE',
   'TO',
   'BIN',
+  'TAB',
 ].reduce((acc, curr) => {
   acc[curr] = true;
   return acc;
