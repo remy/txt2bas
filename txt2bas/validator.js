@@ -1,5 +1,5 @@
 import { opTable } from './op-table';
-import { intFunctions } from '../codes';
+import { intFunctions, functions, printModifiers } from '../codes';
 
 import {
   COMMENT,
@@ -32,6 +32,7 @@ import {
   UNTIL,
   STRING,
   FLOAT_EXPRESSION,
+  INT_EXPRESSION,
 } from './types';
 
 /**
@@ -93,6 +94,9 @@ class Scope {
     this.currentToken = {};
     /** @type {Token} - the previously processed token */
     this.previousToken = {};
+
+    /** @type {Token[]} - list of all tokens excluding spaces */
+    this.statementStack = [];
   }
 
   /**
@@ -100,6 +104,9 @@ class Scope {
    */
   next() {
     let token = this.currentToken;
+    this.previousToken = token;
+
+    token = this.tokens.shift();
 
     if (token && token.name) {
       if (token.name === KEYWORD) {
@@ -113,10 +120,12 @@ class Scope {
       if (token.name !== WHITE_SPACE) {
         this.statementStack.push(token);
       }
-    }
-    this.previousToken = token;
 
-    token = this.tokens.shift();
+      if ([opTable.ELSE, opTable.THEN].includes(token.value)) {
+        this.statementStack = [];
+      }
+    }
+
     this.currentToken = token;
     this.position++;
     if (token.name === STATEMENT_SEP) {
@@ -160,21 +169,41 @@ class Scope {
   }
 
   /**
-   * @param {Token} value
+   * @param {string} value
    */
   push(value) {
     this.stack.push(value);
   }
 
-  /** @type {Token} */
+  /** @returns {string} */
   pop() {
     return this.stack.pop();
   }
 
+  /**
+   * @param {string} value
+   * @returns {boolean}
+   */
   includes(value) {
     return this.stack.includes(value);
   }
 
+  /**
+   * @param {string} value
+   * @param {string} before
+   * @returns {boolean}
+   */
+  stateIsAfter(value, before) {
+    const beforeIndex = this.stack.lastIndexOf(before);
+    const valueIndex = this.stack.lastIndexOf(value);
+
+    return valueIndex > beforeIndex;
+  }
+
+  /**
+   * @param {string} type
+   * @returns {boolean}
+   */
   popTo(type) {
     while (this.stack.length && this.last !== type) this.pop();
     if (this.stack.length === 0) {
@@ -319,22 +348,21 @@ export function validateStatement(tokens, debug = {}) {
 
       if (scope.includes(IF) && value === opTable.THEN) {
         scope.popTo(IF);
+        scope.resetExpression();
       }
 
       if (value === opTable.ELSE && scope.includes(OUTER_IF)) {
         throw new Error('Statement separator (:) expected before ELSE');
       }
 
-      if (value === opTable.PRINT) {
-        scope.push(PRINT);
-      }
-
       if (
         value == opTable.PRINT ||
         value == opTable.INPUT ||
         value == opTable.PLOT ||
-        value === opTable.DRAW
+        value === opTable.DRAW ||
+        value === opTable.CIRCLE
       ) {
+        scope.push(PRINT);
         scope.push(SEMI_COLON_ALLOWED);
       }
 
@@ -385,7 +413,7 @@ export function validateStatement(tokens, debug = {}) {
       // symbols that reset the integer expression state
       if (name == SYMBOL) {
         if (value === ',') {
-          if (scope.includes(SEMI_COLON_ALLOWED)) {
+          if (scope.stateIsAfter(SEMI_COLON_ALLOWED, OPEN_PARENS)) {
             scope.resetExpression();
           } else {
             scope.argumentExpression = [];
@@ -396,6 +424,10 @@ export function validateStatement(tokens, debug = {}) {
               }
             }
           }
+        }
+
+        if (value === '%') {
+          scope.push(INT_EXPRESSION);
         }
 
         if (value === '=') {
@@ -430,6 +462,7 @@ export function validateStatement(tokens, debug = {}) {
       validateExpressionPosition(token, scope, expect);
       validateIntKeyword(token, scope, expect);
       validateComment(token, scope);
+      validatePrintStatement(token, scope);
 
       // setting expectations
       if (value === opTable['DEF FN']) {
@@ -437,17 +470,58 @@ export function validateStatement(tokens, debug = {}) {
         scope.push(DEFFN_SIG);
       }
     } catch (e) {
-      let message = e.message;
-      message += `, "${token.text || value}" at: ${token.pos + 1}:${
+      e.message += `, "${token.text || value}" at: ${token.pos + 1}:${
         (token.text || value).length + token.pos + 1
       }`;
-
-      throw new Error(message);
+      throw e;
     }
   }
 
   // check if anything is hanging on the scope
   validateEndOfStatement(scope);
+}
+
+/**
+ * @param {Token} token
+ * @param {Scope} scope
+ */
+export function validatePrintStatement(token, scope) {
+  if (token.name !== KEYWORD) {
+    return;
+  }
+
+  if (!scope.statementStack.length) {
+    return;
+  }
+
+  if (token.pos === scope.statementStack[0].pos) {
+    return;
+  }
+
+  if (!scope.includes(PRINT)) {
+    // PRINT covers PRINT, CIRCLE, DRAW, PLOT, etc
+    return;
+  }
+
+  const op = token.text;
+
+  if (functions[op]) {
+    return;
+  }
+
+  if (printModifiers[op]) {
+    return;
+  }
+
+  if (scope.expression[0].value === '%') {
+    return;
+  }
+
+  scope; // ?
+
+  throw new Error(
+    `Unexpected ${op} in ${scope.statementStack[0].text} statement`
+  );
 }
 
 /**
@@ -552,6 +626,7 @@ export function validateNumberTypes(token, scope) {
   if (token.name !== LITERAL_NUMBER) return;
 
   if (!scope.intExpression && !scope.intNext) {
+    scope.intNext; //?
     throw new Error('Parsing error, did not expect an integer number');
   }
 }
@@ -625,7 +700,7 @@ export function validateIdentifier({ value, name }, scope = { last: null }) {
 
     if (scope.intExpression && !scope.includes(FLOAT_EXPRESSION)) {
       // check if this is a define value - a custom tweak for txt2bas
-      if (scope.statementStack.slice(-1)[0].value === '#') {
+      if (scope.statementStack.slice(-2)[0].value === '#') {
         return;
       }
       throw new Error(
@@ -741,66 +816,3 @@ export function validateIdentifierDeclaration(token, scope, expect) {
   expect.error =
     'Function names can only contain letters and numbers and must start with a letter';
 }
-
-validateStatement([
-  {
-    name: 'SYMBOL',
-    value: '%',
-    pos: 3,
-  },
-  {
-    name: 'IDENTIFIER',
-    value: 'b',
-    pos: 4,
-  },
-  {
-    name: 'SYMBOL',
-    value: '=',
-    pos: 5,
-  },
-  {
-    name: 'SYMBOL',
-    value: '%',
-    pos: 6,
-  },
-  {
-    name: 'IDENTIFIER',
-    value: 'p',
-    pos: 7,
-  },
-  {
-    name: 'SYMBOL',
-    value: '(',
-    pos: 8,
-  },
-  {
-    name: 'SYMBOL',
-    value: '#',
-    pos: 9,
-  },
-  {
-    name: 'IDENTIFIER',
-    value: 'Y',
-    pos: 10,
-  },
-  {
-    name: 'SYMBOL',
-    value: ')',
-    pos: 11,
-  },
-  {
-    name: 'SYMBOL',
-    value: '+',
-    pos: 12,
-  },
-  {
-    name: 'SYMBOL',
-    value: '#',
-    pos: 13,
-  },
-  {
-    name: 'IDENTIFIER',
-    value: 'TILEWIDTH',
-    pos: 14,
-  },
-]);

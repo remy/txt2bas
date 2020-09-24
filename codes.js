@@ -181,6 +181,41 @@ intFunctions.SPRITE = ['CONTINUE', 'AT', 'OVER'];
 intFunctions.BANK = ['USR', 'PEEK', 'DPEEK'];
 intFunctions.ABS = ['*'];
 
+export const functions = [
+  'ABS',
+  'ACS',
+  'ASN',
+  'ATN',
+  'ATTR',
+  'CHR$',
+  'CODE',
+  'COS',
+  'EXP',
+  'FN',
+  'IN',
+  'INKEY$',
+  'INT',
+  'LEN',
+  'PEEK',
+  'PEEK$',
+  'PI',
+  'POINTER',
+  'REG',
+  'RND',
+  'SCREEN$',
+  'SGN',
+  'SIN',
+  'SQR',
+  'STR$',
+  'TAN',
+  'USR',
+  'VAL',
+  'VAL$',
+].reduce((acc, curr) => {
+  acc[curr] = true;
+  return acc;
+}, {});
+
 export const keywords = [
   'BANK',
   'BEEP',
@@ -257,3 +292,19 @@ export const keywords = [
   'TILE',
   'VERIFY',
 ];
+
+export const printModifiers = [
+  'INK',
+  'PAPER',
+  'FLASH',
+  'INVERSE',
+  'OVER',
+  'BRIGHT',
+  'POINT',
+  'AT',
+  'TO',
+  'BIN',
+].reduce((acc, curr) => {
+  acc[curr] = true;
+  return acc;
+}, {});

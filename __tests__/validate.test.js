@@ -44,26 +44,6 @@ test('validator errors without autoline', async (t) => {
   t.is(res.length, 6, '6 line number');
 });
 
-test('test bad int expression', (t) => {
-  t.plan(2);
-  let line;
-  let debug = {};
-
-  t.throws(
-    () => {
-      line = asBasic('10 %4 << %1');
-      validateStatement(line, debug);
-    },
-    contains('Expected to assign an integer value to an identifier'),
-    '10 %4 << %1'
-  );
-
-  line = asBasic('10 a = %4 << 1');
-  t.notThrows(() => {
-    validateStatement(line, debug);
-  }, '10 a = %4 << 1');
-});
-
 test('hex looking like dec', (t) => {
   t.plan(1);
   const line = asBasic('740 let %a=$10');
@@ -93,6 +73,7 @@ function notThrows(src, { debug, message } = {}) {
 }
 
 // const debug = {};
+notThrows('10 a = %4 << 1');
 notThrows('10 let %a = % BANK b USR 0');
 notThrows('20 LET %a = % IN 254');
 notThrows('20 PRINT %REG 7 & BIN 00000011');
@@ -191,10 +172,12 @@ notThrows('30 PRINT AT %i,0;%i;" ",%W(i);" "');
 notThrows('55 PRINT AT 0,0;%x-1,%y >> 8');
 notThrows('55 PLOT INVERSE 1;%x-1,%y >> 8');
 notThrows('55 PLOT INVERSE 1;%p(#COORD)-1,%y >> 8');
-notThrows(' 50 PLOT OVER 1;x0,0: PLOT x,0');
+notThrows('50 PLOT OVER 1;x0,0: PLOT x,0');
+notThrows('10 PRINT AT 0,0;% SPRITE AT (1,0)');
 
 /********************************************/
 
+throws('330 PRINT INK 2; AT 19,12; CHR$ 147; PAUSE 6');
 throws('10 %a = % sprite over (%1,2)', 'Cannot redeclare integer');
 throws('10 IF %f=0 OR (%f=b) THEN ENDPROC =%0', 'Cannot redeclare integer');
 throws('10 %j=% SPRITE OVER (b+1,1 TO %c,8,8)', 'Cannot redeclare integer');
@@ -206,10 +189,11 @@ throws('10 DEFPROC 5foo()', 'Function names can only contain letters');
 
 throws('760 ', 'Empty line');
 throws('945 IF %i = 20 ENDPROC', 'IF statement must have THEN');
-throws('10 % sprite continue %', 'Expected to assign');
+throws('10 % sprite continue %', 'Cannot redeclare integer expression whilst');
 throws('10 IF %b=%c THEN ENDPROC', 'Cannot redeclare integer expression', {
   message: 'integer expression function on either side of IF comparator',
 });
+throws('10 %4 << %1', 'Cannot redeclare integer expression whilst');
 throws(
   '760 IF sgn{(e-a) < 0} THEN %g=%a ELSE %g=%e',
   'Statement separator (:) expected before ELSE'
