@@ -498,7 +498,7 @@ export function validatePrintStatement(token, scope) {
     return;
   }
 
-  if (!scope.includes(PRINT)) {
+  if (scope.stack[1] !== PRINT) {
     // PRINT covers PRINT, CIRCLE, DRAW, PLOT, etc
     return;
   }

@@ -174,6 +174,7 @@ notThrows('55 PLOT INVERSE 1;%x-1,%y >> 8');
 notThrows('55 PLOT INVERSE 1;%p(#COORD)-1,%y >> 8');
 notThrows('50 PLOT OVER 1;x0,0: PLOT x,0');
 notThrows('10 PRINT AT 0,0;% SPRITE AT (1,0)');
+notThrows('10 SPRITE PRINT 1');
 
 /********************************************/
 
