@@ -264,7 +264,7 @@ export function parseLines(
         }
 
         if (line.toLowerCase().startsWith('#define ')) {
-          let [key, ...value] = line.replace(/^#define /, '').split('=');
+          let [key, ...value] = line.replace(/^#define /i, '').split('=');
           value = value.join('=').trim();
           defines[key] = parseBasic(value, 0);
         }
@@ -1103,19 +1103,19 @@ export function parseBasic(line, lineNumber = null) {
 /**
  *
  * @param {number} lineNumber
- * @param {string} basic Plain text NextBASIC string
+ * @param {Token[]} tokens
  * @returns {Uint8Array} tokenised bytes
  */
-export function basicToBytes(lineNumber, basic) {
+export function basicToBytes(lineNumber, tokens) {
   let length = 0;
-  const tokens = [];
+  const opTokens = [];
 
-  for (let i = 0; i < basic.length; i++) {
-    const token = basic[i];
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
     const { name, value } = token;
     if (name === KEYWORD) {
       length++;
-      tokens.push(token);
+      opTokens.push(token);
     } else if (
       name === NUMBER ||
       (name === BINARY && token.integer === false)
@@ -1123,7 +1123,7 @@ export function basicToBytes(lineNumber, basic) {
       length += value.length;
       const { numeric } = token;
 
-      tokens.push({ name, value });
+      opTokens.push({ name, value });
 
       if (
         (numeric | 0) === numeric &&
@@ -1135,7 +1135,7 @@ export function basicToBytes(lineNumber, basic) {
         view.setUint8(1, 0x00);
         view.setUint8(2, numeric < 0 ? 0xff : 0x00);
         view.setUint16(3, numeric, true);
-        tokens.push({
+        opTokens.push({
           name: NUMBER_DATA,
           value: new Uint8Array(view.buffer),
         });
@@ -1144,27 +1144,27 @@ export function basicToBytes(lineNumber, basic) {
         const value = new Uint8Array(6);
         value[0] = 0x0e;
         value.set(floatToZX(numeric), 1);
-        tokens.push({
+        opTokens.push({
           name: NUMBER_DATA,
           value,
         });
         length += 6;
       }
     } else if (name === DEF_FN_ARG) {
-      tokens.push({ name, value });
+      opTokens.push({ name, value });
       length += value.length;
-      tokens.push({
+      opTokens.push({
         name: NUMBER_DATA,
         value: new Uint8Array([0x0e, 0x00, 0x00, 0x00, 0x00, 0x00]),
       });
       length += 6;
     } else if (!token.skip) {
       length += value.length;
-      tokens.push(token);
+      opTokens.push(token);
     }
   }
 
-  tokens.push({ name: KEYWORD, value: 0x0d }); // EOL
+  opTokens.push({ name: KEYWORD, value: 0x0d }); // EOL
   length++;
 
   const buffer = new DataView(new ArrayBuffer(length + 4));
@@ -1174,7 +1174,7 @@ export function basicToBytes(lineNumber, basic) {
 
   let offset = 4;
 
-  tokens.forEach(({ name, value }) => {
+  opTokens.forEach(({ name, value }) => {
     if (name === KEYWORD) {
       buffer.setUint8(offset, value);
       offset++;

@@ -35,3 +35,16 @@ test('keep directives', (t) => {
   const res = formatText(src);
   t.is(src.replace(/run/, 'RUN'), res);
 });
+
+test('mixed case', (t) => {
+  const src = `#autoline 10
+#define spriteNumber=1
+PRINT %#spriteNumber`;
+
+  const res = file2bas(src, { defines: true });
+
+  const txt = file2txt(res);
+  t.is(txt.includes('PRINT %1'), true);
+  t.is(res.slice(-2)[0], 0x31);
+  t.not(res.slice(-2)[0], 0x00);
+});

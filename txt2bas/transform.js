@@ -1,6 +1,8 @@
 import { opTable } from './op-table';
 import * as types from './types';
 import { renumberStatements } from '../renumber';
+import { basicToBytes, parseBasic } from './index';
+import { bas2txtLines } from '../bas2txt';
 
 /**
  * @typedef { import("./index").Statement } Statement
@@ -198,9 +200,10 @@ export function inlineLoad(statements) {
 export function replaceDefines(statements, defines) {
   const res = [];
   for (let i = 0; i < statements.length; i++) {
-    const st = statements[i];
+    let st = statements[i];
     const tokens = st.tokens;
     const updated = [];
+    let modified = false;
     for (let j = 0; j < tokens.length; j++) {
       const token = tokens[j];
       if (token.name === types.SYMBOL && tokens[j + 1]) {
@@ -210,6 +213,7 @@ export function replaceDefines(statements, defines) {
           defines[next.value] !== undefined
         ) {
           // check the previous token is # and then replace them both
+          modified = true;
           updated.push(...defines[next.value].tokens);
           j = j + 1; // skip over the next token
           continue;
@@ -219,6 +223,12 @@ export function replaceDefines(statements, defines) {
     }
 
     st.tokens = updated;
+    if (modified) {
+      const bytes = basicToBytes(st.lineNumber, st.tokens);
+      const text = bas2txtLines(bytes); // ?
+      st.tokens = parseBasic(text, null).tokens;
+    }
+
     res.push(st);
   }
 
