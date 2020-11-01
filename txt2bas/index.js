@@ -393,7 +393,7 @@ export class Statement {
     for (let code in TEXT) {
       if (line.includes(code)) {
         let re = new RegExp(code, 'g');
-        if (code.startsWith('\\UDG')) {
+        if (code.startsWith('\\')) {
           re = new RegExp(code.replace('\\', '\\\\'), 'g');
         }
         line = line.replace(re, TEXT[code]);

@@ -7,7 +7,7 @@ const { readFile } = fsPromises;
 test('strings protected', (t) => {
   const src = [0x00, 0x0a, 0x05, 0x00, 0xf5, 0x22, 0x90, 0x22, 0x0d];
   const line = line2txt(src);
-  t.is(line.includes('\\UDGA'), true);
+  t.is(line.includes('\\A'), true);
 });
 
 test('vars', async (t) => {
@@ -22,7 +22,7 @@ test('UDG char encoding', async (t) => {
   const src = await readFile(__dirname + '/fixtures/udg-test.bas');
   const line = file2txt(src);
 
-  t.is(line, '10 PRINT "\\UDGA"\n');
+  t.is(line, '10 PRINT "\\A"\n');
   t.is(src[src.length - 3], 0x90);
 });
 
