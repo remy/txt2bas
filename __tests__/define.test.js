@@ -25,6 +25,16 @@ test('basic define with transform', (t) => {
   t.is(txt.includes('%129'), true);
 });
 
+test('basic define with int transform', (t) => {
+  let src = `#autoline 10
+#define POINTER=127
+% SPRITE AT (#POINTER,1)`;
+
+  const res = file2bas(src, { defines: true, includeHeader: false });
+
+  t.is(res.includes(0x0e), false);
+});
+
 test('keep directives', (t) => {
   const src = `#define X=0
 #program foo

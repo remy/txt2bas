@@ -7,7 +7,7 @@ const { readFile } = fsPromises;
 test('strings protected', (t) => {
   const src = [0x00, 0x0a, 0x05, 0x00, 0xf5, 0x22, 0x90, 0x22, 0x0d];
   const line = line2txt(src);
-  t.is(line.slice(-2, -1).charCodeAt(0), 144);
+  t.is(line.includes('\\UDGA'), true);
 });
 
 test('vars', async (t) => {
@@ -17,19 +17,13 @@ test('vars', async (t) => {
 });
 
 test('UDG char encoding', async (t) => {
-  t.plan(1);
+  t.plan(2);
 
-  const src = await readFile(__dirname + '/fixtures/udg.bas');
+  const src = await readFile(__dirname + '/fixtures/udg-test.bas');
   const line = file2txt(src);
-  const res = Uint8Array.from({ length: line.length }, (_, i) => {
-    return line.charCodeAt(i);
-  });
 
-  t.deepEqual(
-    res.slice(-5),
-    new Uint8Array([0x9e, 0x80, 0x9f, 0x22, 0x0a]),
-    'udg encoding matches'
-  );
+  t.is(line, '10 PRINT "\\UDGA"\n');
+  t.is(src[src.length - 3], 0x90);
 });
 
 test('BANKed code', async (t) => {

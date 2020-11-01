@@ -41,12 +41,11 @@ import {
  *
  * @typedef ParsedBasic
  * @type {object}
- * @property {Uint8Array} data - NextBASIC encoded data
+ * @property {Uint8Array} basic - NextBASIC encoded data
+ * @property {string} line
  * @property {number} length - byte length
+ * @property {number} lineNumber
  * @property {Token[]} tokens
- * @property {Statement[]} statements
- * @property {number} autostart If not specified in source, will be 0x8000
- * @property {string|null} filename The program if parsed from the source
  */
 
 /**
@@ -54,20 +53,10 @@ import {
  *
  * @typedef Token
  * @property {string} name The token type name
- * @property {string|number} value Token byte value
+ * @property {number|string} value Token byte value
  * @property {string} text Source text content
  * @property {number} numeric Numerical value
  * @property {boolean} integer Flag (only used on number types)
- */
-
-/**
- * A statement from a single parsed NextBASIC line
- *
- * @typedef Statement
- * @property {Token[]} tokens
- * @property {Token} lastToken
- * @property {string} line
- * @property {number} lineNumber
  */
 
 /**
@@ -84,7 +73,7 @@ import {
  * @class
  */
 export class Autoline {
-  constructor(number = 10, step = 10) {
+  constructor(number = '10', step = '10') {
     this.number = parseInt(number, 10);
     this.step = parseInt(step, 10);
     this.active = false;
@@ -121,7 +110,10 @@ export class Autoline {
   }
 }
 
-// const encode = (a) => new TextEncoder().encode(a);
+/**
+ * @param {string | number} a
+ * @returns {Uint8Array}
+ */
 const encode = (a) => {
   a = a.toString();
   const res = [];
@@ -189,7 +181,7 @@ export function parseLine(line) {
 
 /**
  * @param {string} line A single line of NextBASIC
- * @param {boolean} [autoline=false] Flag to ignore line numbers
+ * @param {number|null} [autoline=false] Flag to ignore line numbers
  * @returns {ParsedBasic} fully parsed object
  */
 export function parseLineWithData(line, autoline = null) {
@@ -203,7 +195,7 @@ export function parseLineWithData(line, autoline = null) {
  * @typedef {object} ParseLineResult
  * @property {Uint8Array} bytes
  * @property {number} length
- * @property {Token[]} tokens
+ * @property {Token[][]} tokens
  * @property {Statement[]} statements
  * @property {number} autostart
  * @property {string} filename
@@ -265,8 +257,7 @@ export function parseLines(
 
         if (line.toLowerCase().startsWith('#define ')) {
           let [key, ...value] = line.replace(/^#define /i, '').split('=');
-          value = value.join('=').trim();
-          defines[key] = parseBasic(value, 0);
+          defines[key] = parseBasic(value.join('=').trim(), 0);
         }
       }
 
@@ -375,7 +366,7 @@ export class Statement {
     this.pos = 0;
     this.inIntExpression = false;
     this.next = null;
-    /** @type {Token} */
+    /** @type {Token|object} */
     this.lastToken = {};
     this.inIf = false;
     this.in = [];
@@ -394,10 +385,19 @@ export class Statement {
     }
   }
 
+  /**
+   * @param {string} line
+   * @returns {string}
+   */
   static processChars(line) {
     for (let code in TEXT) {
-      const re = new RegExp(code, 'g');
-      line = line.replace(re, TEXT[code]);
+      if (line.includes(code)) {
+        let re = new RegExp(code, 'g');
+        if (code.startsWith('\\UDG')) {
+          re = new RegExp(code.replace('\\', '\\\\'), 'g');
+        }
+        line = line.replace(re, TEXT[code]);
+      }
     }
 
     return line;
@@ -406,7 +406,7 @@ export class Statement {
   /**
    *
    * @param {string} line line with line number at lead
-   * @returns {[lineNumber {number}, line {string}]}
+   * @returns {[lineNumber: number, line: string]}
    */
   static parseLineNumber(line) {
     if (line.startsWith('#')) return [null, line];
@@ -938,8 +938,8 @@ export class Statement {
   processDirective() {
     const start = this.pos;
 
-    let [directive, ...arg] = this.line.substring(this.pos + 1).split(' ', 2);
-    arg = arg.join(' ');
+    let [directive, ...args] = this.line.substring(this.pos + 1).split(' ', 2);
+    let arg = args.join(' ');
 
     this.pos = this.line.length; // always slurp to the end
 
