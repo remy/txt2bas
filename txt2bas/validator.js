@@ -81,6 +81,7 @@ class Scope {
    */
   constructor(tokens) {
     this.reset();
+
     /** @type {Token[]} - original list of tokens */
     this.source = Array.from(tokens);
     /** @type {Token[]} - remaining tokens to process */
@@ -104,9 +105,14 @@ class Scope {
    */
   next() {
     let token = this.currentToken;
-    this.previousToken = token;
 
+    this.previousToken = token;
     token = this.tokens.shift();
+
+    if (!this.previousToken.name && token.name === WHITE_SPACE) {
+      // skip the first token
+      return this.next();
+    }
 
     if (token && token.name) {
       if (token.name === KEYWORD) {

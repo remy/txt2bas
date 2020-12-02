@@ -182,6 +182,7 @@ notThrows('80 PRINT "Char";TAB (6);"Count"');
 notThrows(
   '943 IF a$="HTTP/1.1 200 OK" THEN FOR k=1 TO 10: INPUT #7, LINE a$: NEXT k'
 );
+notThrows('10   %a = 10');
 
 /********************************************/
 
