@@ -523,6 +523,10 @@ export function validatePrintStatement(token, scope) {
     return;
   }
 
+  if (scope.stateIsAfter(OPEN_PARENS, PRINT)) {
+    return;
+  }
+
   if (scope.stateIsAfter(INT_EXPRESSION, PRINT)) {
     return;
   }
