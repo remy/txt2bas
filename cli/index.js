@@ -66,8 +66,8 @@ async function main(type) {
   } else {
     // input is txt
     // input is basic, so check the output filename
-    if (!options.format && options.input && options.input !== '-') {
-      options.format = options.input.toLowerCase().endsWith('.tap')
+    if (!options.format && options.output && options.output !== '-') {
+      options.format = options.output.toLowerCase().endsWith('.tap')
         ? 'tap'
         : '3dos';
     }
