@@ -363,4 +363,13 @@ test('in the wild', (t) => {
   res.pop(); // ')'
   res = res.pop();
   t.is(res.name, 'LITERAL_NUMBER', 'int number found');
+
+  src = '10 PRINT 1e6';
+  res = parseLines(src, { validate: false }).statements[0].tokens;
+  console.log(res);
+
+  res = res.pop(); // 'number'
+  t.is(res.name, 'NUMBER', 'number found');
+  t.is(res.value, '1e6', 'original source found');
+  t.is(res.numeric, 1e6, 'has correct value');
 });

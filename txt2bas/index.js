@@ -909,10 +909,9 @@ export class Statement {
       if (this.inIntExpression) {
         throw new Error(`Non integer used in integer expression`);
       }
-      numeric = parseFloat(value);
-    } else {
-      numeric = parseInt(value, 10);
     }
+
+    numeric = new Number(value) * 1;
 
     let name = NUMBER;
     if (this.inIntExpression) {
