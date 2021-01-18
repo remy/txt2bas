@@ -199,6 +199,7 @@ export function inlineLoad(statements) {
  */
 export function replaceDefines(statements, defines) {
   const res = [];
+
   for (let i = 0; i < statements.length; i++) {
     let st = statements[i];
     const tokens = st.tokens;
@@ -206,10 +207,16 @@ export function replaceDefines(statements, defines) {
     let modified = false;
     for (let j = 0; j < tokens.length; j++) {
       const token = tokens[j];
+
       if (token.name === types.DEFINE) {
         modified = true;
+        if (!defines[token.value.substring(1)]) {
+          throw new Error(
+            `${token.value} is unknown and not in a #define statement`
+          );
+        }
+
         updated.push(...defines[token.value.substring(1)].tokens);
-        j = j + 1; // skip over the next token
         continue;
       }
       updated.push(token);

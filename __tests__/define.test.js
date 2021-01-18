@@ -80,3 +80,15 @@ PRINT #BANK_SPR`;
   const txt = file2txt(res);
   t.is(txt.includes('PRINT 1'), true);
 });
+
+test.only('with mixed code', (t) => {
+  const src = `#autoline 10
+#define KEYBOARD=1
+#define DEVICE=1
+%p(#DEVICE)=#KEYBOARD`;
+
+  const res = file2bas(src, { defines: true });
+
+  const txt = file2txt(res);
+  t.is(txt.includes('%p(1)=1'), true);
+});
