@@ -206,18 +206,11 @@ export function replaceDefines(statements, defines) {
     let modified = false;
     for (let j = 0; j < tokens.length; j++) {
       const token = tokens[j];
-      if (token.name === types.SYMBOL && tokens[j + 1]) {
-        const next = tokens[j + 1];
-        if (
-          next.name === types.IDENTIFIER &&
-          defines[next.value] !== undefined
-        ) {
-          // check the previous token is # and then replace them both
-          modified = true;
-          updated.push(...defines[next.value].tokens);
-          j = j + 1; // skip over the next token
-          continue;
-        }
+      if (token.name === types.DEFINE) {
+        modified = true;
+        updated.push(...defines[token.value.substring(1)].tokens);
+        j = j + 1; // skip over the next token
+        continue;
       }
       updated.push(token);
     }

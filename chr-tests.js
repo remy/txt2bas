@@ -64,6 +64,10 @@ const tests = {
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
   },
 
+  _isDefine(c) {
+    return tests._isAlpha(c) || c === '_';
+  },
+
   _isDollar(c) {
     return c === '$';
   },

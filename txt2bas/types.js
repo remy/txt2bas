@@ -1,3 +1,4 @@
+export const DEFINE = 'DEFINE'; // custom to my own txt2bas
 export const COMMENT = 'COMMENT';
 export const LINE_NUMBER = 'LINE_NUMBER';
 export const BINARY = 'BINARY';

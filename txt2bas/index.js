@@ -7,6 +7,7 @@ import { TEXT } from '../unicode';
 import { validateLineNumber, validateStatement } from './validator';
 
 import {
+  DEFINE,
   COMMENT,
   DIRECTIVE,
   LINE_NUMBER,
@@ -726,6 +727,13 @@ export class Statement {
       return this.processSingleKeyword();
     }
 
+    if (!this.startOfStatement) {
+      // this should rarely happen as directives are pre-parsed
+      if (tests._isDirective(c)) {
+        return this.processDefine();
+      }
+    }
+
     if (tests._isSymbol(c)) {
       return this.processSingle();
     }
@@ -816,6 +824,31 @@ export class Statement {
 
     tok = {
       name: IDENTIFIER,
+      value,
+      pos: this.pos,
+    };
+
+    if (this.in.includes(DEFFN_ARGS)) {
+      tok.name = DEF_FN_ARG;
+    }
+
+    this.pos = endPos;
+
+    return tok;
+  }
+
+  processDefine() {
+    let endPos = this.pos + 1;
+    let c = this.line.charAt(endPos);
+    while (tests._isDefine(c)) {
+      endPos++;
+      c = this.line.charAt(endPos);
+    }
+
+    const value = this.line.substring(this.pos, endPos);
+
+    const tok = {
+      name: DEFINE,
       value,
       pos: this.pos,
     };

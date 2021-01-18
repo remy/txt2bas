@@ -366,7 +366,6 @@ test('in the wild', (t) => {
 
   src = '10 PRINT 1e6';
   res = parseLines(src, { validate: false }).statements[0].tokens;
-  console.log(res);
 
   res = res.pop(); // 'number'
   t.is(res.name, 'NUMBER', 'number found');

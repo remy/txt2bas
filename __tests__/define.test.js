@@ -58,3 +58,25 @@ PRINT %#spriteNumber`;
   t.is(res.slice(-2)[0], 0x31);
   t.not(res.slice(-2)[0], 0x00);
 });
+
+test('contains keyword', (t) => {
+  const src = `#autoline 10
+#define BANKSPR=1
+PRINT #BANKSPR`;
+
+  const res = file2bas(src, { defines: true });
+
+  const txt = file2txt(res);
+  t.is(txt.includes('PRINT 1'), true);
+});
+
+test('allow underscores', (t) => {
+  const src = `#autoline 10
+#define BANK_SPR=1
+PRINT #BANK_SPR`;
+
+  const res = file2bas(src, { defines: true });
+
+  const txt = file2txt(res);
+  t.is(txt.includes('PRINT 1'), true);
+});
