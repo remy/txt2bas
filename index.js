@@ -210,7 +210,16 @@ export const file2bas = (src, options = {}) => {
       file[128] = 'B'.charCodeAt(0);
       file[129] = 'C'.charCodeAt(0);
     }
-    file.set(bytes, offset);
+
+    try {
+      file.set(bytes, offset);
+    } catch (e) {
+      if (bank) {
+        throw new Error('Too large for bank');
+      } else {
+        throw e;
+      }
+    }
 
     return file;
   } else if (format === 'tap') {
