@@ -208,7 +208,7 @@ export function replaceDefines(statements, defines) {
     for (let j = 0; j < tokens.length; j++) {
       const token = tokens[j];
 
-      if (token.name === types.DEFINE) {
+      if (token.name === types.DEFINE && token.value !== '#') {
         modified = true;
         if (!defines[token.value.substring(1)]) {
           throw new Error(

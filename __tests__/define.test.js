@@ -81,7 +81,7 @@ PRINT #BANK_SPR`;
   t.is(txt.includes('PRINT 1'), true);
 });
 
-test.only('with mixed code', (t) => {
+test('with mixed code', (t) => {
   const src = `#autoline 10
 #define KEYBOARD=1
 #define DEVICE=1
@@ -91,4 +91,12 @@ test.only('with mixed code', (t) => {
 
   const txt = file2txt(res);
   t.is(txt.includes('%p(1)=1'), true);
+});
+
+test.only('allows # in code lines', (t) => {
+  const src = `10 PRINT #7;"ok"`;
+  const res = file2bas(src, { defines: true });
+
+  const txt = file2txt(res);
+  t.is(txt.includes('10 PRINT #7'), true);
 });
