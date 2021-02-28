@@ -104,7 +104,7 @@ export function bas2txtLines(data) {
       if (length === 0x8080 && lineNumber === 0x8080 && banked) {
         break;
       }
-      throw new Error(`${lineNumber} is beyond 9999 range.`);
+      throw new Error(`${lineNumber} is beyond 9999 range: ${length}`);
     }
 
     const content = unpack.parse(`<C${length}$data`);

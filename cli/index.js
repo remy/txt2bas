@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, statSync } from 'fs';
 import { dirname, resolve, basename, extname } from 'path';
 import * as cli from '../index';
 import { version } from '../package.json';
@@ -54,6 +54,16 @@ async function main(type) {
 
   if (options.help) {
     return help(type);
+  }
+
+  if (options.input) {
+    // check the file actually exists
+    try {
+      statSync(options.input);
+    } catch (e) {
+      console.error(`The file ${options.input} cannot not be found or read.`);
+      process.exit(1);
+    }
   }
 
   if (type === 'bas') {
@@ -210,12 +220,12 @@ function help(type) {
   if (type === 'txt') {
     console.log('  -f 3dos|tap ... set the output format');
     console.log('  -t ............ parse and validate the NextBASIC');
-    console.log('  -H ............ omit the file header');
     console.log('  -bank ......... output LOAD "file" BANK format');
     console.log('  -C ............ strip comments from output');
     console.log('  -define........ support #define constant transforms');
     console.log('  -A #n ......... set autostart line');
   }
+  console.log('  -H ............ omit the file header');
   console.log('  -udg .......... UDGs are used so encode with binary not utf8');
   console.log('  -v ............ Show current version');
 

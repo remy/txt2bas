@@ -93,7 +93,7 @@ test('with mixed code', (t) => {
   t.is(txt.includes('%p(1)=1'), true);
 });
 
-test.only('allows # in code lines', (t) => {
+test('allows # in code lines', (t) => {
   const src = `10 PRINT #7;"ok"`;
   const res = file2bas(src, { defines: true });
 
