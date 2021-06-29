@@ -101,3 +101,32 @@ export const plus3DOSHeader = (basic, options = { autostart: 128 }) => {
 
   return result;
 };
+
+// const fs = require('fs');
+// const data = new Uint8Array(
+//   fs.readFileSync(__dirname + '/__tests__/fixtures/picture.scr')
+// );
+
+// const length = data.length;
+// const bank = true;
+// const directives = {};
+// let fileLength = length + 128;
+// let offset = 128;
+// if (bank) {
+//   // fileLength = 0x4000 + 128;
+//   directives.hType = 4;
+//   directives.hOffset = 0x8000;
+//   directives.autostart = 20; // unsure why, but autostart doesn't make sense in a BANK
+//   // offset = 130;
+// }
+
+// const file = new Uint8Array(fileLength);
+// file.fill(0x80);
+
+// file.set(plus3DOSHeader(file, directives)); // set the header (128)
+
+// // file[128] = 'B'.charCodeAt(0);
+// // file[129] = 'C'.charCodeAt(0);
+
+// file.set(data, offset);
+// fs.writeFileSync(__dirname + '/__tests__/fixtures/picture.bin', file);

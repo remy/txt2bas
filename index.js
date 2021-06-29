@@ -189,7 +189,15 @@ export const file2bas = (src, options = {}) => {
   }
 
   if (!includeHeader) {
-    return bytes;
+    if (!bank) {
+      return bytes;
+    }
+
+    const file = new Uint8Array(length + 2);
+    file[0] = 'B'.charCodeAt(0);
+    file[1] = 'C'.charCodeAt(0);
+    file.set(bytes, 2);
+    return file;
   }
 
   if (format === '3dos') {
