@@ -600,14 +600,14 @@ export function validateExpressionPosition(token, scope) {
  */
 export function validateExpressionState(token, scope) {
   if (token.name === SYMBOL && token.value === '%') {
+    if (scope.intExpression) {
+      throw new Error(
+        'Cannot redeclare integer expression whilst already inside one'
+      );
+    }
     if (scope.expression.length === 1) {
       scope.intExpression = true;
     } else {
-      if (scope.intExpression) {
-        throw new Error(
-          'Cannot redeclare integer expression whilst already inside one'
-        );
-      }
       scope.intNext = true;
     }
     return;
@@ -626,7 +626,7 @@ export function validateExpressionState(token, scope) {
   }
 
   if (token.name === KEYWORD) {
-    if ([opTable.IF, opTable.THEN].includes(token.value)) {
+    if ([opTable.IF, opTable.THEN, opTable.UNTIL].includes(token.value)) {
       scope.resetExpression();
     }
   }
@@ -640,7 +640,6 @@ export function validateNumberTypes(token, scope) {
   if (token.name !== LITERAL_NUMBER) return;
 
   if (!scope.intExpression && !scope.intNext) {
-    scope.intNext; //?
     throw new Error('Parsing error, did not expect an integer number');
   }
 }

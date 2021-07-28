@@ -187,6 +187,10 @@ notThrows('10 PRINT ("TRUE" AND b)+("FALSE" AND NOT b)');
 
 /********************************************/
 
+throws(
+  '330 REPEAT UNTIL %(c=13) AND %(j > 8)',
+  'Cannot redeclare integer expression'
+);
 throws('330 PRINT INK 2; AT 19,12; CHR$ 147; PAUSE 6');
 throws('10 %a = % sprite over (%1,2)', 'Cannot redeclare integer');
 throws('10 IF %f=0 OR (%f=b) THEN ENDPROC =%0', 'Cannot redeclare integer');
