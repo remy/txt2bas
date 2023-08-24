@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, statSync } from 'fs';
 import { dirname, resolve, basename, extname } from 'path';
 import * as cli from '../index';
 import { version } from '../package.json';
+import { LATEST } from '../parser-version';
 
 /**
  * CLI entry point for txt2bas and bas2txt. Arguments are parsed from process.argv
@@ -24,6 +25,7 @@ async function main(type) {
     L: 'inline-load',
     A: 'autostart',
     C: 'comments-off',
+    P: 'parser', // currently not exposed
   };
   const bools = [
     'bank',
@@ -169,6 +171,7 @@ async function main(type) {
             : undefined,
           inlineLoad: options['inline-load'],
           stripComments: options['comments-off'],
+          parser: LATEST,
         });
       }
     }

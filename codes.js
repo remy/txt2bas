@@ -5,6 +5,15 @@ export default {
   0x3c: '<',
   0x3e: '>',
   // 0x2a: '*',
+
+  // new in 2.08
+  0x81: 'TIME',
+  0x82: 'PRIVATE',
+  0x83: 'ELSEIF',
+  0x84: 'ENDIF', // internal use only: displays as IF, but indicates ELSE is present on same line
+  0x85: 'EXIT',
+  0x86: 'REF',
+
   0x87: 'PEEK$',
   0x88: 'REG',
   0x89: 'DPOKE',
@@ -137,6 +146,7 @@ export const usesLineNumbers = [
   'RESTORE',
   'RUN',
   'CODE',
+  'EXIT',
 ];
 
 export const bitWiseOperators = ['&', '|', '^', '!', '>>', '<<'];
@@ -216,6 +226,8 @@ export const functions = [
   return acc;
 }, {});
 
+// FIXME - unused and I'm not sure it's complete
+// RS 2023-07-06
 export const keywords = [
   'BANK',
   'BEEP',
@@ -306,6 +318,7 @@ export const printModifiers = [
   'TO',
   'BIN',
   'TAB',
+  'TIME',
 ].reduce((acc, curr) => {
   acc[curr] = true;
   return acc;
