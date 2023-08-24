@@ -22,7 +22,7 @@
   },
   "release": {
     "branches": [
-      "master",
+      "main",
       "next"
     ]
   },
