@@ -1,5 +1,6 @@
 import { opTable } from './op-table';
 import { intFunctions, functions, printModifiers } from '../codes';
+import * as parser from '../parser-version';
 
 import {
   COMMENT,
@@ -378,13 +379,19 @@ export function validateStatement(tokens, debug = {}) {
       ) {
         // check the arg
         if (name !== IDENTIFIER) {
-          throw new Error('Expected single letter function name');
+          if (parser.getParser() === parser.v207) {
+            throw new Error('Expected single letter function name');
+          } else {
+            throw new Error('Expected function name');
+          }
         }
 
         if (value.length > 1 && !(value.length === 2 && value[1] === '$')) {
-          throw new Error(
-            'DEF FN must be followed by a single letter identifier'
-          );
+          if (parser.getParser() === parser.v207) {
+            throw new Error(
+              'DEF FN must be followed by a single letter identifier'
+            );
+          }
         }
       }
 
@@ -724,11 +731,15 @@ export function validateIdentifier({ value, name }, scope = { last: null }) {
     if (isString) return;
 
     if (value.endsWith('$') && value.length > 2) {
-      throw new Error('String variables are only allowed 1 character long');
+      if (parser.getParser() === parser.v207) {
+        throw new Error('String variables are only allowed 1 character long');
+      }
     }
 
     if (scope.last === DEFFN_SIG && value.length > 1 && !isString) {
-      throw new Error('Only single character names allowed for DEF FN');
+      if (parser.getParser() === parser.v207) {
+        throw new Error('Only single character names allowed for DEF FN');
+      }
     }
   }
 }
