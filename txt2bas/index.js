@@ -69,6 +69,14 @@ import {
  */
 
 /**
+ * Where a bank starts
+ *
+ * @typedef BankSplit
+ * @property {string} bankFile the filename
+ * @property {number} line the starting line
+ */
+
+/**
  * Auto increment line
  *
  * @class
@@ -202,6 +210,7 @@ export function parseLineWithData(line, autoline = null) {
  * @property {string} filename
  * @property {Autoline} autoline
  * @property {Define[]} defines
+ * @property {BankSplit[]} bankSplits
  */
 
 /**
@@ -229,6 +238,8 @@ export function parseLines(
   let filename = null;
   const defines = [];
 
+  const bankSplits = [];
+
   const autoline = new Autoline();
 
   for (let i = 0; i < lines.length; i++) {
@@ -240,6 +251,11 @@ export function parseLines(
         // comment and directives
         if (line.startsWith('#program ')) {
           filename = line.split(' ')[1];
+        }
+
+        if (line.startsWith('#bankfile ')) {
+          const bankFile = line.split(' ')[1];
+          bankSplits.push({ bank: bankFile, line: i + 1 });
         }
 
         if (line.startsWith('#autoline')) {
@@ -311,6 +327,7 @@ export function parseLines(
     filename,
     autoline,
     defines,
+    bankSplits,
   };
 }
 
@@ -758,6 +775,23 @@ export class Statement {
     return this.line.substring(start, pos);
   }
 
+  peekPrevToken(at = this.pos) {
+    let pos = at - 1;
+    const end = pos;
+    let allowSpace = true;
+    while (pos >= 0 || tests._isDigit(this.line.charAt(pos))) {
+      if (tests._isSpace(this.line.charAt(pos)) && !allowSpace) {
+        pos++;
+        break;
+      }
+      if (tests._isSpace(this.line.charAt(pos))) {
+        allowSpace = false;
+      }
+      pos--;
+    }
+    return this.line.substring(pos, end);
+  }
+
   findOpCode(endPos) {
     const peek = this.peek(endPos);
     const moreToken = tests._isAlpha(peek);
@@ -771,8 +805,16 @@ export class Statement {
       return false;
     }
 
+    if (curr === 'IF') {
+      // look for ELSE before hand
+      const prev = this.peekPrevToken();
+      if (prev === 'ELSE') {
+        curr = 'ELSE IF';
+      }
+    }
+
     // be wary that this could be something like `DEF FN`
-    if (peek === ' ' && !opTable[curr]) {
+    else if (peek === ' ' && !opTable[curr]) {
       const next = this.peekToken(endPos + 1).toUpperCase();
       const test = `${curr} ${next}`;
 

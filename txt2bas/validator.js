@@ -144,10 +144,11 @@ class Scope {
   }
 
   /**
-   * @returns {Token}
+   * @returns {Token|null}
    */
   peekNext() {
     let next = this.tokens[0];
+    if (!next) return null;
     if (next.name === WHITE_SPACE) next = this.tokens[1];
     return next;
   }
@@ -343,6 +344,8 @@ export function validateStatement(tokens, debug = {}) {
         // scope state
         scope.push(OUTER_IF);
         scope.push(IF);
+
+        // should I look ahead for a THEN to detect the type of IF?
       }
 
       if (value === opTable.UNTIL) {
@@ -358,8 +361,14 @@ export function validateStatement(tokens, debug = {}) {
         scope.resetExpression();
       }
 
-      if (value === opTable.ELSE && scope.includes(OUTER_IF)) {
-        throw new Error('Statement separator (:) expected before ELSE');
+      if (value === opTable.ELSE) {
+        const next = scope.peekNext();
+
+        if (next && next.text === IF) {
+          // change the token to ELSEIF and drop the IF
+        } else if (scope.includes(OUTER_IF)) {
+          throw new Error('Statement separator (:) expected before ELSE');
+        }
       }
 
       if (
@@ -675,7 +684,11 @@ export function validateStatementStarters(token, scope) {
  */
 export function validateEndOfStatement(scope) {
   if (scope.includes(IF)) {
-    throw new Error('IF statement must have THEN');
+    if (parser.getParser() === parser.v207) {
+      throw new Error('IF statement must have THEN');
+    } else {
+      // we need to stack up an open IF statement
+    }
   }
 
   const open = scope.findIndex((_) => _.startsWith('OPEN_'));

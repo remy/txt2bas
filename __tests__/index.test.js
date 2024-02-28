@@ -96,3 +96,26 @@ test('validateTxt', (t) => {
   const res = validateTxt(src);
   t.is(res.length, 0, 'no errors');
 });
+
+test('exact matches', (t) => {
+  const tests = [
+    `10 %a=1
+20 PRINT (%a)+1`,
+    `100 REPEAT
+110 INPUT n
+120 IF n=33 THEN EXIT 150
+130 REPEAT UNTIL n < 0
+140 PRINT "Loop completed normally": STOP
+150 PRINT "Loop ended early": STOP`,
+  ];
+
+  tests.forEach((src) => {
+    src = src
+      .split('\n')
+      .map((_) => _.trim())
+      .join('\n');
+    const bytes = file2bas(src);
+    const txt = file2txt(bytes);
+    t.is(txt.trim(), src.trim(), 'matches');
+  });
+});

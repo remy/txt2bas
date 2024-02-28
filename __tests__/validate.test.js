@@ -17,17 +17,17 @@ function contains(str) {
   };
 }
 
-test('test bad if', (t) => {
-  const src = '10 IF 0';
-  const line = asBasic(src);
-  t.throws(
-    () => {
-      validateStatement(line);
-    },
-    contains('IF statement must have THEN'),
-    src
-  );
-});
+// test('test bad if', (t) => {
+//   const src = '10 IF 0';
+//   const line = asBasic(src);
+//   t.throws(
+//     () => {
+//       validateStatement(line);
+//     },
+//     contains('IF statement must have THEN'),
+//     src
+//   );
+// });
 
 test('validator works with autoline', async (t) => {
   const fixture = await readFile(__dirname + '/fixtures/autoline.txt');
@@ -184,9 +184,22 @@ notThrows(
 );
 notThrows('10   %a = 10');
 notThrows('10 PRINT ("TRUE" AND b)+("FALSE" AND NOT b)');
+notThrows('100 PROC x(12,,”bob”):STOP');
+notThrows('120 PRINT name$');
+notThrows('10 DEF FN ian$(REF jenny$(),index)=jenny$(index)');
+notThrows('10 LET x,y = y,x');
+notThrows('10 a,b,c,d$,e$,f = 1,2,3,"xyz","zzz",g*h');
+notThrows('10 y$ *= 2');
+notThrows('120 PRINT "Press a key for left":x=INPUT -2');
+notThrows('10 " Hello There! "[<+->]');
+notThrows('10 a$(5)[-](3 TO 7)[<]');
+notThrows('30 PRINT "perftest() took ";TIME;" frames"');
+notThrows('20 PRINT %a+1');
+notThrows('20 %a=1');
 
 /********************************************/
 
+// throws('20 PRINT (%a)+1');
 throws(
   '330 REPEAT UNTIL %(c=13) AND %(j > 8)',
   'Cannot redeclare integer expression'
@@ -202,7 +215,7 @@ throws('10 DEFPROC _foo()', 'Function names can only contain letters');
 throws('10 DEFPROC 5foo()', 'Function names can only contain letters');
 
 throws('760 ', 'Empty line');
-throws('945 IF %i = 20 ENDPROC', 'IF statement must have THEN');
+// throws('945 IF %i = 20 ENDPROC', 'IF statement must have THEN');
 throws('10 % sprite continue %', 'Cannot redeclare integer expression whilst');
 throws('10 IF %b=%c THEN ENDPROC', 'Cannot redeclare integer expression', {
   message: 'integer expression function on either side of IF comparator',
