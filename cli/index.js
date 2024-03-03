@@ -222,7 +222,7 @@ function help(type) {
   console.log('');
   if (type === 'txt') {
     console.log('  -f 3dos|tap ... set the output format');
-    console.log('  -t ............ parse and validate the NextBASIC');
+    console.log('  -t ............ test and validate the NextBASIC');
     console.log('  -bank ......... output LOAD "file" BANK format');
     console.log('  -C ............ strip comments from output');
     console.log('  -define........ support #define constant transforms');

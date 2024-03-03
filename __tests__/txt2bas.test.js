@@ -101,9 +101,9 @@ test('comments', (t) => {
 });
 
 test('end with $', (t) => {
-  let src = '202 IF INKEY$="s"';
+  let src = '202 IF INKEY$="s" THEN';
   let expect = [
-    0x00, 0xca, 0x07, 0x00, 0xfa, 0xa6, 0x3d, 0x22, 0x73, 0x22, 0x0d,
+    0x00, 0xca, 0x08, 0x00, 0xfa, 0xa6, 0x3d, 0x22, 0x73, 0x22, 0xcb, 0x0d,
   ];
 
   const res = Array.from(parseLine(src));
@@ -293,13 +293,16 @@ test('INT function', (t) => {
   t.is(token.name, 'NUMBER');
 });
 
-test('ELSE IF', (t) => {
+test('ELSE IF (2.08)', (t) => {
   let src, res;
+
   src = '20 ELSE IF 1 < 2 PRINT "ELSE"';
   res = parseLines(src).statements[0];
 
+  console.log(res.tokens[1]);
+
   t.is(res.tokens[0].text, 'ELSE', 'has else');
-  t.is(res.tokens[1].text, 'IF', 'then if');
+  t.is(res.tokens[1].text, 'IF', 'then "special" if');
   t.is(res.tokens[1].value, 0x83, 'correct IF value for following ELSE');
 });
 

@@ -6,6 +6,7 @@ export const IDENTIFIER = 'IDENTIFIER';
 export const DEFFN = 'DEFFN';
 export const DEFFN_SIG = 'DEFFN_SIG';
 export const IF = 'IF';
+export const ELSEIF = 'ELSE IF';
 export const FOR = 'FOR';
 export const OUTER_IF = 'OUTER_IF';
 export const DEFFN_ARGS = 'DEFFN_ARGS';

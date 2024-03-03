@@ -65,3 +65,11 @@ test('comments are parsed as plain text', (t) => {
   res = line2txt(src.basic);
   t.is(res, text, 'comments are untouched with REM');
 });
+
+test('else if (2.08)', (t) => {
+  let text, src, res;
+  text = '20 ELSE IF 1 < 2 PRINT "ELSE"';
+  src = parseLineWithData(text); // to binary
+  res = line2txt(src.basic); // to text
+  t.is(res, text, 'new IF correctly rendered');
+});

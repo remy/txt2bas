@@ -5,6 +5,7 @@ import tests from '../chr-tests';
 import { TEXT } from '../unicode';
 
 import { validateLineNumber, validateStatement } from './validator';
+import * as parser from '../parser-version';
 
 import {
   DEFINE,
@@ -25,6 +26,7 @@ import {
   DEFFN_SIG,
   DEF_FN_ARG,
   IF,
+  ELSEIF,
   DEFFN_ARGS,
   NUMBER_DATA,
   KEYWORD,
@@ -561,8 +563,76 @@ export class Statement {
     return token;
   }
 
+  /**
+   *
+   * @param {Token} token
+   * @returns {Token}
+   */
   manageTokenState(token) {
-    if (!token) return;
+    // if !token, it could be that it wasn't recognised
+    if (!token) {
+      // console log the state?
+      return;
+    }
+
+    // TODO if the token isn't recognised, try to get the DEF FN or other
+    if (token.value === 'DEF') {
+      // this is more likely to be a DEF FN - so let's peek the next token
+      const peek = this.peekToken(this.pos);
+      if (peek.text === 'FN') {
+        token = {
+          name: KEYWORD,
+          text: 'DEF FN',
+          value: opTable['DEF FN'],
+          pos: this.pos,
+        };
+        this.pos = peek.pos; // move to the end of DEF FN
+      }
+    }
+
+    if (token.value === 'OPEN' || token.value === 'CLOSE') {
+      // this is more likely to be a OPEN # or CLOSE #
+      const peek = this.peek();
+
+      if (peek === '#') {
+        token = {
+          name: KEYWORD,
+          text: `${token.value} ${peek}`,
+          value: opTable[`${token.value} ${peek}`],
+          pos: this.pos,
+        };
+        this.pos += 2; // allow for the space
+      }
+    }
+
+    if (token.value === 'GO') {
+      // this is more likely to be a GO TO or GO SUB
+      const peek = this.peekToken(this.pos);
+      // note: peek.value when it's an identify
+      // peek.text when it's a keyword
+      if (peek.value === 'SUB' || peek.text === 'TO') {
+        token = {
+          name: KEYWORD,
+          text: `GO ${peek.text || peek.value}`,
+          value: opTable[`GO ${peek.text || peek.value}`],
+          pos: this.pos,
+        };
+        this.pos = peek.pos; // move to the end of DEF FN
+      }
+    }
+
+    if (parser.getParser() >= parser.v208 && token.text === 'IF') {
+      // look for ELSE before hand
+      const hasThen = this.peekStatementContains('THEN');
+      if (!hasThen) {
+        token = {
+          name: KEYWORD,
+          text: codes[opTable[ELSEIF]],
+          value: opTable[ELSEIF],
+          pos: this.pos,
+        };
+      }
+    }
 
     if (token.name !== WHITE_SPACE) {
       if (token.value !== '%') this.next = null; // always reset
@@ -631,12 +701,21 @@ export class Statement {
         this.in.push(IF);
       }
 
+      if (token.value === opTable.ELSEIF) {
+        this.in.push(ELSEIF);
+      }
+
       if (token.value === opTable.UNTIL) {
         this.in.push(UNTIL);
       }
 
       if (token.value === opTable.THEN) {
         this.popTo(IF);
+        this.inIntExpression = false;
+      }
+
+      if (token.value === opTable.ENDIF) {
+        this.popTo(ELSEIF);
         this.inIntExpression = false;
       }
 
@@ -656,7 +735,7 @@ export class Statement {
     }
 
     if (token.value === '=') {
-      if (!this.isIn(IF) && !this.isIn(UNTIL)) {
+      if (!this.isIn(IF) && !this.isIn(ELSEIF) && !this.isIn(UNTIL)) {
         this.inIntExpression = false;
       }
     }
@@ -763,33 +842,52 @@ export class Statement {
   }
 
   peekToken(at = this.pos) {
-    let pos = at + 1;
-    const start = at;
-    while (
-      pos < this.line.length &&
-      !tests._isSpace(this.line.charAt(pos)) &&
-      !tests._isDigit(this.line.charAt(pos))
-    ) {
-      pos++;
+    // cache state
+    const cache = {
+      pos: this.pos,
+      inIntExpression: this.inIntExpression,
+      lastToken: this.lastToken,
+      tokens: Array.from(this.tokens),
+    };
+
+    this.pos = at;
+
+    /** @type {Token} */
+    let token = this.token();
+
+    if (!token) {
+      return null;
     }
-    return this.line.substring(start, pos);
+
+    if (token.name === WHITE_SPACE) {
+      token = this.token();
+    }
+
+    let tokenPosition = this.pos;
+
+    // restore state
+    this.pos = cache.pos;
+    this.inIntExpression = cache.inIntExpression;
+    this.lastToken = cache.lastToken;
+    this.tokens = cache.tokens;
+
+    return { ...token, pos: tokenPosition };
   }
 
-  peekPrevToken(at = this.pos) {
-    let pos = at - 1;
-    const end = pos;
-    let allowSpace = true;
-    while (pos >= 0 || tests._isDigit(this.line.charAt(pos))) {
-      if (tests._isSpace(this.line.charAt(pos)) && !allowSpace) {
-        pos++;
-        break;
-      }
-      if (tests._isSpace(this.line.charAt(pos))) {
-        allowSpace = false;
-      }
-      pos--;
+  // mostly only used to search for THEN
+  peekStatementContains(keyword) {
+    let frag = this.line.substring(this.pos);
+
+    frag = frag.replace(/".*?"/g, '').trim();
+    frag = frag.split(/\b/).map((_) => _.trim().toUpperCase());
+    let end = frag.indexOf(':');
+    if (end === -1) {
+      end = undefined;
     }
-    return this.line.substring(pos, end);
+    frag = frag.slice(0, end);
+
+    // strip out any quoted strings
+    return frag.includes(keyword);
   }
 
   findOpCode(endPos) {
@@ -803,27 +901,6 @@ export class Statement {
 
     if (peek && opTable[curr + peek]) {
       return false;
-    }
-
-    if (curr === 'IF') {
-      // look for ELSE before hand
-      const prev = this.peekPrevToken();
-      if (prev === 'ELSE') {
-        curr = 'ELSE IF';
-      }
-    }
-
-    // be wary that this could be something like `DEF FN`
-    else if (peek === ' ' && !opTable[curr]) {
-      const next = this.peekToken(endPos + 1).toUpperCase();
-      const test = `${curr} ${next}`;
-
-      if (opTable[test]) {
-        curr = test;
-        endPos = endPos + 1 + next.length;
-      } else {
-        return false;
-      }
     }
 
     if (opTable[curr] !== undefined) {

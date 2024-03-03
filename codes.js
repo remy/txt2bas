@@ -9,7 +9,7 @@ export default {
   // new in 2.08
   0x81: 'TIME',
   0x82: 'PRIVATE',
-  0x83: 'IF', // internal use only: displays as IF (which is managed here), but is converted from 0x83 via the aliases in op-table
+  0x83: 'IF', // internal use only: displays as IF (which is managed here), but is converted from 0x83 via the aliases in op-table as 'ELSE IF'
   0x84: 'ENDIF',
   0x85: 'EXIT',
   0x86: 'REF',
