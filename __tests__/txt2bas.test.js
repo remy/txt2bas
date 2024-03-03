@@ -303,6 +303,15 @@ test('ELSE IF', (t) => {
   t.is(res.tokens[1].value, 0x83, 'correct IF value for following ELSE');
 });
 
+test('IF with THEN (2.08)', (t) => {
+  let src, res;
+
+  src = '10 IF %z THEN: ELSE IF %z=34 THEN: ELSE PRINT "3"';
+
+  res = parseLines(src).statements[0].tokens;
+  t.is(res[6].value, 0xfa, 'correct IF value when THEN is used');
+});
+
 test('in the wild', (t) => {
   let src, res;
 
