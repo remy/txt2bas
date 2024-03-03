@@ -268,6 +268,7 @@ export function parseLines(
             bankFile = `${filename || 'untitled'}-${bankFile}.bnk`;
           }
           autoline.reset();
+          lastLine = -1;
           const bank = {
             filename: bankFile,
             line: statements.length,
