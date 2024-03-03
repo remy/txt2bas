@@ -100,6 +100,10 @@ export function bas2txtLines(data) {
   while ((next = unpack.parse('<n$line S$length'))) {
     const { length, line: lineNumber } = next;
 
+    if (!length) {
+      break;
+    }
+
     if (lineNumber > 9999) {
       if (length === 0x8080 && lineNumber === 0x8080 && banked) {
         break;

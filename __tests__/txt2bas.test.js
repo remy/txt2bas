@@ -8,6 +8,7 @@ import {
 import { line2txt, formatText, file2bas, file2txt, statements } from '../index';
 import { promises as fsPromises } from 'fs';
 const { readFile } = fsPromises;
+import * as parser from '../parser-version';
 
 test('source = output', (t) => {
   let src = '10 REM marker';
@@ -26,7 +27,9 @@ test('beep and encoded numbers', (t) => {
 
 test('generates BANK code', async (t) => {
   let src = '10 PRINT "Hello, World!"\n20 GO TO 10';
+  parser.setParser(parser.v207);
   const res = file2bas(src, { bank: true });
+  parser.setParser(parser.v208);
   const expect = Uint8Array.from(
     await readFile(__dirname + '/fixtures/bank.p20')
   );
@@ -298,8 +301,6 @@ test('ELSE IF (2.08)', (t) => {
 
   src = '20 ELSE IF 1 < 2 PRINT "ELSE"';
   res = parseLines(src).statements[0];
-
-  console.log(res.tokens[1]);
 
   t.is(res.tokens[0].text, 'ELSE', 'has else');
   t.is(res.tokens[1].text, 'IF', 'then "special" if');

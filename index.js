@@ -7,6 +7,7 @@ import {
 } from './txt2bas/index';
 import * as transform from './txt2bas/transform';
 import { tap2txt, bas2txt, bas2txtLines } from './bas2txt';
+import * as parser from './parser-version';
 export { plus3DOSHeader, tapHeader } from './headers';
 export { default as codes } from './codes';
 export { renumber, shift } from './renumber';
@@ -201,39 +202,68 @@ export const file2bas = (src, options = {}) => {
   }
 
   if (format === '3dos') {
-    let fileLength = length + 128;
-    let offset = 128;
-    if (bank) {
-      fileLength = 0x4000 + 128;
-      directives.hType = 3;
-      directives.hOffset = 0x8000;
-      directives.autostart = 0xc000; // unsure why, but autostart doesn't make sense in a BANK
-      offset = 130;
-    }
-    const file = new Uint8Array(fileLength);
-    file.fill(0x80);
-
-    file.set(plus3DOSHeader(file, directives)); // set the header (128)
-    if (bank) {
-      file[128] = 'B'.charCodeAt(0);
-      file[129] = 'C'.charCodeAt(0);
+    if (rest.bankSplits.length === 0) {
+      return generateFile({ bytes, bank, directives });
     }
 
-    try {
-      file.set(bytes, offset);
-    } catch (e) {
-      if (bank) {
-        throw new Error('Too large for bank');
-      } else {
-        throw e;
-      }
-    }
-
+    const file = generateFile({ bytes, bank, directives });
+    rest.bankSplits.forEach((bank) => {
+      const file = generateFile({
+        bytes: bank.bytes,
+        bank: true,
+        directives: { ...directives, filename: bank.filename },
+      });
+      // save the bank as a file
+      require('fs').writeFileSync(bank.filename, Buffer.from(file));
+    });
+    // generate the file, but also save the actual banks as files
     return file;
   } else if (format === 'tap') {
     return asTap(bytes, directives);
   }
 };
+
+function generateFile({ bytes, bank, directives }) {
+  const length = bytes.length;
+  let fileLength = length + 128;
+  let offset = 128;
+  if (bank) {
+    if (parser.getParser() < parser.v208) {
+      fileLength = 0x4000 + 128;
+      directives.hOffset = 0x8000;
+    } else {
+      fileLength += 3;
+      directives.hOffset = 0x005a;
+    }
+    directives.hType = 3;
+    directives.autostart = 0xc000; // unsure why, but autostart doesn't make sense in a BANK
+    offset = 130;
+  }
+  const file = new Uint8Array(fileLength);
+  file.fill(0x80);
+
+  file.set(plus3DOSHeader(file, directives)); // set the header (128)
+  if (bank) {
+    file[128] = 'B'.charCodeAt(0);
+    file[129] = 'C'.charCodeAt(0);
+  }
+
+  try {
+    file.set(bytes, offset);
+  } catch (e) {
+    if (bank) {
+      throw new Error('Too large for bank');
+    } else {
+      throw e;
+    }
+  }
+
+  if (bank && parser.getParser() >= parser.v208) {
+    file[fileLength] = 0x80;
+  }
+
+  return file;
+}
 
 /**
  * Converts byte data to plain text

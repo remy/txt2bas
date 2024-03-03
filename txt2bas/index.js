@@ -92,17 +92,23 @@ export class Autoline {
     this.start = this.number;
   }
 
-  next() {
+  next(from = this.number) {
     if (!this.active) return null;
-    this.last = this.number;
-    const res = this.number;
-    this.number += this.step;
+    this.last = from;
+    const res = from;
+    this.number = from + this.step;
     return res;
   }
 
   prev() {
     if (this.last === null) return;
     this.number = this.last;
+    this.last = null;
+  }
+
+  reset() {
+    if (!this.active) return;
+    this.number = this.start;
     this.last = null;
   }
 
@@ -234,7 +240,8 @@ export function parseLines(
   { validate = true, keepDirectives = false, bank = false } = {}
 ) {
   const lines = text.split(text.includes('\r') ? '\r' : '\n');
-  const statements = [];
+  const programStatements = [];
+  let statements = programStatements;
   let autostart = 0x8000;
   let lastLine = -1;
   let filename = null;
@@ -242,7 +249,7 @@ export function parseLines(
 
   const bankSplits = [];
 
-  const autoline = new Autoline();
+  let autoline = new Autoline();
 
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i].trim();
@@ -255,9 +262,19 @@ export function parseLines(
           filename = line.split(' ')[1];
         }
 
-        if (line.startsWith('#bankfile ')) {
-          const bankFile = line.split(' ')[1];
-          bankSplits.push({ bank: bankFile, line: i + 1 });
+        if (line.startsWith('#bankfile ') || line.startsWith('#bank ')) {
+          let bankFile = line.split(' ')[1];
+          if (line.startsWith('#bank ')) {
+            bankFile = `${filename || 'untitled'}-${bankFile}.bnk`;
+          }
+          autoline.reset();
+          const bank = {
+            filename: bankFile,
+            line: statements.length,
+            statements: [],
+          };
+          statements = bank.statements;
+          bankSplits.push(bank);
         }
 
         if (line.startsWith('#autoline')) {
@@ -303,10 +320,12 @@ export function parseLines(
         }
 
         if (!likeDirective) {
-          try {
-            validateLineNumber(statement.lineNumber, lastLine);
-          } catch (e) {
-            throw new Error(e.message + errorTail);
+          if (validate) {
+            try {
+              validateLineNumber(statement.lineNumber, lastLine);
+            } catch (e) {
+              throw new Error(e.message + errorTail);
+            }
           }
           lastLine = statement.lineNumber;
 
@@ -318,13 +337,19 @@ export function parseLines(
     }
   }
 
-  const bytes = statementsToBytes(statements, { bank });
+  const bytes = statementsToBytes(programStatements, { bank });
+
+  if (bankSplits.length) {
+    bankSplits.forEach((split) => {
+      split.bytes = statementsToBytes(split.statements, { bank: true });
+    });
+  }
 
   return {
     bytes,
     length: bytes.length,
-    tokens: statements.map((_) => _.tokens),
-    statements,
+    tokens: programStatements.map((_) => _.tokens),
+    statements: programStatements,
     autostart,
     filename,
     autoline,
