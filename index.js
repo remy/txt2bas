@@ -144,6 +144,7 @@ export const tokens = (
  * @param {boolean} [options.stripComments=false]
  * @param {boolean} [options.validate=false]
  * @param {boolean} [options.defines=false]
+ * @param {boolean} [options.cwd=process.cwd()]
  * @returns {Uint8Array}
  */
 export const file2bas = (src, options = {}) => {
@@ -155,6 +156,7 @@ export const file2bas = (src, options = {}) => {
     format = '3dos',
     binary = false, // used if source has UDGs
     includeHeader = true,
+    cwd = '.',
     ...parseOptions
   } = options;
 
@@ -214,7 +216,9 @@ export const file2bas = (src, options = {}) => {
         directives: { ...directives, filename: bank.filename },
       });
       // save the bank as a file
-      require('fs').writeFileSync(bank.filename, Buffer.from(file));
+      const { join } = require('path');
+
+      require('fs').writeFileSync(join(cwd, bank.filename), Buffer.from(file));
     });
     // generate the file, but also save the actual banks as files
     return file;

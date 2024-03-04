@@ -51,7 +51,7 @@
     "basic"
   ],
   "engines": {
-    "node": "12"
+    "node": ">=12"
   },
   "author": "Remy Sharp",
   "license": "MIT",
