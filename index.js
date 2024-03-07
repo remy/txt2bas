@@ -144,7 +144,7 @@ export const tokens = (
  * @param {boolean} [options.stripComments=false]
  * @param {boolean} [options.validate=false]
  * @param {boolean} [options.defines=false]
- * @param {boolean} [options.cwd=process.cwd()]
+ * @param {boolean} [options.bankOutputDir=process.cwd()] directory to save banks to, if this is empty or false, it doesn't write banks when split
  * @returns {Uint8Array}
  */
 export const file2bas = (src, options = {}) => {
@@ -156,7 +156,7 @@ export const file2bas = (src, options = {}) => {
     format = '3dos',
     binary = false, // used if source has UDGs
     includeHeader = true,
-    cwd = '.',
+    bankOutputDir = false,
     ...parseOptions
   } = options;
 
@@ -209,17 +209,23 @@ export const file2bas = (src, options = {}) => {
     }
 
     const file = generateFile({ bytes, bank, directives });
-    rest.bankSplits.forEach((bank) => {
-      const file = generateFile({
-        bytes: bank.bytes,
-        bank: true,
-        directives: { ...directives, filename: bank.filename },
-      });
-      // save the bank as a file
-      const { join } = require('path');
 
-      require('fs').writeFileSync(join(cwd, bank.filename), Buffer.from(file));
-    });
+    if (bankOutputDir) {
+      rest.bankSplits.forEach((bank) => {
+        const file = generateFile({
+          bytes: bank.bytes,
+          bank: true,
+          directives: { ...directives, filename: bank.filename },
+        });
+        // save the bank as a file
+        const { join } = require('path');
+
+        require('fs').writeFileSync(
+          join(bankOutputDir, bank.filename),
+          Buffer.from(file)
+        );
+      });
+    }
     // generate the file, but also save the actual banks as files
     return file;
   } else if (format === 'tap') {
@@ -227,7 +233,18 @@ export const file2bas = (src, options = {}) => {
   }
 };
 
+/**
+ * Generates a file based on the provided bytes, bank flag, and directives.
+ *
+ * @param {object} options - The options object.
+ * @param {Uint8Array} options.bytes - The bytes to generate the file from.
+ * @param {boolean} [options.bank] - Indicates if the file is a bank.
+ * @param {object} options.directives - The directives for the file.
+ * @returns {Uint8Array} The generated file.
+ */
 function generateFile({ bytes, bank, directives }) {
+  // Function implementation goes here
+
   const length = bytes.length;
   let fileLength = length + 128;
   let offset = 128;

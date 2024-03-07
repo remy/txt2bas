@@ -1,5 +1,5 @@
 import { opTable } from './op-table';
-import codes, { usesLineNumbers, intFunctions } from '../codes';
+import codes, { usesLineNumbers, intFunctions, operators } from '../codes';
 import { floatToZX } from '../to';
 import tests from '../chr-tests';
 import { TEXT } from '../unicode';
@@ -710,7 +710,13 @@ export class Statement {
 
     if (token.name === KEYWORD) {
       if (this.inIntExpression && intFunctions[token.text]) {
-        this.in.push(INT_EXPRESSION);
+        // check if an int function was used
+        if (
+          (this.lastToken.name === SYMBOL && this.lastToken.value === '%') ||
+          operators.includes(token.text)
+        ) {
+          this.in.push(INT_EXPRESSION);
+        }
       }
 
       if (!this.isIn(IF) && !this.isIn(INT_EXPRESSION)) {

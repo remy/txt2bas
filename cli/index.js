@@ -172,6 +172,7 @@ async function main(type) {
           inlineLoad: options['inline-load'],
           stripComments: options['comments-off'],
           parser: LATEST,
+          bankOutputDir: cwd,
         });
       }
     }
