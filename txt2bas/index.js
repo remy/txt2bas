@@ -699,6 +699,12 @@ export class Statement {
     if (token.value === ']') {
       this.popTo(OPEN_BRACKETS);
     }
+    if (token.value === ';' && token.name === SYMBOL) {
+      if (this.isIn(INT_EXPRESSION)) {
+        this.popTo(INT_EXPRESSION);
+      }
+      this.inIntExpression = false;
+    }
 
     if (this.in.length && token.name === STATEMENT_SEP) {
       this.in = [];
@@ -861,6 +867,8 @@ export class Statement {
         return this.processDefine();
       }
     }
+
+    // FIXME if symbol is ';' and we're in a print, reset the int state
 
     if (tests._isSymbol(c)) {
       return this.processSingle();

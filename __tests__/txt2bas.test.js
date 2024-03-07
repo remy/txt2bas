@@ -384,4 +384,20 @@ test('in the wild', (t) => {
   t.is(res.name, 'NUMBER', 'number found');
   t.is(res.value, '1e6', 'original source found');
   t.is(res.numeric, 1e6, 'has correct value');
+
+  src = '10 LAYER PALETTE %0 BANK 32,%0';
+  res = parseLines(src, { validate: false }).statements[0].tokens;
+
+  res = res.filter((_) => _.name === 'NUMBER')[0]; // first 'number'
+  t.is(res.name, 'NUMBER', 'number found');
+  t.is(res.value, '32', 'original source found');
+  t.is(res.integer, false, 'integer mode was reset');
+
+  src = '30 PRINT POINT %i<<3,%i;s$(%i,1 TO 10)';
+  res = parseLines(src, { validate: false }).statements[0].tokens;
+
+  res = res.filter((_) => _.name === 'NUMBER').pop(); // last 'number'
+  t.is(res.name, 'NUMBER', 'number found');
+  t.is(res.value, '10', 'original source found');
+  t.is(res.integer, false, 'integer mode was reset');
 });
