@@ -52,6 +52,17 @@ test('hex looking like dec', (t) => {
   });
 });
 
+test('#bank splitting resets line numbers', async (t) => {
+  let fixture = await readFile(
+    __dirname + '/fixtures/bank-split-numbers.txt',
+    'utf8'
+  );
+  fixture = fixture.split('\n').slice(2).join('\n');
+  const res = validateTxt(fixture);
+
+  t.deepEqual(res, [], 'no validation errors');
+});
+
 function throws(src, expect, { debug, message } = {}) {
   test(src, (t) => {
     t.throws(

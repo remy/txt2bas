@@ -161,6 +161,11 @@ export function validate(text, debug = {}) {
         if (line.startsWith('#autoline')) {
           autoline.parse(line);
         }
+
+        if (line.startsWith('#bank')) {
+          autoline.reset();
+          lastLine = -1;
+        }
         // skip
       } else {
         let ln;
