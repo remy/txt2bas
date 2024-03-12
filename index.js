@@ -1,3 +1,9 @@
+/**
+ * @typedef { import(".").ParseOptions } ParseOptions
+ * @typedef { import(".").Statement } Statement
+ * @typedef { import(".").ParseLineResult } ParseLineResult
+ */
+
 import { asTap, plus3DOSHeader } from './headers';
 import {
   parseLines,
@@ -81,10 +87,6 @@ export const validateTxt = (text, debug) => {
 
   return validate(text, debug);
 };
-
-/** @typedef { import("./txt2bas/").ParseOptions } ParseOptions */
-/** @typedef { import("./txt2bas/").Statement } Statement */
-/** @typedef { import("./txt2bas/").ParseLineResult } ParseLineResult */
 
 /**
  * Get the statement objects for source code

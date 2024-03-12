@@ -1,9 +1,10 @@
+/**
+ * @typedef { import(".").Statement } Statement
+ * @typedef { import(".").RenumberOptions } RenumberOptions
+ */
+
 import { parseLines, statementsToBytes } from './txt2bas/index';
 import { bas2txtLines } from './bas2txt';
-
-/**
- * @typedef { import("./index").Statement } Statement
- */
 
 /**
  * Find original line number for a given new position
@@ -106,16 +107,6 @@ export function renumberStatements(statements, options = {}) {
 
   return statements;
 }
-
-/**
- * @typedef {object} RenumberOptions
- * @property {number} [start=first line] The line number to affect
- * @property {number} [step=10] Increment by step
- * @property {number} [end=last line] The line number to end renumbering
- * @property {boolean} [relocate=false] Moves lines to a new location
- * @property {number} [limit] Only used with relocate, the number of lines to work with if  end is not specified
- * @property {number} [base=start] Used with relocate to specify where the lines should be moved _to_
- */
 
 /**
  * Renumbers a string of NextBASIC lines.

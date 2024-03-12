@@ -1,3 +1,7 @@
+/**
+ * @typedef { import("..").Token } Token
+ */
+
 import { opTable } from './op-table';
 import { intFunctions, functions, printModifiers } from '../codes';
 import * as parser from '../parser-version';
@@ -35,17 +39,6 @@ import {
   FLOAT_EXPRESSION,
   INT_EXPRESSION,
 } from './types';
-
-/**
- * @typedef { import("./index").Token } Token
- */
-
-/**
- * @typedef Expect
- * @property {string} name The token name value to expect, such as KEYWORD, etc
- * @property {string} error The error message throw if expectation isn't met
- * @property {string} [value] Narrows specification of expectation
- */
 
 /**
  * Validates that line numbers increase
@@ -555,8 +548,6 @@ export function validatePrintStatement(token, scope) {
     return;
   }
 
-  scope; // ?
-
   throw new Error(
     `Unexpected ${op} in ${scope.statementStack[0].text} statement`
   );
@@ -751,14 +742,12 @@ export function validateIdentifier({ value, name }, scope = { last: null }) {
 
     if (isString) return;
 
-    if (value.endsWith('$') && value.length > 2) {
-      if (parser.getParser() === parser.v207) {
+    if (parser.getParser() === parser.v207) {
+      if (value.endsWith('$') && value.length > 2) {
         throw new Error('String variables are only allowed 1 character long');
       }
-    }
 
-    if (scope.last === DEFFN_SIG && value.length > 1 && !isString) {
-      if (parser.getParser() === parser.v207) {
+      if (scope.last === DEFFN_SIG && value.length > 1 && !isString) {
         throw new Error('Only single character names allowed for DEF FN');
       }
     }

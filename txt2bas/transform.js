@@ -1,15 +1,15 @@
+/**
+ * @typedef { import("../index.d.ts").Statement } Statement
+ * @typedef { import("../index.d.ts").Token } Token
+ * @typedef { import("../index.d.ts").Autoline } Autoline
+ * @typedef { import("../index.d.ts").Define } Define
+ */
+
 import { opTable } from './op-table';
 import * as types from './types';
 import { renumberStatements } from '../renumber';
 import { basicToBytes, parseBasic } from './index';
 import { bas2txtLines } from '../bas2txt';
-
-/**
- * @typedef { import("./index").Statement } Statement
- * @typedef { import("./index").Token } Token
- * @typedef { import("./index").Autoline } Autoline
- * @typedef { import("./index").Define } Define
- */
 
 /**
  * Convert all LOAD statement to inline DATA lines and respective pokes

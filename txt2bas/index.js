@@ -1,3 +1,10 @@
+/**
+ * @typedef {import('../index.d.ts').Token} Token
+ * @typedef {import('../index.d.ts').ParsedBasic} ParsedBasic
+ * @typedef {import('../index.d.ts').ParseOptions} ParseOptions
+ * @typedef {import('../index.d.ts').ParseLineResult} ParseLineResult
+ */
+
 import { opTable } from './op-table';
 import codes, {
   usesLineNumbers,
@@ -42,46 +49,9 @@ import {
   OPEN_PARENS,
   OPEN_BRACES,
   OPEN_BRACKETS,
+  MODIFIER,
+  STRING_EXPRESSION,
 } from './types';
-
-/**
- * A complete object representation of NextBASIC code
- *
- * @typedef ParsedBasic
- * @type {object}
- * @property {Uint8Array} basic - NextBASIC encoded data
- * @property {string} line
- * @property {number} length - byte length
- * @property {number} lineNumber
- * @property {Token[]} tokens
- */
-
-/**
- * A single token used in the lexing process
- *
- * @typedef Token
- * @property {string} name The token type name
- * @property {number|string} value Token byte value
- * @property {string} text Source text content
- * @property {number} numeric Numerical value
- * @property {boolean} integer Flag (only used on number types)
- */
-
-/**
- * A simple definition pragma set as: #define KEY=VALUE
- *
- * @typedef Define
- * @property {string} key
- * @property {Statement} value
- */
-
-/**
- * Where a bank starts
- *
- * @typedef BankSplit
- * @property {string} bankFile the filename
- * @property {number} line the starting line
- */
 
 /**
  * Auto increment line
@@ -217,26 +187,6 @@ export function parseLineWithData(line, autoline = null) {
   const length = basic.length;
   return { basic, line, length, lineNumber, tokens };
 }
-
-/**
- * @typedef {object} ParseLineResult
- * @property {Uint8Array} bytes
- * @property {number} length
- * @property {Token[][]} tokens
- * @property {Statement[]} statements
- * @property {number} autostart
- * @property {string} filename
- * @property {Autoline} autoline
- * @property {Define[]} defines
- * @property {BankSplit[]} bankSplits
- */
-
-/**
- * @typedef ParseOptions
- * @property {boolean} [validate=true] Whether to throw on validation failures
- * @property {boolean} [keepDirectives=false] Whether to keep lines starting with "#"
- * @property {boolean} [bank=false] Whether the target will be a bank
- */
 
 /**
  * Converts plain text to fully parsed NextBASIC with AST
@@ -611,7 +561,7 @@ export class Statement {
       return;
     }
 
-    // TODO if the token isn't recognised, try to get the DEF FN or other
+    // if the token isn't recognised, try to get the DEF FN or other
     if (token.value === 'DEF') {
       // this is more likely to be a DEF FN - so let's peek the next token
       const peek = this.peekToken(this.pos);
@@ -889,8 +839,6 @@ export class Statement {
         return this.processDefine();
       }
     }
-
-    // FIXME if symbol is ';' and we're in a print, reset the int state
 
     if (tests._isSymbol(c)) {
       return this.processSingle();
@@ -1277,6 +1225,8 @@ export class Statement {
         pos: this.pos,
       };
       this.pos = end + 1;
+      this.popTo(STRING_EXPRESSION);
+      this.in.push(STRING_EXPRESSION);
       return tok;
     }
   }
@@ -1401,7 +1351,8 @@ export function basicToBytes(lineNumber, tokens) {
       }
     } else if (
       name === NUMBER ||
-      (name === BINARY && token.integer === false)
+      (name === BINARY && token.integer === false) ||
+      (name === HEX && token.integer === false)
     ) {
       length += value.length;
       const { numeric } = token;

@@ -316,6 +316,37 @@ test('IF with THEN (2.08)', (t) => {
   t.is(res[6].value, 0xfa, 'correct IF value when THEN is used');
 });
 
+test('PRIVATE pads', (t) => {
+  let src, res;
+
+  src = '10 PRIVATE t=0';
+
+  res = parseLines(src).bytes;
+  t.is(res[5], 0x0e, 'start of 6 byte buffer');
+});
+
+test('String modifiers', (t) => {
+  let src, res;
+
+  src = '10 PRINT a$[<+->]';
+  res = parseLines(src)
+    .tokens.flat()
+    .find((_) => (_.value || _.text) === '<');
+  t.is(res.name, 'SYMBOL', 'modifier is correct');
+
+  src = '10 PRINT a$[<+->][<]';
+  res = parseLines(src)
+    .tokens.flat()
+    .find((_) => (_.value || _.text) === '<');
+  t.is(res.name, 'SYMBOL', 'following modifier is correct');
+
+  src = '10 PRINT a$(5)[-](3 TO 7)[<]';
+  res = parseLines(src)
+    .tokens.flat()
+    .find((_) => (_.value || _.text) === '<');
+  t.is(res.name, 'SYMBOL', 'modifier after string var is correct');
+});
+
 test('in the wild', (t) => {
   let src, res;
 
