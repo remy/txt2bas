@@ -1257,7 +1257,7 @@ export class Statement {
   }
 
   processCmpOperator() {
-    const tok = this.simpleSlurp(tests._isCmpOperator, KEYWORD);
+    const tok = this.simpleSlurp(tests._isCmpOperator, KEYWORD, 2);
     const value = opTable[tok.value];
     tok.text = tok.value;
     tok.value = value;
@@ -1276,10 +1276,11 @@ export class Statement {
     return this.simpleSlurp(tests._isSpace, WHITE_SPACE);
   }
 
-  simpleSlurp(test, tokenName) {
+  simpleSlurp(test, tokenName, maxLength = Infinity) {
     let endPos = this.pos;
+    maxLength += endPos;
 
-    while (test(this.line.charAt(endPos))) {
+    while (test(this.line.charAt(endPos)) && endPos < maxLength) {
       endPos++;
     }
 
