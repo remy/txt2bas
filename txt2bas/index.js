@@ -1,5 +1,10 @@
 import { opTable } from './op-table';
-import codes, { usesLineNumbers, intFunctions, operators } from '../codes';
+import codes, {
+  usesLineNumbers,
+  intFunctions,
+  stringAltFunctions,
+  operators,
+} from '../codes';
 import { floatToZX } from '../to';
 import tests from '../chr-tests';
 import { TEXT } from '../unicode';
@@ -693,6 +698,10 @@ export class Statement {
     }
     if (token.value === '[') {
       this.in.push(OPEN_BRACKETS);
+
+      if (this.isIn(STRING_EXPRESSION)) {
+        this.in.push(MODIFIER);
+      }
     }
 
     if (token.value === ')') {
@@ -836,7 +845,7 @@ export class Statement {
       return { ...this.processSingle(), name: STATEMENT_SEP };
     }
 
-    if (tests._isCmpOperatorStart(c)) {
+    if (!this.isIn(MODIFIER) && tests._isCmpOperatorStart(c)) {
       // special handling for operator keywords, such as <=
       return this.processCmpOperator();
     }
@@ -851,6 +860,14 @@ export class Statement {
     }
 
     if (tests._isHexSymbol(c)) {
+      // now check if the last token was in the string functions
+      // if it was, then we're in a string, not a hex value
+      if (
+        this.lastToken.name === KEYWORD &&
+        stringAltFunctions.includes(this.lastToken.text)
+      ) {
+        return this.processSingle();
+      }
       return this.processHex();
     }
 
@@ -991,6 +1008,14 @@ export class Statement {
       value,
       pos: this.pos,
     };
+
+    if (this.isIn(STRING_EXPRESSION)) {
+      this.popTo(STRING_EXPRESSION);
+    }
+
+    if (value.endsWith('$')) {
+      this.in.push(STRING_EXPRESSION);
+    }
 
     if (this.in.includes(DEFFN_ARGS)) {
       tok.name = DEF_FN_ARG;

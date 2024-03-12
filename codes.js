@@ -191,6 +191,8 @@ intFunctions.SPRITE = ['CONTINUE', 'AT', 'OVER'];
 intFunctions.BANK = ['USR', 'PEEK', 'DPEEK'];
 intFunctions.ABS = ['*'];
 
+export const stringAltFunctions = ['TIME', 'USR', 'ERROR'];
+
 export const functions = [
   'ABS',
   'ACS',
@@ -304,6 +306,8 @@ export const keywords = [
   'TILE',
   'VERIFY',
 ];
+
+export const stringModifiers = ['+', '-', '<', '>', '~', '^', '(', ')'];
 
 export const printModifiers = [
   'INK',
