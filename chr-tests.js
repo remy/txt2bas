@@ -39,6 +39,12 @@ const tests = {
     return c == '.';
   },
 
+  _isFloatOr(test) {
+    return (c) => {
+      return tests._isStartOfFloat(c) || test(c);
+    };
+  },
+
   _isHex(c) {
     c = c.toUpperCase();
     return c === '$' || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F');

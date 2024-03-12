@@ -1049,13 +1049,41 @@ export class Statement {
   }
 
   processBinary() {
-    const tok = this.simpleSlurp(tests._isBinary, BINARY);
+    const tok = this.simpleSlurp(
+      this.inIntExpression
+        ? tests._isBinary
+        : tests._isFloatOr(tests._isBinary),
+      BINARY
+    );
+
+    tok.integer = this.inIntExpression;
 
     const offset = tok.value.startsWith('@') ? 1 : 0;
-    const numeric = parseInt(tok.value.substring(offset), 2);
+    const value = tok.value.substring(offset);
+    let numeric = 0;
+
+    // if it's an integer, then just store parse
+    // the value as binary.
+    if (tok.integer) {
+      numeric = parseInt(value, 2);
+    }
+
+    // if it's a float, then split on the dot, and
+    // parse the first part as binary, and the second
+    // part as binary, and then join them together.
+    if (!tok.integer) {
+      const [whole, fraction] = value.split('.');
+      numeric = parseInt(whole, 2);
+      if (fraction) {
+        numeric += parseInt(fraction, 2) / Math.pow(2, fraction.length);
+      }
+    }
+
+    if (isNaN(numeric)) {
+      numeric = 0;
+    }
 
     tok.numeric = numeric;
-    tok.integer = this.inIntExpression;
 
     // unlikely but we'll keep it
     if (this.next === LINE_NUMBER) {
@@ -1066,12 +1094,35 @@ export class Statement {
   }
 
   processHex() {
-    const tok = this.simpleSlurp(tests._isHex, HEX);
+    const tok = this.simpleSlurp(
+      this.inIntExpression ? tests._isHex : tests._isFloatOr(tests._isHex),
+      HEX
+    );
 
-    const numeric = parseInt(`0x${tok.value.substring(1)}`, 16);
+    tok.integer = this.inIntExpression; // should always be true
+    const value = tok.value.substring(1);
+
+    let numeric = 0;
+
+    // if it's an integer, then just store parse
+    // the value as hex.
+    if (tok.integer) {
+      numeric = parseInt(value, 16);
+    }
+
+    if (!tok.integer) {
+      const [whole, fraction] = value.split('.');
+      numeric = parseInt(whole, 16);
+      if (fraction) {
+        numeric += parseInt(fraction, 16) / Math.pow(16, fraction.length);
+      }
+    }
+
+    if (isNaN(numeric)) {
+      numeric = 0;
+    }
 
     tok.numeric = numeric;
-    tok.integer = this.inIntExpression; // should always be true
 
     // unlikely but we'll keep it
     if (this.next === LINE_NUMBER) {
@@ -1312,6 +1363,16 @@ export function basicToBytes(lineNumber, tokens) {
     if (name === KEYWORD) {
       length++;
       opTokens.push(token);
+
+      if (value === opTable.PRIVATE) {
+        const view = new DataView(new ArrayBuffer(6));
+        view.setUint8(0, 0x0e);
+        opTokens.push({
+          name: NUMBER_DATA,
+          value: new Uint8Array(view.buffer),
+        });
+        length += 6;
+      }
     } else if (
       name === NUMBER ||
       (name === BINARY && token.integer === false)
