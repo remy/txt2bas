@@ -406,12 +406,18 @@ export function validateStatement(tokens, debug = {}) {
         }
       }
 
-      if (name === BINARY && value.startsWith('@') && !token.integer) {
-        throw new Error('Binary values only allowed in integer expressions');
-      }
+      if (parser.getParser() === parser.v207) {
+        if (
+          name === BINARY &&
+          scope.previousToken.value === '@' &&
+          !token.integer
+        ) {
+          throw new Error('Binary values only allowed in integer expressions');
+        }
 
-      if (name === HEX && !token.integer) {
-        throw new Error('Hex values only allowed in integer expressions');
+        if (name === HEX && !token.integer) {
+          throw new Error('Hex values only allowed in integer expressions');
+        }
       }
 
       if (value === opTable.BIN) {
