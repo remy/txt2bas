@@ -367,7 +367,9 @@ export function validateStatement(tokens, debug = {}) {
         if (next && next.text === IF) {
           // change the token to ELSEIF and drop the IF
         } else if (scope.includes(OUTER_IF)) {
-          throw new Error('Statement separator (:) expected before ELSE');
+          if (scope.previousToken.value !== opTable.THEN) {
+            throw new Error('Statement separator (:) expected before ELSE');
+          }
         }
       }
 
