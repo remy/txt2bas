@@ -37,3 +37,5 @@ export const OPEN_PARENS = 'OPEN_PARENS'; // ()
 export const OPEN_BRACKETS = 'OPEN_BRACKETS'; //  []
 export const OPEN_BRACES = 'OPEN_BRACES'; // {}
 export const INT_PARENS = 'INT_PARENS';
+export const MODIFIER = 'MODIFIER';
+export const STRING_EXPRESSION = 'STRING_EXPRESSION';
