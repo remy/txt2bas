@@ -1,7 +1,11 @@
 import test from 'ava';
-import { line2txt, file2txt } from '../index';
-import { parseLineWithData } from '../txt2bas';
+import { line2txt, file2txt } from '../index.mjs';
+import { parseLineWithData } from '../txt2bas/index.mjs';
 import { promises as fsPromises } from 'fs';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const { readFile } = fsPromises;
 
 test('strings protected', (t) => {

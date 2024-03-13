@@ -1,5 +1,5 @@
 import test from 'ava';
-import { formatText } from '../index';
+import { formatText } from '../index.mjs';
 
 test('retains spaces (with autoline true)', (t) => {
   let src = `10 ; Thanks Remy for your extension!`;

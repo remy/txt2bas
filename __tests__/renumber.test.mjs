@@ -1,5 +1,5 @@
 import test from 'ava';
-import { renumber, shift } from '../index';
+import { renumber, shift } from '../index.mjs';
 
 const src = `
 10 PRINT "ok"

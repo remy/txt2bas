@@ -2,9 +2,9 @@
  * @typedef { import("..").Token } Token
  */
 
-import { opTable } from './op-table';
-import { intFunctions, functions, printModifiers } from '../codes';
-import * as parser from '../parser-version';
+import { opTable } from './op-table.mjs';
+import { intFunctions, functions, printModifiers } from '../codes.mjs';
+import * as parser from '../parser-version.mjs';
 
 import {
   COMMENT,
@@ -38,7 +38,7 @@ import {
   STRING,
   FLOAT_EXPRESSION,
   INT_EXPRESSION,
-} from './types';
+} from './types.mjs';
 
 /**
  * Validates that line numbers increase

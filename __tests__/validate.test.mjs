@@ -1,17 +1,30 @@
 import test from 'ava';
-import { parseBasic } from '../txt2bas';
-import { validateStatement } from '../txt2bas/validator';
 import { promises as fsPromises } from 'fs';
-import { validateTxt } from '../index';
+import { parseBasic } from '../txt2bas/index.mjs';
+import { validateStatement } from '../txt2bas/validator.mjs';
+import { validateTxt } from '../index.mjs';
+import * as parser from '../parser-version.mjs';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const { readFile } = fsPromises;
 
+/**
+ * @param {string} s
+ * @returns {import("~/index.d.ts").Token[]}
+ */
 function asBasic(s) {
   const { tokens } = parseBasic(s);
   return tokens;
 }
 
+/**
+ * @param {string} str
+ * @returns {null|{message: RegExp}}
+ */
 function contains(str) {
-  if (!str) return null;
+  if (!str) return { any: false };
   return {
     message: new RegExp(str.replace(/\(/g, '\\(').replace(/\)/g, '\\)')),
   };
@@ -47,9 +60,13 @@ test('validator errors without autoline', async (t) => {
 test('hex looking like dec', (t) => {
   t.plan(1);
   const line = asBasic('740 let %a=$10');
+
   t.throws(() => {
+    parser.setParser(parser.v207);
     validateStatement(line);
+    parser.setParser(parser.LATEST);
   });
+  parser.setParser(parser.LATEST);
 });
 
 test('#bank splitting resets line numbers', async (t) => {
@@ -63,8 +80,16 @@ test('#bank splitting resets line numbers', async (t) => {
   t.deepEqual(res, [], 'no validation errors');
 });
 
-function throws(src, expect, { debug, message } = {}) {
-  test(src, (t) => {
+/**
+ * @param {string} src
+ * @param {string} expect
+ * @param {object} [options]
+ * @param {string} [options.debug]
+ * @param {string} [options.message]
+ * @param {string} [options.title=src]
+ */
+function throws(src, expect, { debug, message, title } = { title: src }) {
+  test(title || src, (t) => {
     t.throws(
       () => {
         const line = asBasic(src);
@@ -76,8 +101,15 @@ function throws(src, expect, { debug, message } = {}) {
   });
 }
 
-function notThrows(src, { debug, message } = {}) {
-  test(src, (t) => {
+/**
+ * @param {string} src
+ * @param {object} [options]
+ * @param {string} [options.debug]
+ * @param {string} [options.message]
+ * @param {string} [options.title=src]
+ */
+function notThrows(src, { debug, message, title } = {}) {
+  test(title || src, (t) => {
     const line = asBasic(src);
     t.notThrows(() => validateStatement(line, debug), message);
   });
@@ -207,7 +239,10 @@ notThrows('10 a$(5)[-](3 TO 7)[<]');
 notThrows('30 PRINT "perftest() took ";TIME;" frames"');
 notThrows('20 PRINT %a+1');
 notThrows('20 %a=1');
-
+notThrows('10 PRINT TIME$');
+notThrows('20 IF %m&12 THEN ELSE %m=%m+1', { message: 'THEN ELSE is allowed' });
+notThrows('10 DATA $DEAD');
+notThrows('10 PRINT " Hello There!   "[<+->]');
 /********************************************/
 
 // throws('20 PRINT (%a)+1');
@@ -237,6 +272,7 @@ throws(
   'Statement separator (:) expected before ELSE'
 );
 throws('760       ', 'Empty line', {
+  title: 'Empty line, lots of white space',
   message: 'Line with only white space should fail',
 });
 throws(
