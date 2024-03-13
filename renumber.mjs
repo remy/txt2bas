@@ -3,8 +3,8 @@
  * @typedef { import(".").RenumberOptions } RenumberOptions
  */
 
-import { parseLines, statementsToBytes } from './txt2bas/index';
-import { bas2txtLines } from './bas2txt';
+import { parseLines, statementsToBytes } from './txt2bas/index.mjs';
+import { bas2txtLines } from './bas2txt.mjs';
 
 /**
  * Find original line number for a given new position

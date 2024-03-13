@@ -5,11 +5,11 @@
  * @typedef { import("../index.d.ts").Define } Define
  */
 
-import { opTable } from './op-table';
-import * as types from './types';
-import { renumberStatements } from '../renumber';
-import { basicToBytes, parseBasic } from './index';
-import { bas2txtLines } from '../bas2txt';
+import { opTable } from './op-table.mjs';
+import * as types from './types.mjs';
+import { renumberStatements } from '../renumber.mjs';
+import { basicToBytes, parseBasic } from './index.mjs';
+import { bas2txtLines } from '../bas2txt.mjs';
 
 /**
  * Convert all LOAD statement to inline DATA lines and respective pokes

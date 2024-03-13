@@ -4,11 +4,21 @@ import {
   parseLine,
   parseLines,
   parseBasic,
-} from '../txt2bas';
-import { line2txt, formatText, file2bas, file2txt, statements } from '../index';
+} from '../txt2bas/index.mjs';
+import {
+  line2txt,
+  formatText,
+  file2bas,
+  file2txt,
+  statements,
+} from '../index.mjs';
+import * as parser from '../parser-version.mjs';
 import { promises as fsPromises } from 'fs';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const { readFile } = fsPromises;
-import * as parser from '../parser-version';
 
 test('source = output', (t) => {
   let src = '10 REM marker';

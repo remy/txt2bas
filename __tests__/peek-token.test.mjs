@@ -1,5 +1,5 @@
 import test from 'ava';
-import { Statement } from '../txt2bas';
+import { Statement } from '../txt2bas/index.mjs';
 
 /**
  * @param {require("~/index.d.ts").Token} token string

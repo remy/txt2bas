@@ -5,19 +5,19 @@
  * @typedef {import('../index.d.ts').ParseLineResult} ParseLineResult
  */
 
-import { opTable } from './op-table';
+import { opTable } from './op-table.mjs';
 import codes, {
   usesLineNumbers,
   intFunctions,
   stringAltFunctions,
   operators,
-} from '../codes';
-import { floatToZX } from '../to';
-import tests from '../chr-tests';
-import { TEXT } from '../unicode';
+} from '../codes.mjs';
+import { floatToZX } from '../to.mjs';
+import tests from '../chr-tests.mjs';
+import { TEXT } from '../unicode.mjs';
 
-import { validateLineNumber, validateStatement } from './validator';
-import * as parser from '../parser-version';
+import { validateLineNumber, validateStatement } from './validator.mjs';
+import * as parser from '../parser-version.mjs';
 
 import {
   DEFINE,
@@ -51,7 +51,7 @@ import {
   OPEN_BRACKETS,
   MODIFIER,
   STRING_EXPRESSION,
-} from './types';
+} from './types.mjs';
 
 /**
  * Auto increment line
@@ -178,7 +178,7 @@ export function parseLine(line) {
 
 /**
  * @param {string} line A single line of NextBASIC
- * @param {number|null} [autoline=false] Flag to ignore line numbers
+ * @param {number|null} autoline Flag to ignore line numbers
  * @returns {ParsedBasic} fully parsed object
  */
 export function parseLineWithData(line, autoline = null) {
@@ -502,7 +502,7 @@ export class Statement {
   }
 
   /**
-   * @returns {Token}
+   * @returns {Token|undefined}
    */
   nextToken() {
     const token = this.manageTokenState(this.token());
@@ -552,7 +552,7 @@ export class Statement {
   /**
    *
    * @param {Token} token
-   * @returns {Token}
+   * @returns {Token|undefined}
    */
   manageTokenState(token) {
     // if !token, it could be that it wasn't recognised

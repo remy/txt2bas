@@ -1,7 +1,7 @@
 import test from 'ava';
-import { parseLines } from '../txt2bas';
-import { file2bas, file2txt, formatText } from '../index';
-import { replaceDefines } from '../txt2bas/transform';
+import { parseLines } from '../txt2bas/index.mjs';
+import { file2bas, file2txt, formatText } from '../index.mjs';
+import { replaceDefines } from '../txt2bas/transform.mjs';
 
 const getSource = () => `#autoline 10
 #define LAND=%129

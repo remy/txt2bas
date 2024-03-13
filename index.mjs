@@ -4,20 +4,22 @@
  * @typedef { import(".").ParseLineResult } ParseLineResult
  */
 
-import { asTap, plus3DOSHeader } from './headers';
+import { asTap, plus3DOSHeader } from './headers.mjs';
 import {
   parseLines,
   validate,
   parseLineWithData,
   statementsToBytes,
-} from './txt2bas/index';
-import * as transform from './txt2bas/transform';
-import { tap2txt, bas2txt, bas2txtLines } from './bas2txt';
-import * as parser from './parser-version';
-export { plus3DOSHeader, tapHeader } from './headers';
-export { default as codes } from './codes';
-export { renumber, shift } from './renumber';
-export { version } from './package.json';
+} from './txt2bas/index.mjs';
+import * as transform from './txt2bas/transform.mjs';
+import { tap2txt, bas2txt, bas2txtLines } from './bas2txt.mjs';
+import * as parser from './parser-version.mjs';
+export { plus3DOSHeader, tapHeader } from './headers.mjs';
+export { default as codes } from './codes.mjs';
+export { renumber, shift } from './renumber.mjs';
+import pkg from './package.json' with { type: 'json' };
+
+export const version = pkg.version;
 
 export const line2bas = parseLineWithData;
 export const line2txt = bas2txtLines;

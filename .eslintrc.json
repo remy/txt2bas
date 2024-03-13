@@ -5,18 +5,23 @@
   },
   "extends": ["eslint:recommended", "plugin:jsdoc/recommended"],
   "parserOptions": {
-    "ecmaVersion": 9,
+    "ecmaVersion": 2023,
     "sourceType": "module",
-    "ecmaFeatures": {
-      "jsx": true
+    "requireConfigFile": false,
+    "babelOptions": {
+      "plugins": ["@babel/plugin-syntax-import-assertions"]
     }
   },
+  "parser": "@babel/eslint-parser",
+
   "plugins": ["jsdoc"],
   "rules": {
     "no-console": 0,
     "jsdoc/require-param-description": 0,
     "jsdoc/require-returns-description": 0,
     "jsdoc/require-property-description": 0,
-    "jsdoc/valid-types": 0
+    "jsdoc/valid-types": 0,
+    "jsdoc/tag-lines": ["warn", "always", { "startLines": 1, "count": 0 }],
+    "jsdoc/no-defaults": 0
   }
 }

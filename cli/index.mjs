@@ -1,8 +1,10 @@
 import { readFileSync, writeFileSync, statSync } from 'fs';
 import { dirname, resolve, basename, extname } from 'path';
 import * as cli from '../index';
-import { version } from '../package.json';
+import pkg from '../package.json' with { type: 'json' };
 import { LATEST } from '../parser-version';
+
+const { version } = pkg;
 
 /**
  * CLI entry point for txt2bas and bas2txt. Arguments are parsed from process.argv

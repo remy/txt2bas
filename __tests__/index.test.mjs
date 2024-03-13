@@ -1,7 +1,7 @@
 import test from 'ava';
-import { version } from '../index';
-import { parseLine } from '../txt2bas';
-import { bas2txtLines } from '../bas2txt';
+import { version } from '../index.mjs';
+import { parseLine } from '../txt2bas/index.mjs';
+import { bas2txtLines } from '../bas2txt.mjs';
 import {
   line2bas,
   line2txt,
@@ -9,7 +9,7 @@ import {
   validateTxt,
   file2bas,
   file2txt,
-} from '../index';
+} from '../index.mjs';
 
 test('version is exposed', (t) => {
   t.is(version, '0.0.0-development');

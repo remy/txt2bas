@@ -1,5 +1,5 @@
-import BASIC from './codes.js';
-import { BASIC as BASIC_CHRS } from './unicode.js';
+import BASIC from './codes.mjs';
+import { BASIC as BASIC_CHRS } from './unicode.mjs';
 import { Unpack } from '@remy/unpack';
 
 /**

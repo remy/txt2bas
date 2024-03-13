@@ -1,4 +1,6 @@
 import json from '@rollup/plugin-json';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
+
 export default [
   {
     input: 'index.js',
@@ -10,7 +12,7 @@ export default [
     external: ['@remy/unpack'], // <-- suppresses the warning
   },
   {
-    plugins: [json()],
+    plugins: [json(), nodeResolve()],
     input: 'cli/txt2bas.js',
     output: {
       file: 'dist/cli/txt2bas.js',
@@ -20,7 +22,7 @@ export default [
     external: ['@remy/unpack'],
   },
   {
-    plugins: [json()],
+    plugins: [json(), nodeResolve()],
     input: 'cli/bas2txt.js',
     output: {
       file: 'dist/cli/bas2txt.js',

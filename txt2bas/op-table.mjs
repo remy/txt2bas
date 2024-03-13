@@ -1,4 +1,4 @@
-import codes from '../codes';
+import codes from '../codes.mjs';
 
 export const opTable = Object.entries(codes).reduce(
   (acc, [code, str]) => {
