@@ -3,7 +3,7 @@ import { nodeResolve } from '@rollup/plugin-node-resolve';
 
 export default [
   {
-    input: 'index.js',
+    input: 'index.mjs',
     output: {
       file: 'dist/index.js',
       format: 'cjs',
@@ -13,7 +13,7 @@ export default [
   },
   {
     plugins: [json(), nodeResolve()],
-    input: 'cli/txt2bas.js',
+    input: 'cli/txt2bas.mjs',
     output: {
       file: 'dist/cli/txt2bas.js',
       format: 'cjs',
@@ -23,7 +23,7 @@ export default [
   },
   {
     plugins: [json(), nodeResolve()],
-    input: 'cli/bas2txt.js',
+    input: 'cli/bas2txt.mjs',
     output: {
       file: 'dist/cli/bas2txt.js',
       format: 'cjs',
