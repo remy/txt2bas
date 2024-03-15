@@ -687,9 +687,7 @@ export class Statement {
         ) {
           this.in.push(INT_EXPRESSION);
         }
-      }
-
-      if (!this.isIn(IF) && !this.isIn(INT_EXPRESSION)) {
+      } else if (!this.isIn(IF) && !this.isIn(INT_EXPRESSION)) {
         this.inIntExpression = false;
       }
 

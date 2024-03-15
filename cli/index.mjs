@@ -1,8 +1,8 @@
 import { readFileSync, writeFileSync, statSync } from 'fs';
 import { dirname, resolve, basename, extname } from 'path';
-import * as cli from '../index';
+import * as cli from '../index.mjs';
 import pkg from '../package.json' with { type: 'json' };
-import { LATEST } from '../parser-version';
+import { LATEST } from '../parser-version.mjs';
 
 const { version } = pkg;
 

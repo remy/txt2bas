@@ -7,7 +7,6 @@
 
 import { opTable } from './op-table.mjs';
 import * as types from './types.mjs';
-import { renumberStatements } from '../renumber.mjs';
 import { basicToBytes, parseBasic } from './index.mjs';
 import { bas2txtLines } from '../bas2txt.mjs';
 
@@ -22,6 +21,8 @@ export function inlineLoad(statements) {
   const { join } = require('path');
   const cwd = process.cwd();
   let index;
+
+  /** @type {Statement} */
   let st;
 
   const getLengthAndOffset = () => {
@@ -254,10 +255,10 @@ function removeTrailingWhiteSpace(tokens) {
  * Remove comments from statements
  *
  * @param {Statement[]} statements
- * @param {Autoline} autoline
  * @returns {Statement[]}
  */
-export function stripComments(statements, autoline) {
+export function stripComments(statements) {
+  /** @type {Statement[]} */
   const res = [];
   for (let i = 0; i < statements.length; i++) {
     const st = statements[i];
@@ -281,8 +282,5 @@ export function stripComments(statements, autoline) {
     }
   }
 
-  return renumberStatements(res, {
-    start: autoline.start,
-    step: autoline.step,
-  });
+  return res;
 }

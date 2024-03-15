@@ -17,7 +17,7 @@ import * as parser from './parser-version.mjs';
 export { plus3DOSHeader, tapHeader } from './headers.mjs';
 export { default as codes } from './codes.mjs';
 export { renumber, shift } from './renumber.mjs';
-import pkg from './package.json' with { type: 'json' };
+import pkg from './package.json' assert { type: 'json' };
 
 export const version = pkg.version;
 
@@ -125,7 +125,7 @@ export const tokens = (
   }
 
   if (stripComments) {
-    statements = transform.stripComments(statements, rest.autoline);
+    statements = transform.stripComments(statements);
   }
 
   if (inlineLoad) {
@@ -207,34 +207,34 @@ export const file2bas = (src, options = {}) => {
     return file;
   }
 
-  if (format === '3dos') {
-    if (rest.bankSplits.length === 0) {
-      return generateFile({ bytes, bank, directives });
-    }
-
-    const file = generateFile({ bytes, bank, directives });
-
-    if (bankOutputDir) {
-      rest.bankSplits.forEach((bank) => {
-        const file = generateFile({
-          bytes: bank.bytes,
-          bank: true,
-          directives: { ...directives, filename: bank.filename },
-        });
-        // save the bank as a file
-        const { join } = require('path');
-
-        require('fs').writeFileSync(
-          join(bankOutputDir, bank.filename),
-          Buffer.from(file)
-        );
-      });
-    }
-    // generate the file, but also save the actual banks as files
-    return file;
-  } else if (format === 'tap') {
+  if (format === 'tap') {
     return asTap(bytes, directives);
   }
+
+  if (rest.bankSplits.length === 0) {
+    return generateFile({ bytes, bank, directives });
+  }
+
+  const file = generateFile({ bytes, bank, directives });
+
+  if (bankOutputDir) {
+    rest.bankSplits.forEach((bank) => {
+      const file = generateFile({
+        bytes: bank.bytes,
+        bank: true,
+        directives: { ...directives, filename: bank.filename },
+      });
+      // save the bank as a file
+      const { join } = require('path');
+
+      require('fs').writeFileSync(
+        join(bankOutputDir, bank.filename),
+        Buffer.from(file)
+      );
+    });
+  }
+  // generate the file, but also save the actual banks as files
+  return file;
 };
 
 /**
@@ -297,7 +297,7 @@ function generateFile({ bytes, bank, directives }) {
  * @param {object} [options]
  * @param {string} [options.format=3dos] format type: "3dos", "tap"
  * @param {boolean} [options.includeHeader=true]
- * @returns {Uint8Array}
+ * @returns {string}
  */
 export const file2txt = (src, options = {}) => {
   const { format = '3dos' } = options;
@@ -306,9 +306,10 @@ export const file2txt = (src, options = {}) => {
   }
   if (options.includeHeader === false) {
     return bas2txtLines(new Uint8Array(src)) + '\n';
-  } else if (format === '3dos') {
-    return bas2txt(new Uint8Array(src)) + '\n';
   } else if (format === 'tap') {
     return tap2txt(new Uint8Array(src)) + '\n';
   }
+
+  // else format = '3dos'
+  return bas2txt(new Uint8Array(src)) + '\n';
 };

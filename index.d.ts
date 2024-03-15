@@ -85,8 +85,13 @@ export type Expect = {
   value?: string;
 };
 
-import { Statement as StatementInstance } from './txt2bas/index';
-type Statement = InstanceType<typeof StatementInstance>;
+import {
+  Statement as StatementClass,
+  Autoline as AutolineClass,
+} from './txt2bas/index';
+
+export type Statement = InstanceType<typeof StatementClass>;
+export type Autoline = InstanceType<typeof AutolineClass>;
 
 export type RenumberOptions = {
   /** The line number to affect */

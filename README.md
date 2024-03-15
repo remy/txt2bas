@@ -64,11 +64,18 @@ Problematically using the library exposes a number of paired functions:
 - `file2bas(String: source, Object<String=3dos: format, filename=UNTITLED: String, validate=false: Boolean>): Uint8Array` - results full byte array with correct format header, if `validate` is true, will throw on token errors
 - `bas2file(Uint8Array: source, String=3dos: format): String` - formatted BASIC text
 - `formatText(String: line): String` - processes the line through `line2bas` then `bas2line` to result the formatted line
-- `validateTxt(String: source): Arrary[String]` - parses each line collecting and returning any token errors
+- `validateTxt(String: source): Array[String]` - parses each line collecting and returning any token errors
 - `plus3DOSHeader` and `tapHeader` - file headers for the appropriate data formats
 - `codes` an object lookup from NextBASIC numerical value to text value, ie. `0xf5 = 'PRINT'`
 - `statements(String: source): Array[Statement]` - returns the parsed statement which include `lineNumber` and `tokens` for each line.
 - `renumber(String: source, Object<start: Number, end: Number, step=10: Number, base=start: Number>)` - renumbers source lines and `GO TO` line number targets.
+
+## Development
+
+- Currently the latest code uses node@21 (due to specific use of syntax)
+- To test with another project: `npm link`
+- For new features of language or validation changes, ensure a test is provided
+- txt2bas also support different NextOS versions, specified through `parser-version`
 
 ## Licence
 

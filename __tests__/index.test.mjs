@@ -47,7 +47,7 @@ test('strip comments and autoline works', (t) => {
 
   const txt = file2txt(bytes);
 
-  t.is(txt, '#autostart 1\n1 PAUSE 0\n', 'matches');
+  t.is(txt, '#autostart 1\n2 PAUSE 0\n', 'matches');
 });
 
 test('formatText', (t) => {
