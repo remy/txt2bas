@@ -149,6 +149,7 @@ export const tokens = (
  * @param {boolean} [options.validate=false]
  * @param {boolean} [options.defines=false]
  * @param {boolean} [options.bankOutputDir=process.cwd()] directory to save banks to, if this is empty or false, it doesn't write banks when split
+ * @param {string} [options.parser] parser version to use
  * @returns {Uint8Array}
  */
 export const file2bas = (src, options = {}) => {
@@ -163,6 +164,10 @@ export const file2bas = (src, options = {}) => {
     bankOutputDir = false,
     ...parseOptions
   } = options;
+
+  if (parseOptions.parser) {
+    parser.setParser(parseOptions.parser);
+  }
 
   const bank = parseOptions.bank;
 

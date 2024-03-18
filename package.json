@@ -30,7 +30,7 @@
     "build": "rm -rf dist; rollup --config && chmod 744 dist/cli/*.js",
     "dev": "npm run build; rollup --config --watch",
     "prepare": "npm run build",
-    "test:dev": "ava __tests__/*.test.js --no-coverage-report --watch",
+    "test:dev": "ava __tests__/*.test.mjs --no-coverage-report --watch",
     "test": "nyc --reporter=lcov ava",
     "semantic-release": "semantic-release"
   },

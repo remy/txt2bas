@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, statSync } from 'fs';
 import { dirname, resolve, basename, extname } from 'path';
 import * as cli from '../index.mjs';
 import pkg from '../package.json' with { type: 'json' };
-import { LATEST } from '../parser-version.mjs';
+import { LATEST, setParser, valid } from '../parser-version.mjs';
 
 const { version } = pkg;
 
@@ -27,7 +27,7 @@ async function main(type) {
     L: 'inline-load',
     A: 'autostart',
     C: 'comments-off',
-    P: 'parser', // currently not exposed
+    P: 'parser',
   };
   const bools = [
     'bank',
@@ -59,6 +59,18 @@ async function main(type) {
   if (options.help) {
     return help(type);
   }
+
+  if (options.parser) {
+    options.parser = options.parser.toUpperCase();
+    if (!valid.includes(options.parser)) {
+      console.error(`Unknown parser: ${options.parser} - valid options: ${valid.join(', ')}`);
+      process.exit(1);
+    }
+  } else {
+    options.parser = LATEST;
+  }
+
+  setParser(options.parser);
 
   if (options.input) {
     // check the file actually exists
@@ -173,7 +185,7 @@ async function main(type) {
             : undefined,
           inlineLoad: options['inline-load'],
           stripComments: options['comments-off'],
-          parser: LATEST,
+          parser: options.parser,
           bankOutputDir: cwd,
         });
       }
