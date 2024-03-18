@@ -430,6 +430,7 @@ test('in the wild', (t) => {
   res = parseLines(src, { validate: false }).statements[0].tokens;
 
   res = res.filter((_) => _.name === 'NUMBER')[0]; // first 'number'
+  t.truthy(!!res, 'number tokens found');
   t.is(res.name, 'NUMBER', 'number found');
   t.is(res.value, '32', 'original source found');
   t.is(res.integer, false, 'integer mode was reset');
@@ -441,4 +442,30 @@ test('in the wild', (t) => {
   t.is(res.name, 'NUMBER', 'number found');
   t.is(res.value, '10', 'original source found');
   t.is(res.integer, false, 'integer mode was reset');
+
+  src = '10 PRINT AT %1,%29;%840/PEEK 23672';
+  res = parseLines(src, { validate: false }).statements[0].tokens;
+  t.is(
+    res.filter((_) => _.name === 'NUMBER').length,
+    0,
+    'PRINT ; % - no numbers found'
+  );
+  t.is(
+    res.filter((_) => _.name === 'LITERAL_NUMBER').length,
+    4,
+    '4 literal numbers found'
+  );
+
+  src = '40 %d=%d-(IN 57342 &1)';
+  res = parseLines(src, { validate: false }).statements[0].tokens;
+  t.is(
+    res.filter((_) => _.name === 'NUMBER').length,
+    0,
+    '%IN() - no numbers found'
+  );
+  t.is(
+    res.filter((_) => _.name === 'LITERAL_NUMBER').length,
+    2,
+    '2 literal numbers found'
+  );
 });

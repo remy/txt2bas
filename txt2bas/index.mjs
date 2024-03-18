@@ -679,13 +679,18 @@ export class Statement {
     }
 
     if (token.name === KEYWORD) {
-      if (this.inIntExpression && intFunctions[token.text]) {
+      if (this.inIntExpression && this.isIn(OPEN_PARENS)) {
+        // nop
+      } else if (this.inIntExpression && intFunctions[token.text]) {
         // check if an int function was used
         if (
           (this.lastToken.name === SYMBOL && this.lastToken.value === '%') ||
-          operators.includes(token.text)
+          operators.includes(token.text) ||
+          operators.includes(this.lastToken.value)
         ) {
           this.in.push(INT_EXPRESSION);
+        } else {
+          this.inIntExpression = false;
         }
       } else if (!this.isIn(IF) && !this.isIn(INT_EXPRESSION)) {
         this.inIntExpression = false;
