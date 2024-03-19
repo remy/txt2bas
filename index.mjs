@@ -80,9 +80,13 @@ export const formatText = (line, autoline = null) => {
  *
  * @param {string|Buffer} text multiline NextBASIC
  * @param {object} [debug]
+ * @param {string} [parserVersion]
  * @returns {string[]} Any errors found
  */
-export const validateTxt = (text, debug) => {
+export const validateTxt = (text, debug, parserVersion) => {
+  if (parserVersion) {
+    parser.setParser(parserVersion);
+  }
   if (typeof text !== 'string') {
     text = text.toString('binary');
   }

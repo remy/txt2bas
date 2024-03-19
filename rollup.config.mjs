@@ -5,6 +5,15 @@ export default [
   {
     input: 'index.mjs',
     output: {
+      file: 'dist/index.mjs',
+      format: 'esm',
+    },
+    plugins: [json()],
+    external: ['@remy/unpack'], // <-- suppresses the warning
+  },
+  {
+    input: 'index.mjs',
+    output: {
       file: 'dist/index.js',
       format: 'cjs',
     },
