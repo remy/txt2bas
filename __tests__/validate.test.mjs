@@ -251,6 +251,7 @@ throws(
   'Cannot redeclare integer expression'
 );
 throws('330 PRINT INK 2; AT 19,12; CHR$ 147; PAUSE 6');
+notThrows('8810 PRINT BRIGHT M(I)>0');
 throws('10 %a = % sprite over (%1,2)', 'Cannot redeclare integer');
 throws('10 IF %f=0 OR (%f=b) THEN ENDPROC =%0', 'Cannot redeclare integer');
 throws('10 %j=% SPRITE OVER (b+1,1 TO %c,8,8)', 'Cannot redeclare integer');

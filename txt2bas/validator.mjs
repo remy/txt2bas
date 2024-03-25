@@ -3,7 +3,12 @@
  */
 
 import { opTable } from './op-table.mjs';
-import { intFunctions, functions, printModifiers } from '../codes.mjs';
+import {
+  intFunctions,
+  functions,
+  printModifiers,
+  operators,
+} from '../codes.mjs';
 import * as parser from '../parser-version.mjs';
 
 import {
@@ -533,6 +538,10 @@ export function validatePrintStatement(token, scope) {
   }
 
   if (printModifiers[op]) {
+    return;
+  }
+
+  if (operators.includes(op)) {
     return;
   }
 
