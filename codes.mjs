@@ -157,6 +157,7 @@ export const operators = [
   'NOT',
   'MOD',
   '-', // math
+  '+',
   '*',
   '/',
   '<', // compare

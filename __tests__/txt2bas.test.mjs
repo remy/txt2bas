@@ -468,4 +468,8 @@ test('in the wild', (t) => {
     2,
     '2 literal numbers found'
   );
+
+  src = '120 %r=%1+ DPEEK 23730';
+  res = parseLines(src, { validate: false }).statements[0].tokens;
+  t.is(res.pop().integer, true, '%1 + DPEEK n - is an int');
 });
