@@ -321,8 +321,15 @@ export function validateStatement(tokens, debug = {}) {
         }
 
         // we were inside an INT function
+
         if (scope.last === FLOAT_EXPRESSION) {
           scope.pop();
+          // pop to INT_EXPRESSION and then set intExpression to true
+          if (scope.includes(INT_EXPRESSION)) {
+            scope.popTo(INT_EXPRESSION);
+            scope.push(INT_EXPRESSION); // put it back
+            scope.intExpression = true;
+          }
         }
       }
 
@@ -586,6 +593,7 @@ export function validateIntKeyword(token, scope, expect) {
   if (!scope.intExpression) return;
 
   scope.push(FLOAT_EXPRESSION);
+  scope.intExpression = false;
 
   expect.value = '{';
   expect.name = SYMBOL;
@@ -637,10 +645,30 @@ export function validateExpressionState(token, scope) {
     return;
   }
 
-  if (token.name === KEYWORD && intFunctions[token.text]) {
-    if (scope.previousToken.value === '%') {
-      scope.intExpression = true;
+  if (token.name === KEYWORD) {
+    if (intFunctions[token.text]) {
+      if (scope.previousToken.value === '%') {
+        scope.intExpression = true;
+        return;
+      }
+    } else if (
+      scope.intExpression &&
+      intFunctions[scope.previousToken.text] &&
+      intFunctions[scope.previousToken.text].includes(token.text)
+    ) {
       return;
+    } else if (
+      [opTable.IF, opTable.THEN, opTable.UNTIL].includes(token.value)
+    ) {
+      scope.resetExpression();
+    } else {
+      if (scope.intExpression) {
+        if (functions[token.text]) {
+          throw new Error(
+            'Only integer functions are allowed in integer expressions'
+          );
+        }
+      }
     }
   }
 

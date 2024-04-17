@@ -809,6 +809,14 @@ export class Statement {
 
     if (tests._isBinarySymbol(c)) {
       this.captureToken(this.processSingle());
+      const peek = this.peekToken();
+
+      if (peek.name === 'IDENTIFIER') {
+        if (this.peek(this.pos) === ' ') {
+          this.captureToken(this.processWhitespace());
+        }
+        return this.processIdentifier();
+      }
       return this.processBinary();
     }
 
@@ -854,6 +862,10 @@ export class Statement {
     return this.line.charAt(at);
   }
 
+  /**
+   * @param {number} [at]
+   * @returns {Token} Token
+   */
   peekToken(at = this.pos) {
     // cache state
     const cache = {

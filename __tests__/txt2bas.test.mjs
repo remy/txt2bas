@@ -472,4 +472,20 @@ test('in the wild', (t) => {
   src = '120 %r=%1+ DPEEK 23730';
   res = parseLines(src, { validate: false }).statements[0].tokens;
   t.is(res.pop().integer, true, '%1 + DPEEK n - is an int');
+
+  src = '10 @ here';
+  res = parseLines(src, { validate: false }).statements[0].tokens;
+  t.is(
+    res.filter((_) => _.name.includes('NUMBER')).length,
+    0,
+    '@ label not misread as number'
+  );
+
+  src = '10 @here';
+  res = parseLines(src, { validate: false }).statements[0].tokens;
+  t.is(
+    res.filter((_) => _.name.includes('NUMBER')).length,
+    0,
+    '@ label with no space not misread as number'
+  );
 });
