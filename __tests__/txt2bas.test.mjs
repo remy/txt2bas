@@ -488,4 +488,17 @@ test('in the wild', (t) => {
     0,
     '@ label with no space not misread as number'
   );
+
+  src = '10 %x=%SGN{RND0}';
+  res = parseLines(src, { validate: false }).statements[0].tokens;
+  t.is(
+    res.filter((_) => _.name === 'NUMBER').length,
+    0,
+    'No numbers found in %SGN{RND0}'
+  );
+  t.is(
+    res.filter((_) => _.name === 'LITERAL_NUMBER').length,
+    1,
+    'Int 0 found in %SGN{RND0}'
+  );
 });

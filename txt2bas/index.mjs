@@ -51,6 +51,7 @@ import {
   OPEN_BRACKETS,
   MODIFIER,
   STRING_EXPRESSION,
+  SGN_EXPRESSION,
 } from './types.mjs';
 
 /**
@@ -644,6 +645,9 @@ export class Statement {
       }
     }
     if (token.value === '{') {
+      if (this.lastToken.text === 'SGN') {
+        this.in.push(SGN_EXPRESSION);
+      }
       this.in.push(OPEN_BRACES);
     }
     if (token.value === '[') {
@@ -659,6 +663,9 @@ export class Statement {
     }
     if (token.value === '}') {
       this.popTo(OPEN_BRACES);
+      if (this.isIn(SGN_EXPRESSION)) {
+        this.popTo(SGN_EXPRESSION);
+      }
     }
     if (token.value === ']') {
       this.popTo(OPEN_BRACKETS);
@@ -679,7 +686,10 @@ export class Statement {
     }
 
     if (token.name === KEYWORD) {
-      if (this.inIntExpression && this.isIn(OPEN_PARENS)) {
+      if (
+        this.inIntExpression &&
+        (this.isIn(OPEN_PARENS) || this.isIn(SGN_EXPRESSION))
+      ) {
         // nop
       } else if (this.inIntExpression && intFunctions[token.text]) {
         // check if an int function was used
