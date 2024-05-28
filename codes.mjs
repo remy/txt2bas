@@ -182,6 +182,7 @@ export const intFunctions = [
   'INT',
   'ABS',
   'SGN',
+  'CODE',
   ...operators,
 ].reduce((acc, curr) => {
   acc[curr] = true;
