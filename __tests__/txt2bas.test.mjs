@@ -357,148 +357,210 @@ test('String modifiers', (t) => {
   t.is(res.name, 'SYMBOL', 'modifier after string var is correct');
 });
 
-test('in the wild', (t) => {
-  let src, res;
+const tests = [
+  (src, res, t) => {
+    src = '10 IF %(12/8) MOD 2 THEN BANK 14 POKE 0,%188';
+    res = statements(src);
 
-  src = '10 IF %(12/8) MOD 2 THEN BANK 14 POKE 0,%188';
-  res = statements(src);
+    const index = res[0].tokens.findIndex((_) => _.text === 'BANK');
+    t.is(res[0].tokens[index + 1].integer, false, 'bank 14 is a float type');
+  },
+  (src, res, t) => {
+    src = '40 OPEN #4,"w>4,0,16,20,5"';
+    res = parseLines(src).statements[0];
 
-  const index = res[0].tokens.findIndex((_) => _.text === 'BANK');
-  t.is(res[0].tokens[index + 1].integer, false, 'bank 14 is a float type');
+    t.is(res.tokens[0].name, 'KEYWORD', 'leading keywords');
+    t.is(res.tokens[1].value, '4', 'then channel number');
+  },
+  (src, res, t) => {
+    src = '10 .install "t:/nextdaw.drv"';
+    res = parseLines(src).statements[0].tokens.pop();
+    t.is(res.name, 'DOT_COMMAND');
+  },
+  (src, res, t) => {
+    src = '10 REPEAT UNTIL %n=200';
+    res = parseLines(src).statements[0].tokens.pop();
+    t.is(res.integer, true, src);
+  },
+  (src, res, t) => {
+    src = '370 SPRITE -2,16,0,1,1, BIN 110';
+    res = parseLines(src).statements[0].tokens.pop();
+    t.is(res.numeric, 6, 'binary interpreted as 6 and not 110');
+  },
+  (src, res, t) => {
+    src = '370 SPRITE -2,16,0,1,1, %@110';
+    res = parseLines(src).statements[0].tokens.pop();
+    t.is(res.numeric, 6, 'shorthand binary interpreted as 6 and not 110');
+  },
+  (src, res, t) => {
+    src = '10 %k=% ABS SGN {f}=1';
+    t.notThrows(() => {
+      res = parseLines(src);
+    }, src);
+  },
+  (src, res, t) => {
+    src = '10 %k=%x MOD 48 <> 0';
+    res = parseLines(src).statements[0].tokens.pop();
+    t.is(res.integer, true, '10 %k=%x MOD 48 <> 0');
+  },
+  (src, res, t) => {
+    src = '10 IF %g > 20 THEN %g=20';
+    res = parseBasic(src).tokens.pop();
 
-  src = '40 OPEN #4,"w>4,0,16,20,5"';
-  res = parseLines(src).statements[0];
+    t.is(res.integer, false, 'IF %g > 20 THEN %g=20');
+  },
+  (src, res, t) => {
+    src = '10 ENDPROC';
+    res = parseLines(src).statements[0].tokens.pop();
+    t.is(res.name, 'KEYWORD', 'ENDPROC is a keyword');
+  },
+  (src, res, t) => {
+    src = '55 PRINT AT %0,%0;"0"(1)';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    res.pop();
+    res = res.pop();
+    t.is(res.name, 'NUMBER', 'float number found');
+  },
+  (src, res, t) => {
+    src = '10 %a=% SPRITE OVER (0,35,1,1)';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    res.pop(); // ')'
+    res = res.pop();
+    t.is(res.name, 'LITERAL_NUMBER', 'int number found');
+  },
+  (src, res, t) => {
+    src = '10 PRINT 1e6';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
 
-  t.is(res.tokens[0].name, 'KEYWORD', 'leading keywords');
-  t.is(res.tokens[1].value, '4', 'then channel number');
+    res = res.pop(); // 'number'
+    t.is(res.name, 'NUMBER', 'number found');
+    t.is(res.value, '1e6', 'original source found');
+    t.is(res.numeric, 1e6, 'has correct value');
+  },
+  (src, res, t) => {
+    src = '10 LAYER PALETTE %0 BANK 32,%0';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
 
-  src = '10 .install "t:/nextdaw.drv"';
-  res = parseLines(src).statements[0].tokens.pop();
-  t.is(res.name, 'DOT_COMMAND');
+    res = res.filter((_) => _.name === 'NUMBER')[0]; // first 'number'
+    t.truthy(!!res, 'number tokens found');
+    t.is(res.name, 'NUMBER', 'number found');
+    t.is(res.value, '32', 'original source found');
+    t.is(res.integer, false, 'integer mode was reset');
+  },
+  (src, res, t) => {
+    src = '30 PRINT POINT %i<<3,%i;s$(%i,1 TO 10)';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
 
-  src = '10 REPEAT UNTIL %n=200';
-  res = parseLines(src).statements[0].tokens.pop();
-  t.is(res.integer, true, src);
+    res = res.filter((_) => _.name === 'NUMBER').pop(); // last 'number'
+    t.is(res.name, 'NUMBER', 'number found');
+    t.is(res.value, '10', 'original source found');
+    t.is(res.integer, false, 'integer mode was reset');
+  },
+  (src, res, t) => {
+    src = '10 PRINT AT %1,%29;%840/PEEK 23672';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    t.is(
+      res.filter((_) => _.name === 'NUMBER').length,
+      0,
+      'PRINT ; % - no numbers found'
+    );
+    t.is(
+      res.filter((_) => _.name === 'LITERAL_NUMBER').length,
+      4,
+      '4 literal numbers found'
+    );
+  },
+  (src, res, t) => {
+    src = '40 %d=%d-(IN 57342 &1)';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    t.is(
+      res.filter((_) => _.name === 'NUMBER').length,
+      0,
+      '%IN() - no numbers found'
+    );
+    t.is(
+      res.filter((_) => _.name === 'LITERAL_NUMBER').length,
+      2,
+      '2 literal numbers found'
+    );
+  },
+  (src, res, t) => {
+    src = '120 %r=%1+ DPEEK 23730';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    t.is(res.pop().integer, true, '%1 + DPEEK n - is an int');
+  },
+  (src, res, t) => {
+    src = '10 @ here';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    t.is(
+      res.filter((_) => _.name.includes('NUMBER')).length,
+      0,
+      '@ label not misread as number'
+    );
+  },
+  (src, res, t) => {
+    src = '10 @here';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    t.is(
+      res.filter((_) => _.name.includes('NUMBER')).length,
+      0,
+      '@ label with no space not misread as number'
+    );
+  },
+  (src, res, t) => {
+    src = '10 %x=%SGN{RND0}';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    t.is(
+      res.filter((_) => _.name === 'NUMBER').length,
+      0,
+      'No numbers found in %SGN{RND0}'
+    );
+    t.is(
+      res.filter((_) => _.name === 'LITERAL_NUMBER').length,
+      1,
+      'Int 0 found in %SGN{RND0}'
+    );
+  },
+  (src, res, t) => {
+    src = '270 %CODE = %CODE | @10: REM Disable BREAK';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    t.is(
+      res.filter((_) => _.name === 'NUMBER').length,
+      0,
+      'No numbers found in %CODE = %CODE | @10'
+    );
+  },
+  (src, res, t) => {
+    src = '10 BANK %27 DPOKE %y<<1,%BANK 27 DPEEK (319-n<<1)';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    t.is(
+      res.filter((_) => _.name === 'NUMBER').length,
+      0,
+      'No numbers found in BANK %27 DPOKE %y<<1 (all ints)'
+    );
+  },
+  (src, res, t) => {
+    src = '10 IF %ABS SPRITE AT (36,3)<6 THEN';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    t.is(
+      res.filter((_) => _.name === 'NUMBER').length,
+      0,
+      'No numbers found in IF %ABS SPRITE AT (36,3)<6'
+    );
+  },
+  (src, res, t) => {
+    src = '100 SPRITE CONTINUE %n+1,%n<8128 TO %n<8128+127 STEP 1 RUN';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    t.is(
+      res.filter((_) => _.name === 'NUMBER').length,
+      1,
+      'Found literally at end'
+    );
+  },
+];
 
-  src = '370 SPRITE -2,16,0,1,1, BIN 110';
-  res = parseLines(src).statements[0].tokens.pop();
-  t.is(res.numeric, 6, 'binary interpreted as 6 and not 110');
-
-  src = '370 SPRITE -2,16,0,1,1, %@110';
-  res = parseLines(src).statements[0].tokens.pop();
-  t.is(res.numeric, 6, 'shorthand binary interpreted as 6 and not 110');
-
-  src = '10 %k=% ABS SGN {f}=1';
-  t.notThrows(() => {
-    res = parseLines(src);
-  }, src);
-
-  src = '10 %k=%x MOD 48 <> 0';
-  res = parseLines(src).statements[0].tokens.pop();
-  t.is(res.integer, true, '10 %k=%x MOD 48 <> 0');
-
-  src = '10 IF %g > 20 THEN %g=20';
-  res = parseBasic(src).tokens.pop();
-
-  t.is(res.integer, false, 'IF %g > 20 THEN %g=20');
-
-  src = '10 ENDPROC';
-  res = parseLines(src).statements[0].tokens.pop();
-  t.is(res.name, 'KEYWORD', 'ENDPROC is a keyword');
-
-  src = '55 PRINT AT %0,%0;"0"(1)';
-  res = parseLines(src, { validate: false }).statements[0].tokens;
-  res.pop();
-  res = res.pop();
-  t.is(res.name, 'NUMBER', 'float number found');
-
-  src = '10 %a=% SPRITE OVER (0,35,1,1)';
-  res = parseLines(src, { validate: false }).statements[0].tokens;
-  res.pop(); // ')'
-  res = res.pop();
-  t.is(res.name, 'LITERAL_NUMBER', 'int number found');
-
-  src = '10 PRINT 1e6';
-  res = parseLines(src, { validate: false }).statements[0].tokens;
-
-  res = res.pop(); // 'number'
-  t.is(res.name, 'NUMBER', 'number found');
-  t.is(res.value, '1e6', 'original source found');
-  t.is(res.numeric, 1e6, 'has correct value');
-
-  src = '10 LAYER PALETTE %0 BANK 32,%0';
-  res = parseLines(src, { validate: false }).statements[0].tokens;
-
-  res = res.filter((_) => _.name === 'NUMBER')[0]; // first 'number'
-  t.truthy(!!res, 'number tokens found');
-  t.is(res.name, 'NUMBER', 'number found');
-  t.is(res.value, '32', 'original source found');
-  t.is(res.integer, false, 'integer mode was reset');
-
-  src = '30 PRINT POINT %i<<3,%i;s$(%i,1 TO 10)';
-  res = parseLines(src, { validate: false }).statements[0].tokens;
-
-  res = res.filter((_) => _.name === 'NUMBER').pop(); // last 'number'
-  t.is(res.name, 'NUMBER', 'number found');
-  t.is(res.value, '10', 'original source found');
-  t.is(res.integer, false, 'integer mode was reset');
-
-  src = '10 PRINT AT %1,%29;%840/PEEK 23672';
-  res = parseLines(src, { validate: false }).statements[0].tokens;
-  t.is(
-    res.filter((_) => _.name === 'NUMBER').length,
-    0,
-    'PRINT ; % - no numbers found'
-  );
-  t.is(
-    res.filter((_) => _.name === 'LITERAL_NUMBER').length,
-    4,
-    '4 literal numbers found'
-  );
-
-  src = '40 %d=%d-(IN 57342 &1)';
-  res = parseLines(src, { validate: false }).statements[0].tokens;
-  t.is(
-    res.filter((_) => _.name === 'NUMBER').length,
-    0,
-    '%IN() - no numbers found'
-  );
-  t.is(
-    res.filter((_) => _.name === 'LITERAL_NUMBER').length,
-    2,
-    '2 literal numbers found'
-  );
-
-  src = '120 %r=%1+ DPEEK 23730';
-  res = parseLines(src, { validate: false }).statements[0].tokens;
-  t.is(res.pop().integer, true, '%1 + DPEEK n - is an int');
-
-  src = '10 @ here';
-  res = parseLines(src, { validate: false }).statements[0].tokens;
-  t.is(
-    res.filter((_) => _.name.includes('NUMBER')).length,
-    0,
-    '@ label not misread as number'
-  );
-
-  src = '10 @here';
-  res = parseLines(src, { validate: false }).statements[0].tokens;
-  t.is(
-    res.filter((_) => _.name.includes('NUMBER')).length,
-    0,
-    '@ label with no space not misread as number'
-  );
-
-  src = '10 %x=%SGN{RND0}';
-  res = parseLines(src, { validate: false }).statements[0].tokens;
-  t.is(
-    res.filter((_) => _.name === 'NUMBER').length,
-    0,
-    'No numbers found in %SGN{RND0}'
-  );
-  t.is(
-    res.filter((_) => _.name === 'LITERAL_NUMBER').length,
-    1,
-    'Int 0 found in %SGN{RND0}'
-  );
+tests.forEach((fn, i) => {
+  test(`in the wild ${i}`, (t) => {
+    fn('', '', t);
+  });
 });

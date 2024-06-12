@@ -167,6 +167,7 @@ export const operators = [
   '<>',
   ...bitWiseOperators,
   'INT', // misc?
+  'BIN',
 ];
 
 export const intFunctions = [
