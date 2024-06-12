@@ -52,6 +52,7 @@ import {
   MODIFIER,
   STRING_EXPRESSION,
   SGN_EXPRESSION,
+  ELSE,
 } from './types.mjs';
 
 /**
@@ -477,7 +478,7 @@ export class Statement {
       return true;
     }
 
-    const starters = [IF, ELSEIF, UNTIL, DEFFN, DEFFN_SIG, DEFFN_ARGS];
+    const starters = [IF, ELSEIF, ELSE, UNTIL, DEFFN, DEFFN_SIG, DEFFN_ARGS];
 
     return starters.includes(starter.text);
   }
@@ -529,12 +530,14 @@ export class Statement {
   pINT() {
     if (this.peek(this.pos) === '{') {
       const currentIntState = this.inIntExpression;
+      const currentIntSubStatement = this.intSubStatement;
       // turn of any int expression state
-      this.inIntExpression = false;
+      this.resetIntExpression();
 
       while (this.nextToken()) {
         if (this.lastToken.value === '}') {
           this.inIntExpression = currentIntState;
+          this.intSubStatement = currentIntSubStatement;
           break;
         }
       }
@@ -715,7 +718,7 @@ export class Statement {
       if (this.isIn(INT_EXPRESSION)) {
         this.popTo(INT_EXPRESSION);
       }
-      this.inIntExpression = false;
+      this.resetIntExpression();
     }
 
     if (this.in.length && token.name === STATEMENT_SEP) {
@@ -753,7 +756,7 @@ export class Statement {
       } else if (this.inIntExpression && operators.includes(token.text)) {
         // nop
       } else {
-        this.inIntExpression = false;
+        this.resetIntExpression();
       }
 
       // needed to track DEF FN args and to pad them properly
@@ -776,12 +779,12 @@ export class Statement {
 
       if (token.value === opTable.THEN) {
         this.popTo(IF);
-        this.inIntExpression = false;
+        this.resetIntExpression();
       }
 
       if (token.value === opTable.ENDIF) {
         this.popTo(ELSEIF);
-        this.inIntExpression = false;
+        this.resetIntExpression();
       }
 
       if (token.value === opTable.BIN) {
@@ -801,12 +804,17 @@ export class Statement {
 
     if (token.value === '=') {
       if (!this.isIn(IF) && !this.isIn(ELSEIF) && !this.isIn(UNTIL)) {
-        this.inIntExpression = false;
+        this.resetIntExpression();
       }
     }
 
     this.captureToken(token);
     return token;
+  }
+
+  resetIntExpression() {
+    this.inIntExpression = false;
+    this.intSubStatement = false;
   }
 
   token() {
@@ -831,8 +839,7 @@ export class Statement {
       if (this.isIn(INT_EXPRESSION)) {
         this.popTo(INT_EXPRESSION);
       }
-      this.inIntExpression = false;
-      this.intSubStatement = false;
+      this.resetIntExpression();
     }
 
     if (tests._isIntExpression(c)) {
