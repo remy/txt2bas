@@ -475,7 +475,10 @@ export class Statement {
     const starter = this.tokens[i + 1];
 
     if (!starter || starter.name !== KEYWORD) {
-      return true;
+      // peek the next token, and only if it's an int function
+      const peek = this.peekToken(this.pos + 1); // since we stopped on the %
+      // debugger;
+      return peek && peek.name === KEYWORD && intFunctions[peek.text];
     }
 
     const starters = [IF, ELSEIF, ELSE, UNTIL, DEFFN, DEFFN_SIG, DEFFN_ARGS];
@@ -732,6 +735,8 @@ export class Statement {
     if (token.name === KEYWORD) {
       const lastKeyword = this.lastKeyword;
 
+      // debugger;
+
       if (
         this.inIntExpression &&
         (this.isIn(OPEN_PARENS) || this.isIn(SGN_EXPRESSION))
@@ -748,6 +753,7 @@ export class Statement {
       ) {
         // nop
       } else if (
+        lastKeyword &&
         this.inIntExpression &&
         Array.isArray(intFunctions[lastKeyword.text]) &&
         intFunctions[lastKeyword.text].includes(token.text)
@@ -817,7 +823,7 @@ export class Statement {
     this.intSubStatement = false;
   }
 
-  token() {
+  token(peeking = false) {
     const c = this.line.charAt(this.pos);
 
     if (this.next === COMMENT) {
@@ -845,7 +851,7 @@ export class Statement {
     if (tests._isIntExpression(c)) {
       this.in.push(INT_EXPRESSION);
       this.inIntExpression = true;
-      if (this.startOfIntStatement) {
+      if (peeking === false && this.startOfIntStatement) {
         this.intSubStatement = true;
       }
     }
@@ -946,30 +952,37 @@ export class Statement {
     const cache = {
       pos: this.pos,
       inIntExpression: this.inIntExpression,
+      intSubStatement: this.intSubStatement,
       lastToken: this.lastToken,
       tokens: Array.from(this.tokens),
+    };
+
+    const restore = () => {
+      // restore state
+      this.pos = cache.pos;
+      this.inIntExpression = cache.inIntExpression;
+      this.intSubStatement = cache.intSubStatement;
+      this.lastToken = cache.lastToken;
+      this.tokens = cache.tokens;
     };
 
     this.pos = at;
 
     /** @type {Token} */
-    let token = this.token();
+    let token = this.token(true);
 
     if (!token) {
+      restore();
       return null;
     }
 
     if (token.name === WHITE_SPACE) {
-      token = this.token();
+      token = this.token(true);
     }
 
     let tokenPosition = this.pos;
 
-    // restore state
-    this.pos = cache.pos;
-    this.inIntExpression = cache.inIntExpression;
-    this.lastToken = cache.lastToken;
-    this.tokens = cache.tokens;
+    restore();
 
     return { ...token, pos: tokenPosition };
   }

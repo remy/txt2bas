@@ -557,6 +557,15 @@ const tests = [
       'Found literally at end'
     );
   },
+  (src, res, t) => {
+    src = '10 FOR %n=%0 TO %255 STEP 4';
+    res = parseLines(src, { validate: false }).statements[0].tokens;
+    t.is(
+      res.filter((_) => _.name === 'NUMBER').length,
+      1,
+      'Found number at end of FOR'
+    );
+  },
 ];
 
 tests.forEach((fn, i) => {
