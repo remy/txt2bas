@@ -380,6 +380,9 @@ export class Statement {
     /** @type {Token[]} */
     this.tokens = [];
 
+    // this is switched if the entire statement starts with %
+    this.intSubStatement = false;
+
     let lineText;
 
     if (lineNumber === null) {
@@ -448,6 +451,37 @@ export class Statement {
     );
   }
 
+  get startOfIntStatement() {
+    if (this.startOfStatement) {
+      return true;
+    }
+
+    const sep = (/** @type {Token} */ _) => {
+      if (_.name === STATEMENT_SEP) {
+        return true;
+      }
+
+      if (_.name === SYMBOL) {
+        if (_.value === '=') {
+          return true;
+        }
+      }
+    };
+
+    let i = Array.from(this.tokens).reverse().findIndex(sep);
+    if (i > -1) i = this.tokens.length - i - 1;
+
+    const starter = this.tokens[i + 1];
+
+    if (!starter || starter.name !== KEYWORD) {
+      return true;
+    }
+
+    const starters = [IF, ELSEIF, UNTIL, DEFFN, DEFFN_SIG, DEFFN_ARGS];
+
+    return starters.includes(starter.text);
+  }
+
   popTo(type) {
     const state = this.in;
     let last = null;
@@ -460,6 +494,13 @@ export class Statement {
     }
 
     return type === last;
+  }
+
+  get lastKeyword() {
+    return this.tokens
+      .slice()
+      .reverse()
+      .find((_) => _.name === KEYWORD);
   }
 
   isIn(test) {
@@ -686,23 +727,32 @@ export class Statement {
     }
 
     if (token.name === KEYWORD) {
+      const lastKeyword = this.lastKeyword;
+
       if (
         this.inIntExpression &&
         (this.isIn(OPEN_PARENS) || this.isIn(SGN_EXPRESSION))
       ) {
         // nop
-      } else if (this.inIntExpression && intFunctions[token.text]) {
-        // check if an int function was used
-        if (
-          (this.lastToken.name === SYMBOL && this.lastToken.value === '%') ||
-          operators.includes(token.text) ||
-          operators.includes(this.lastToken.value)
-        ) {
-          this.in.push(INT_EXPRESSION);
-        } else {
-          this.inIntExpression = false;
-        }
-      } else if (!this.isIn(IF) && !this.isIn(INT_EXPRESSION)) {
+      } else if (this.intSubStatement) {
+        // nop
+      } else if (
+        this.inIntExpression &&
+        intFunctions[token.text] &&
+        this.lastToken.name === SYMBOL &&
+        (operators.includes(this.lastToken.value) ||
+          this.lastToken.value === '%')
+      ) {
+        // nop
+      } else if (
+        this.inIntExpression &&
+        Array.isArray(intFunctions[lastKeyword.text]) &&
+        intFunctions[lastKeyword.text].includes(token.text)
+      ) {
+        // nop
+      } else if (this.inIntExpression && operators.includes(token.text)) {
+        // nop
+      } else {
         this.inIntExpression = false;
       }
 
@@ -778,11 +828,19 @@ export class Statement {
       !this.isIn(IF) &&
       !this.isIn(UNTIL)
     ) {
+      if (this.isIn(INT_EXPRESSION)) {
+        this.popTo(INT_EXPRESSION);
+      }
       this.inIntExpression = false;
+      this.intSubStatement = false;
     }
 
     if (tests._isIntExpression(c)) {
+      this.in.push(INT_EXPRESSION);
       this.inIntExpression = true;
+      if (this.startOfIntStatement) {
+        this.intSubStatement = true;
+      }
     }
 
     if (this.startOfStatement) {
