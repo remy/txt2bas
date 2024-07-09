@@ -1,2 +1,2 @@
-import main from './index';
+import main from './index.mjs';
 main('bas');
