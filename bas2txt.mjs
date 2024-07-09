@@ -64,7 +64,12 @@ export function bas2txt(data) {
     C$checksum`
   );
 
-  let txt = bas2txtLines(data.slice(unpack.offset, 128 + header.hFileLength));
+  // if hType is 0, then we're a type of program, so it's possible
+  // there's variables at the end of the file (as defined by hOffset)
+  // otherwise, the hFileLength is the length of the file
+  const length = header.hType === 0 ? header.hOffset : header.hFileLength;
+
+  let txt = bas2txtLines(data.slice(unpack.offset, 128 + length));
 
   if (
     header.autostart &&

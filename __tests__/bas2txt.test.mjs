@@ -77,3 +77,10 @@ test('else if (2.08)', (t) => {
   res = line2txt(src.basic); // to text
   t.is(res, text, 'new IF correctly rendered');
 });
+
+test('lines are not being clipped', async (t) => {
+  const src = await readFile(__dirname + '/fixtures/clipped-lines.bnk');
+  const lines = file2txt(src).split('\n').filter(Boolean);
+
+  t.is(lines.length, 4);
+});
