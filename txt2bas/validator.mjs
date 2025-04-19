@@ -1,5 +1,6 @@
 /**
  * @typedef { import("..").Token } Token
+ * @typedef { import("..").Expect } Expect
  */
 
 import { opTable } from './op-table.mjs';
@@ -219,6 +220,33 @@ class Scope {
     return type === last;
   }
 
+  restartIntExpression() {
+    if (this.includes(INT_EXPRESSION)) {
+      // check what's after the INT_EXPRESSION
+      let i = this.stack.length - 1;
+      while (i > -1) {
+        if (this.stack[i - 1] === INT_EXPRESSION) {
+          break;
+        }
+        i--;
+      }
+
+      let next = null;
+      if (i > -1) {
+        next = this.stack[i];
+        if (![OPEN_BRACES, OPEN_BRACKETS, OPEN_PARENS].includes(next)) {
+          next = null;
+        }
+      }
+
+      this.popTo(INT_EXPRESSION);
+      this.push(INT_EXPRESSION);
+      this.intExpression = true;
+
+      if (next) this.push(next);
+    }
+  }
+
   resetExpression() {
     // this.inIntExpression = false;
     this.intNext = false;
@@ -326,9 +354,7 @@ export function validateStatement(tokens, debug = {}) {
           scope.pop();
           // pop to INT_EXPRESSION and then set intExpression to true
           if (scope.includes(INT_EXPRESSION)) {
-            scope.popTo(INT_EXPRESSION);
-            scope.push(INT_EXPRESSION); // put it back
-            scope.intExpression = true;
+            scope.restartIntExpression();
           }
         }
       }

@@ -243,6 +243,9 @@ notThrows('10 PRINT TIME$');
 notThrows('20 IF %m&12 THEN ELSE %m=%m+1', { message: 'THEN ELSE is allowed' });
 notThrows('10 DATA $DEAD');
 notThrows('10 PRINT " Hello There!   "[<+->]');
+notThrows(
+  '1 %F(2)=%( INT {multLevel}):%F(3)=%2*( INT {multLevel}) >> 1:%F(4)=%F(3)'
+);
 /********************************************/
 
 // throws('20 PRINT (%a)+1');
