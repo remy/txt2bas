@@ -211,14 +211,10 @@ export function replaceDefines(statements, defines) {
 
       if (token.name === types.DEFINE && token.value !== '#') {
         modified = true;
-        if (!defines[token.value.substring(1)]) {
-          throw new Error(
-            `${token.value} is unknown and not in a #define statement`
-          );
+        if (defines[token.value.substring(1)]) {
+          updated.push(...defines[token.value.substring(1)].tokens);
+          continue;
         }
-
-        updated.push(...defines[token.value.substring(1)].tokens);
-        continue;
       }
       updated.push(token);
     }
