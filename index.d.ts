@@ -88,7 +88,7 @@ export type Expect = {
 import {
   Statement as StatementClass,
   Autoline as AutolineClass,
-} from './txt2bas/index';
+} from './txt2bas/index.mjs';
 
 export type Statement = InstanceType<typeof StatementClass>;
 export type Autoline = InstanceType<typeof AutolineClass>;

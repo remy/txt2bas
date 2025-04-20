@@ -4,3 +4,5 @@ cspect.log
 .nyc_output
 coverage/
 tmp
+mono_crash.*
+cspect_win.data

@@ -1444,13 +1444,15 @@ export function basicToBytes(lineNumber, tokens) {
       opTokens.push(token);
 
       if (value === opTable.PRIVATE) {
-        const view = new DataView(new ArrayBuffer(6));
-        view.setUint8(0, 0x0e);
-        opTokens.push({
-          name: NUMBER_DATA,
-          value: new Uint8Array(view.buffer),
-        });
-        length += 6;
+        if (tokens[i + 1].value !== opTable.CLEAR) {
+          const view = new DataView(new ArrayBuffer(6));
+          view.setUint8(0, 0x0e);
+          opTokens.push({
+            name: NUMBER_DATA,
+            value: new Uint8Array(view.buffer),
+          });
+          length += 6;
+        }
       }
     } else if (
       name === NUMBER ||
